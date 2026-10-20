@@ -1,0 +1,23 @@
+extends: existence
+message: "'%s' narrates the designing; a chapter states the design."
+description: "A chapter is the destination, written as what the system does. The weighing that led there is a model's or a decision record's, and a chapter that narrates it holds two documents at once. This rule binds chapters only."
+link: https://github.com/agentplot/blueprints/blob/main/books/research/2026-10-13-voice-and-style.md#6-what-a-chapter-never-does-and-where-it-came-from
+level: warning
+ignorecase: true
+tokens:
+  - we chose
+  - we decided
+  - we opted
+  - we considered
+  - we believe
+  - we think
+  - this is intentional
+  - intentionally
+  - the rationale
+  - the design here
+  - in this design
+  - this document
+  - this section
+  - this chapter
+  - as discussed
+  - the thinking is

@@ -1,0 +1,18 @@
+# moon runs weir's checks. Each check is tagged with its layer, which a
+# branch's policy will require by tag:
+#   check-fast    format and the README's prose: seconds
+# Each crate becomes a project of its own as it lands; the root holds what
+# spans the tree. A task whose inputs are identical to a run that passed on
+# this host, in any worktree, replays from .moon/cache/outputs (a link into
+# the git common dir, made by devenv.nix) instead of running again.
+$schema: 'https://moonrepo.dev/schemas/workspace.json'
+
+projects:
+  root: '.'
+
+# --affected compares against the merge-base with main.
+vcs:
+  client: 'git'
+  defaultBranch: 'main'
+
+telemetry: false

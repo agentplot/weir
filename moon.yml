@@ -1,0 +1,19 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# The workspace as a whole: a candidate is held to what the commit hooks
+# hold a commit to.
+tasks:
+  # Every formatter treefmt.nix configures, writing nothing it would change
+  # and keeping no cache outside the tree. It reads every tracked file: one
+  # that no formatter claims and no exclude names fails it.
+  format:
+    command: 'treefmt --ci'
+    inputs: ['/**/*', '!/.devenv/**', '!/.moon/cache/**']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  # The README's prose, through Vale (.vale.ini, styles/Weir).
+  prose:
+    command: 'vale README.md'
+    inputs: ['/README.md', '/.vale.ini', '/styles/**/*']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}

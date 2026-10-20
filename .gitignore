@@ -1,0 +1,8 @@
+/target
+.devenv/
+.devenv.flake.nix
+devenv.local.nix
+.pre-commit-config.yaml
+.moon/cache/
+/result
+.DS_Store

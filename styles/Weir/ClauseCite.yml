@@ -1,0 +1,8 @@
+extends: existence
+message: "Cite a clause by its bare number in parentheses, as '(46)', not '%s'."
+description: "The statement's style: a clause is cited by its number alone, so the citation never outgrows the sentence it sits in."
+link: https://github.com/agentplot/blueprints/blob/main/books/research/2026-10-13-voice-and-style.md#6-what-a-chapter-never-does-and-where-it-came-from
+level: suggestion
+ignorecase: true
+raw:
+  - '\bclauses? \d+'

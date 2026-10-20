@@ -1,0 +1,21 @@
+# The family's shared crates, one workspace. None is built yet; each joins
+# `members` as it lands (agentplot/blueprints, design/capture/plan.md):
+#   crates/weir-capture    the capture contract: its types and key rules,
+#                          JSON in flight, recutils at rest, the sha256
+#                          content hash and the excerpt cut
+#   crates/weir-signals    the signal, move and item records, and the
+#                          inbox's layout
+#   crates/weir-adapters   the folder drop, the meeting file and the
+#                          signals-folder import
+#   crates/weir-branch     the shared-branch write protocol
+#   crates/weir-kinds      the kind format, with an elaboration kind's
+#                          section
+#   crates/weir-cadence    five-field cron, caught up once
+#   the conformance pack   contract lines in, the records a host must
+#                          write from them out
+[workspace]
+resolver = "2"
+members = []
+
+[workspace.package]
+license = "MIT"
