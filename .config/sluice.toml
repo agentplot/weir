@@ -1,0 +1,27 @@
+# sluice gates every merge into a bolt and onto main (kit:gate.1): the
+# checks moon tags, in weir's devenv shell (kit:gate.2). main and the bolts
+# live on GitHub: every round fetches them from origin and forms on what it
+# holds, and a landing is a leased push as the host's [forge] app
+# (kit:gate.4). crew makes each bolt there with `sluice branch create`.
+[tests]
+runner = "moon"
+toolchain = ["devenv", "print-dev-env"]
+
+[branches."bolt/*"]
+required = ["#check-fast"]
+parallel = 4
+batch = false
+flaky = "fail"
+timeout = "10m"
+remote = "origin"
+
+[branches.main]
+required = ["#check-fast"]
+parallel = 2
+batch = false
+flaky = "fail"
+timeout = "10m"
+remote = "origin"
+
+[branches.main.pull_requests]
+reviews = 0
