@@ -12,4 +12,6 @@
 //! Every function answers from its arguments alone and writes only into the
 //! raw place it is handed (core.1).
 
+mod copy;
 pub mod event_time;
+pub mod folder;
