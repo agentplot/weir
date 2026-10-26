@@ -1,5 +1,6 @@
 //! An adapter's lines, JSON Lines on standard output: each exactly one of
-//! an offer, a cursor or a completion (1; C.1; core.5). A line is read to a
+//! an offer, a cursor or a completion (1; C.1; core.5), and never an import
+//! line, which a host's import operation alone reads (63, 64). A line is read to a
 //! JSON value first and each field checked by name, so a refusal names the
 //! field, and a field the contract does not name is ignored (core.6). A
 //! line is written as one line of compact JSON, which reads back the same
@@ -134,7 +135,7 @@ impl Line {
 }
 
 impl Malformed {
-    fn line(reason: impl Into<String>) -> Malformed {
+    pub(crate) fn line(reason: impl Into<String>) -> Malformed {
         Malformed {
             field: None,
             reason: reason.into(),
@@ -142,7 +143,7 @@ impl Malformed {
         }
     }
 
-    fn field(field: impl Into<String>, reason: impl Into<String>) -> Malformed {
+    pub(crate) fn field(field: impl Into<String>, reason: impl Into<String>) -> Malformed {
         Malformed {
             field: Some(field.into()),
             reason: reason.into(),
@@ -171,6 +172,12 @@ pub fn read_line(text: &str) -> Result<Line, Malformed> {
     let Value::Object(object) = value else {
         return Err(Malformed::line("the line is not a JSON object"));
     };
+    if object.contains_key("import") {
+        return Err(Malformed::line(
+            "the line holds `import`: an import line is read by a host's import operation and \
+             never taken (63, 64)",
+        ));
+    }
     let held: Vec<&str> = LINE_KEYS
         .into_iter()
         .filter(|name| object.contains_key(*name))
@@ -208,20 +215,9 @@ fn read_offer(value: &Value) -> Result<Offer, Malformed> {
 }
 
 fn offer_fields(offer: &Map<String, Value>) -> Result<Offer, Malformed> {
-    let key_text = required_string(offer, "key", "key")?;
-    let key = Key::parse(&key_text)
-        .map_err(|error| Malformed::field("key", format!("is `{key_text}`: {error}")))?;
-    let source = required_string(offer, "source", "source")?;
-    if source.is_empty() {
-        return Err(Malformed::field("source", "is empty"));
-    }
-    let event_at = required_string(offer, "event_at", "event_at")?;
-    if OffsetDateTime::parse(&event_at, &Rfc3339).is_err() {
-        return Err(Malformed::field(
-            "event_at",
-            format!("is `{event_at}`, not an RFC 3339 time with an offset"),
-        ));
-    }
+    let key = read_key(offer, "key")?;
+    let source = read_source(offer, "source")?;
+    let event_at = read_event_at(offer, "event_at")?;
     let title = string(offer, "title", "title")?;
     let url = string(offer, "url", "url")?;
     let raw = match offer.get("raw") {
@@ -271,16 +267,7 @@ fn read_excerpt(value: &Value) -> Result<Excerpt, Malformed> {
     if text.is_empty() {
         return Err(Malformed::field("excerpt.text", "is empty"));
     }
-    let kind_text = required_string(excerpt, "kind", "excerpt.kind")?;
-    let kind = Nature::parse(&kind_text).ok_or_else(|| {
-        Malformed::field(
-            "excerpt.kind",
-            format!(
-                "is `{kind_text}`, not one of {}",
-                Nature::ALL.map(Nature::as_str).join(", ")
-            ),
-        )
-    })?;
+    let kind = read_nature(excerpt, "kind", "excerpt.kind")?;
     let asserted_by = required_string(excerpt, "asserted_by", "excerpt.asserted_by")?;
     let assertion = required_string(excerpt, "assertion", "excerpt.assertion")?;
     let subjects = required(excerpt, "subjects", "excerpt.subjects")
@@ -323,7 +310,55 @@ fn read_completion(value: &Value) -> Result<Completion, Malformed> {
     Ok(Completion { listed, failed })
 }
 
-fn required<'a>(
+/// The key the field `key` holds, by the key rule (3, 4); `path` names the
+/// field in a refusal, as `key` or `import.capture.key`.
+pub(crate) fn read_key(object: &Map<String, Value>, path: &str) -> Result<Key, Malformed> {
+    let key_text = required_string(object, "key", path)?;
+    Key::parse(&key_text)
+        .map_err(|error| Malformed::field(path, format!("is `{key_text}`: {error}")))
+}
+
+/// The source the field `source` names, never empty (2).
+pub(crate) fn read_source(object: &Map<String, Value>, path: &str) -> Result<String, Malformed> {
+    let source = required_string(object, "source", path)?;
+    if source.is_empty() {
+        return Err(Malformed::field(path, "is empty"));
+    }
+    Ok(source)
+}
+
+/// The event time the field `event_at` holds, in RFC 3339 with its offset,
+/// kept as written (5; core.8).
+pub(crate) fn read_event_at(object: &Map<String, Value>, path: &str) -> Result<String, Malformed> {
+    let event_at = required_string(object, "event_at", path)?;
+    if OffsetDateTime::parse(&event_at, &Rfc3339).is_err() {
+        return Err(Malformed::field(
+            path,
+            format!("is `{event_at}`, not an RFC 3339 time with an offset"),
+        ));
+    }
+    Ok(event_at)
+}
+
+/// The nature the field `name` spells, one of the five (25).
+pub(crate) fn read_nature(
+    object: &Map<String, Value>,
+    name: &str,
+    path: &str,
+) -> Result<Nature, Malformed> {
+    let kind_text = required_string(object, name, path)?;
+    Nature::parse(&kind_text).ok_or_else(|| {
+        Malformed::field(
+            path,
+            format!(
+                "is `{kind_text}`, not one of {}",
+                Nature::ALL.map(Nature::as_str).join(", ")
+            ),
+        )
+    })
+}
+
+pub(crate) fn required<'a>(
     object: &'a Map<String, Value>,
     name: &str,
     path: &str,
@@ -334,7 +369,7 @@ fn required<'a>(
     }
 }
 
-fn required_string(
+pub(crate) fn required_string(
     object: &Map<String, Value>,
     name: &str,
     path: &str,
@@ -343,7 +378,7 @@ fn required_string(
 }
 
 /// An optional string: absent or `null` is none.
-fn string(
+pub(crate) fn string(
     object: &Map<String, Value>,
     name: &str,
     path: &str,
@@ -355,7 +390,7 @@ fn string(
     }
 }
 
-fn strings(value: &Value, path: &str) -> Result<Vec<String>, Malformed> {
+pub(crate) fn strings(value: &Value, path: &str) -> Result<Vec<String>, Malformed> {
     let Value::Array(items) = value else {
         return Err(Malformed::field(path, "is not a list of strings"));
     };
@@ -429,6 +464,26 @@ mod tests {
 
         let not_object = refused(r#"["cursor"]"#);
         assert_eq!(not_object.reason, "the line is not a JSON object");
+    }
+
+    #[test]
+    fn an_import_line_is_not_an_adapters_line() {
+        let import = r#"{"import": {"capture": {"key": "release/x", "source": "release", "event_at": "2026-10-10T14:02:11Z"}, "came_in": "import:crew-folders", "signals": [], "moves": []}}"#;
+        let with_offer = offer_line(
+            r#""key": "release/x", "source": "release", "event_at": "2026-10-10T14:02:11Z""#,
+        )
+        .replacen('{', r#"{"import": {}, "#, 1);
+        for line in [import.to_string(), with_offer] {
+            let malformed = refused(&line);
+            assert_eq!(malformed.field, None, "{line}");
+            assert!(
+                malformed
+                    .reason
+                    .contains("an import line is read by a host's import operation"),
+                "{malformed}"
+            );
+            assert!(malformed.reason.contains("never taken"), "{malformed}");
+        }
     }
 
     #[test]

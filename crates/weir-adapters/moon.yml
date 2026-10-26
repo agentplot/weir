@@ -1,0 +1,27 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# weir-adapters: the folder drop, the meeting file and the signals-folder
+# import. One task per check, each run from the workspace root (core.39).
+language: 'rust'
+
+tasks:
+  format:
+    command: 'cargo fmt -p weir-adapters --check'
+    inputs: ['/crates/weir-adapters/**/*', '/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  lint:
+    command: 'cargo clippy -p weir-adapters --all-targets -- -D warnings'
+    inputs: ['/crates/weir-adapters/**/*', '/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  typecheck:
+    command: 'cargo check -p weir-adapters --all-targets'
+    inputs: ['/crates/weir-adapters/**/*', '/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  test:
+    command: 'cargo test -p weir-adapters'
+    inputs: ['/crates/weir-adapters/**/*', '/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}

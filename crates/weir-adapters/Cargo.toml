@@ -1,0 +1,19 @@
+[package]
+name = "weir-adapters"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "The built-in adapters: the folder drop, the meeting file and the signals-folder import (statement 61 to 64; C.6)."
+
+[dependencies]
+weir-capture = { path = "../weir-capture" }
+time.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true

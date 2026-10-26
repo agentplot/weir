@@ -4,7 +4,9 @@
 //! writes the same records (24).
 //!
 //! The crate holds an adapter's lines, offers, cursors and completions, read
-//! and written as JSON Lines (1 to 10; C.1); the key rule (3, 4); an
+//! and written as JSON Lines (1 to 10; C.1); the import line, the fourth
+//! line, which an import prints and a host's import operation alone reads,
+//! never `take` (63, 75a; C.1); the key rule (3, 4); an
 //! adapter's declaration, its configuration's schema and the command line a
 //! run is started with (11, 12, 72 to 74); the sha256 content hash the
 //! built-in adapters key files by (C.6); the cut of an own excerpt (20);
@@ -20,6 +22,7 @@ pub mod capture;
 pub mod cut;
 pub mod declaration;
 pub mod hash;
+pub mod import;
 pub mod key;
 pub mod line;
 pub mod rec;
@@ -35,6 +38,9 @@ pub use declaration::{
     Invocation,
 };
 pub use hash::{content_hash, content_hash_reader};
+pub use import::{
+    read_import_line, ImportLine, ImportLineCapture, ImportLineMove, ImportLineSignal,
+};
 pub use key::{Key, KeyError};
 pub use line::{read_line, Completion, Excerpt, Failure, Line, Malformed, Nature, Offer};
 pub use rec::{RecError, Record};
