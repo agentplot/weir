@@ -7,13 +7,14 @@
 
 use std::collections::HashSet;
 use std::fmt;
+use std::fs;
 use std::path::Path;
 
 use time::format_description::well_known::Rfc3339;
 use time::{OffsetDateTime, UtcOffset};
 
 use crate::capture::{CameIn, Capture};
-use crate::cut::{LeftOut, SMALLEST_LIMIT};
+use crate::cut::{cut, LeftOut, SMALLEST_LIMIT};
 use crate::key::Key;
 use crate::line::{read_line, Line, Nature, Offer};
 
@@ -199,13 +200,16 @@ pub struct Report {
 /// line is checked, and a malformed line or an offer that fails the
 /// contract is refused, named and passed over (13, 15); a key the inbox
 /// holds, or that an earlier line of `lines` was taken under, is counted
-/// held, and nothing is banked or written for it (14).
+/// held, and nothing is banked or written for it (14); every other offer's
+/// raw files are read from `raw_place` and banked whole, with its excerpt's
+/// whole text when cut, before its capture is written, pointing at what
+/// was banked (17, 18, 21).
 pub fn take<L: AsRef<str>>(
     lines: impl IntoIterator<Item = L>,
-    _raw_place: Option<&Path>,
+    raw_place: Option<&Path>,
     how: &Take,
     inbox: &mut impl Inbox,
-    _bank: &mut impl Bank,
+    bank: &mut impl Bank,
 ) -> Report {
     let mut report = Report::default();
     // The inbox may answer `holds` from a tip read before the take; a key
@@ -225,7 +229,7 @@ pub fn take<L: AsRef<str>>(
                     continue;
                 }
                 let key = offer.key.clone();
-                match take_offer(offer, how, inbox) {
+                match take_offer(offer, raw_place, how, inbox, bank) {
                     Ok(()) => {
                         taken_here.insert(key.clone());
                         report.taken.push(key);
@@ -242,15 +246,43 @@ pub fn take<L: AsRef<str>>(
     report
 }
 
-/// Writes one offer whose key the inbox does not hold, or says why not.
-fn take_offer(offer: Offer, how: &Take, inbox: &mut impl Inbox) -> Result<(), String> {
+/// Banks and writes one offer whose key the inbox does not hold, or says
+/// why not: steps 3 and 4 of C.1.
+fn take_offer(
+    offer: Offer,
+    raw_place: Option<&Path>,
+    how: &Take,
+    inbox: &mut impl Inbox,
+    bank: &mut impl Bank,
+) -> Result<(), String> {
+    let files = read_raw(&offer.raw, raw_place)?;
+    let cut = offer
+        .excerpt
+        .as_ref()
+        .map(|excerpt| cut(&excerpt.text, how.limit));
+    let whole_excerpt = match (&offer.excerpt, &cut) {
+        (Some(excerpt), Some(cut)) if cut.left_out.is_some() => Some(excerpt.text.as_str()),
+        _ => None,
+    };
+    let pointer = if files.is_empty() && whole_excerpt.is_none() {
+        None
+    } else {
+        match bank.bank(&offer.key, &files, whole_excerpt) {
+            Ok(path) => Some(format!("{}:{path}", how.machine)),
+            Err(refusal) => {
+                // Whatever it banked before refusing is not kept (18).
+                bank.discard(&offer.key);
+                return Err(format!("the bank refused the raw material: {refusal}"));
+            }
+        }
+    };
     let capture = Capture {
         key: offer.key,
         source: offer.source,
         event_at: offer.event_at,
         title: offer.title,
         url: offer.url,
-        pointer: None,
+        pointer,
         came_in: how.came_in.clone(),
         machine: how.machine.clone(),
         taken_at: how.taken_at.clone(),
@@ -263,4 +295,46 @@ fn take_offer(offer: Offer, how: &Take, inbox: &mut impl Inbox) -> Result<(), St
     inbox
         .write(&taken)
         .map_err(|refusal| format!("the inbox refused the capture: {refusal}"))
+}
+
+/// The raw files `raw` names, read whole from `raw_place`; a file that is
+/// missing, cannot be read or resolves outside the raw place refuses the
+/// offer, as does any raw material named with no raw place (6, 18).
+fn read_raw(raw: &[String], raw_place: Option<&Path>) -> Result<Vec<RawFile>, String> {
+    if raw.is_empty() {
+        return Ok(Vec::new());
+    }
+    let named = raw
+        .iter()
+        .map(|path| format!("`{path}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let Some(raw_place) = raw_place else {
+        return Err(format!(
+            "names raw material, {named}, and no raw place was given"
+        ));
+    };
+    let place = raw_place.canonicalize().map_err(|error| {
+        format!(
+            "names raw material, {named}, and the raw place {} cannot be read: {error}",
+            raw_place.display()
+        )
+    })?;
+    raw.iter()
+        .map(|path| {
+            let resolved = place
+                .join(path)
+                .canonicalize()
+                .map_err(|error| format!("raw `{path}` cannot be read: {error}"))?;
+            if !resolved.starts_with(&place) {
+                return Err(format!("raw `{path}` resolves outside the raw place"));
+            }
+            let bytes = fs::read(&resolved)
+                .map_err(|error| format!("raw `{path}` cannot be read: {error}"))?;
+            Ok(RawFile {
+                path: path.clone(),
+                bytes,
+            })
+        })
+        .collect()
 }
