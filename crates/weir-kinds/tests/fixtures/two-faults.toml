@@ -1,0 +1,12 @@
+# One kind with no stage, and another whose stage has no prompt (57).
+[kinds.bare]
+version = 1
+
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits"]
+
+[[kinds.bump.stages]]
+name = "review"
+conversation = true

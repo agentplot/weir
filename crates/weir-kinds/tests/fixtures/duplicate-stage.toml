@@ -1,0 +1,10 @@
+# Two stages of one kind that share a name (52).
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits"]
+
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code-again.md"
+deliverables = ["tasks"]

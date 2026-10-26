@@ -1,0 +1,30 @@
+# Fields of the wrong shape, one kind each (57).
+[kinds.version-two]
+version = "two"
+
+[[kinds.version-two.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+
+[kinds.version-zero]
+version = 0
+
+[[kinds.version-zero.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+
+[kinds.lands-yes]
+lands = "yes"
+
+[[kinds.lands-yes.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+
+[[kinds.quiet-number.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+quiet = 45

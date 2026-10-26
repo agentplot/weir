@@ -1,0 +1,34 @@
+# Every other shape the format names, wrong once each (57).
+kinds.loose = 3
+
+[kinds.branch-empty]
+branch = ""
+starts_unready = "no"
+
+[[kinds.branch-empty.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+
+[kinds.stages-strings]
+stages = ["code", "review"]
+
+[[kinds.stage-shapes.stages]]
+name = ""
+prompt = 7
+deliverables = "commits"
+agents = ["claude"]
+wait = 1
+quiet = "1.5h"
+on_fail = 3
+max_send_backs = -1
+
+[[kinds.stage-shapes.stages]]
+name = "review"
+prompt = "prompts/review.md"
+conversation = "yes"
+
+[[kinds.stage-shapes.stages]]
+name = "verify"
+prompt = "prompts/verify.md"
+deliverables = []

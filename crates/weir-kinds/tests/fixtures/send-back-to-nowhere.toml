@@ -1,0 +1,9 @@
+# A send-back to a stage its kind does not have (52).
+[kinds.bump]
+lands = true
+
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits"]
+on_fail = "deploy"

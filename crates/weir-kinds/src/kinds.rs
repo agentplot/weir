@@ -220,6 +220,7 @@ fn read_stage(stage: &Table, at: &str, problems: &mut Problems) -> Stage {
         );
         Vec::new()
     });
+    let wait = boolean(stage, "wait", at, problems);
     let quiet = match stage.get("quiet") {
         None => None,
         Some(Value::String(text)) => {
@@ -267,7 +268,7 @@ fn read_stage(stage: &Table, at: &str, problems: &mut Problems) -> Stage {
         prompt,
         end,
         agents,
-        wait: boolean(stage, "wait", at, problems),
+        wait,
         quiet,
         on_fail,
         max_send_backs,

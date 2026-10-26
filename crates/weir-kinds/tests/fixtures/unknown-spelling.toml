@@ -1,0 +1,5 @@
+# A deliverable spelled none of the six ways (54).
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commit"]
