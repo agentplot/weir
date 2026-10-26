@@ -1,0 +1,30 @@
+# One stage for each of the six spellings of a deliverable (54).
+[[kinds.every.stages]]
+name = "commits"
+prompt = "prompts/commits.md"
+deliverables = ["commits"]
+
+[[kinds.every.stages]]
+name = "change"
+prompt = "prompts/change.md"
+deliverables = ["change"]
+
+[[kinds.every.stages]]
+name = "tasks"
+prompt = "prompts/tasks.md"
+deliverables = ["tasks"]
+
+[[kinds.every.stages]]
+name = "archived"
+prompt = "prompts/archived.md"
+deliverables = ["archived"]
+
+[[kinds.every.stages]]
+name = "report"
+prompt = "prompts/report.md"
+deliverables = ["report:out/conclusion.md"]
+
+[[kinds.every.stages]]
+name = "committed"
+prompt = "prompts/committed.md"
+deliverables = ["committed:docs/verify.md"]

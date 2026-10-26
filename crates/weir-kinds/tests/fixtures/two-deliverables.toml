@@ -1,0 +1,5 @@
+# A stage that declares two deliverables (S12).
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits", "tasks"]

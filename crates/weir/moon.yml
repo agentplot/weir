@@ -1,0 +1,29 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# The weir command line: its format, lint, typecheck and test, one task
+# per check (core.39). It builds on weir-kinds, whose files are among its
+# inputs beside its own and the toolchain's (kit:testing.3).
+language: 'rust'
+dependsOn: [kinds]
+
+tasks:
+  format:
+    command: 'cargo fmt -p weir --check'
+    inputs: &inputs ['/crates/weir/**/*', '/crates/weir-kinds/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  lint:
+    command: 'cargo clippy -p weir --all-targets -- -D warnings'
+    inputs: *inputs
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  typecheck:
+    command: 'cargo check -p weir --all-targets'
+    inputs: *inputs
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  test:
+    command: 'cargo test -p weir'
+    inputs: *inputs
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}

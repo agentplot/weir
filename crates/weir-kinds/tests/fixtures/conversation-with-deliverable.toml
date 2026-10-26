@@ -1,0 +1,6 @@
+# A conversation that declares a deliverable (51).
+[[kinds.bump.stages]]
+name = "review"
+prompt = "prompts/bump-review.md"
+conversation = true
+deliverables = ["commits"]

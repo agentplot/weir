@@ -1,0 +1,6 @@
+# A kind that declares only its stages: every other field reads as the
+# format says when left out (C.4).
+[[kinds.tidy.stages]]
+name = "code"
+prompt = "prompts/tidy.md"
+deliverables = ["commits"]

@@ -1,0 +1,18 @@
+# Quiet times in each of the three units (57, C.4).
+[[kinds.wait.stages]]
+name = "draft"
+prompt = "prompts/draft.md"
+deliverables = ["commits"]
+quiet = "45m"
+
+[[kinds.wait.stages]]
+name = "check"
+prompt = "prompts/check.md"
+deliverables = ["commits"]
+quiet = "90s"
+
+[[kinds.wait.stages]]
+name = "settle"
+prompt = "prompts/settle.md"
+deliverables = ["commits"]
+quiet = "2h"

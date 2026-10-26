@@ -1,0 +1,28 @@
+# Two kinds, each read the same every time (S10).
+[kinds.fix]
+version = 1
+starts_unready = true
+lands = true
+
+[[kinds.fix.stages]]
+name = "code"
+prompt = "prompts/fix-code.md"
+deliverables = ["commits"]
+
+[kinds.change]
+version = 1
+
+[[kinds.change.stages]]
+name = "construct"
+prompt = "prompts/change-construct.md"
+deliverables = ["change"]
+
+[[kinds.change.stages]]
+name = "code"
+prompt = "prompts/change-code.md"
+deliverables = ["tasks"]
+
+[[kinds.change.stages]]
+name = "verify"
+prompt = "prompts/change-verify.md"
+deliverables = ["archived"]

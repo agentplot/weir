@@ -1,0 +1,4 @@
+# A stage with neither a deliverable nor a conversation (51).
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"

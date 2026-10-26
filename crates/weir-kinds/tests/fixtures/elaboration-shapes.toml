@@ -1,0 +1,21 @@
+# Elaboration sections of the wrong shape, field by field, and one that is
+# not a table; the kinds' stages read whatever they hold (55, 56).
+[kinds.scalar]
+elaboration = "later"
+
+[[kinds.scalar.stages]]
+name = "write"
+prompt = "prompts/write.md"
+deliverables = ["commits"]
+
+[[kinds.shapes.stages]]
+name = "write"
+prompt = "prompts/write.md"
+deliverables = ["commits"]
+
+[kinds.shapes.elaboration]
+inputs = "books/outline.md"
+conclusion = [true]
+ending = 3
+transcripts = "no"
+lands = [["books/"]]

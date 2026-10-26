@@ -1,0 +1,6 @@
+# A quiet time of two parts, which the format does not read (57, C.4).
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits"]
+quiet = "1h30m"

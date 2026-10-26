@@ -1,0 +1,8 @@
+# An elaboration section that declares its inputs and no ending (55, 58).
+[[kinds.notes.stages]]
+name = "write"
+prompt = "prompts/write.md"
+deliverables = ["commits"]
+
+[kinds.notes.elaboration]
+inputs = ["books/outline.md"]

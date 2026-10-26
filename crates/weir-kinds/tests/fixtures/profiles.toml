@@ -1,0 +1,10 @@
+# A tool's own table beside the kinds, holding fields that a kind would be
+# refused for: the format does not name it, so nothing in it is read (56).
+[profiles.fast]
+quiet = 45
+stages = "none"
+
+[[kinds.tidy.stages]]
+name = "code"
+prompt = "prompts/tidy.md"
+deliverables = ["commits"]
