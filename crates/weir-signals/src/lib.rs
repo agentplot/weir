@@ -8,3 +8,7 @@
 //! there, so the write protocol can form it again on a new tip and every
 //! check is made again (46). The crate reads no repository and runs no
 //! program: every function answers from its arguments alone (core.1).
+
+pub mod layout;
+
+pub use layout::Place;
