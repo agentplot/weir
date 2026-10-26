@@ -86,9 +86,11 @@ prints import lines of its own shape for a host's import operation
 - `weir-capture` gains the import line's type beside its other lines,
   and its line reader names an import line as one `take` does not read.
 - The inbox's records and layout unit of this bolt writes import lines
-  into an inbox through its import operation (75a): it reads them with
-  this change's `read_import_line`. Whichever of the two lands second
-  builds on the other.
+  into an inbox through its import operation (75a), which takes its
+  own `ImportedCapture`. One conversion from this change's `ImportLine`
+  hands a line over; it lives in `weir-signals` and is written by
+  whichever of the two units is built second, so this change edits
+  `crates/weir-signals` only when that crate is already on the bolt.
 - millpond's `millpond capture folder|meeting` and `millpond import`
   (plan step P3) call these.
 
@@ -101,4 +103,5 @@ Cargo.lock
 crates/weir-capture/**
 crates/weir-adapters/**
 crates/weir/**
+crates/weir-signals/src/**
 ```

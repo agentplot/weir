@@ -73,8 +73,8 @@ and `conform` need it.
 ### The import line lives in `weir-capture`
 
 `weir-capture` gains a module `import` with `ImportLine` (the capture
-as `ImportedCapture`, `pointer`, `came_in`, `signals` and `moves`),
-`ImportedSignal`, `ImportedMove`, `read_import_line(&str) ->
+as `ImportLineCapture`, `pointer`, `came_in`, `signals` and `moves`),
+`ImportLineSignal`, `ImportLineMove`, `read_import_line(&str) ->
 Result<ImportLine, Malformed>` and `ImportLine::to_json`, reusing
 `line`'s field readers, `Key::parse`, `Nature` and `CameIn`, so a
 refusal names its field the same way (`import.signals[1].kind`). The
@@ -82,7 +82,7 @@ madswan-design ruling places it there, beside the three other lines.
 `read_line` refuses a line holding `import` with a reason naming the
 import operation, so `take` names it among a run's refusals (64; core.5).
 
-An imported signal is `ImportedSignal`, not the capture crate's
+An imported signal is `ImportLineSignal`, not the capture crate's
 `OwnSignal`: an own signal's text is cut and its number is always 1,
 while an imported signal's number is read and its excerpt never cut or
 checked (37). A move's word is a `String`, not an enum of the six, so a
@@ -90,6 +90,19 @@ word of another body reaches the import operation, which leaves its
 signal unmoved (39; core.25). Fields are read through `serde_json::Value`
 as `line` reads them, and written by `serde` in C.1's order with absent
 options left out.
+
+The types are named for the line, `ImportLine*`, because the inbox's
+records and layout unit names its own value `ImportedCapture`: the
+capture, pointer, signals and moves its import operation writes, with
+the key, source and event time as text so that operation refuses a
+line naming no key whatever reader built it (75a). The line is handed
+to the import operation through one conversion, `impl
+From<weir_capture::ImportLine> for weir_signals::ImportedCapture`. It
+lives in `weir-signals`, since `weir-signals` depends on `weir-capture`
+and never the other way, and it is written by whichever of the two
+units is built second: by this one when `crates/weir-signals` stands on
+the branch it is built on, and otherwise by that unit, against this
+one's types.
 
 ### The folder drop
 
@@ -225,9 +238,11 @@ kit:testing.3).
 ## Risks / Trade-offs
 
 - [The import operation is written in another unit, beside this one]
-  → The line's shape is C.1's, and that unit reads it through
-  `read_import_line`; whichever lands second builds on the other's
-  types, and no test here needs `weir-signals`.
+  → The line's shape is C.1's, read in one place, `read_import_line`,
+  and handed over by one conversion, written by whichever unit is built
+  second. When this one is built first, no test here needs
+  `weir-signals`; when second, the conversion's test runs in that
+  crate's project.
 - [S9 says crew's `new-territory` arrives unmoved, while section 10's
   ruling on question 3, ADR 0002 and core.25 make it a join] → This
   change follows the ruling and the rule, the later word; S9's case is
