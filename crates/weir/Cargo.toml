@@ -17,6 +17,7 @@ weir-adapters = { path = "../weir-adapters" }
 
 [dev-dependencies]
 tempfile.workspace = true
+time.workspace = true
 
 [lints]
 workspace = true

@@ -1,11 +1,28 @@
-//! The `weir` command line, a caller of the crates (section 9, core.1).
-//! It holds one command for now: `weir check <declaration>`.
+//! The `weir` command line: the caller that runs the crates, holding no
+//! rule of its own (section 9; core.1). `weir check <declaration>` reads a
+//! declaration of kinds (51 to 58). `weir capture folder` and `weir
+//! capture meeting` run the built-in adapters as a host runs any adapter,
+//! with the arguments a host appends, `--raw-dir <dir>` and `--cursor <c>`,
+//! and print their lines (C.1; core.34).
 
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
+use weir_adapters::{folder, meeting};
+use weir_capture::Line;
 use weir_kinds::{read_elaboration, read_kinds, End, Problem};
+
+const USAGE: &str = "\
+usage:
+  weir check <declaration>
+      list the kinds a declaration holds, or name every field that fails it
+  weir capture folder <dir> --raw-dir <dir> [--cursor <c>]
+      offer one capture per file in <dir>, keyed by the folder and the file's content
+  weir capture meeting <file> --raw-dir <dir> [--cursor <c>]
+      offer one capture for the meeting file <file>
+";
 
 #[derive(Parser)]
 #[command(name = "weir", version, about = "The weir command line")]
@@ -24,9 +41,40 @@ enum Command {
     },
 }
 
+/// How a command ended: its exit status.
+enum Exit {
+    Done,
+    /// A run that could not begin, or did not finish, said why on standard
+    /// error.
+    Failed,
+    /// The command line asked for no command weir has.
+    Usage,
+}
+
+impl From<Exit> for ExitCode {
+    fn from(exit: Exit) -> ExitCode {
+        match exit {
+            Exit::Done => ExitCode::SUCCESS,
+            Exit::Failed => ExitCode::from(1),
+            Exit::Usage => {
+                eprint!("{USAGE}");
+                ExitCode::from(2)
+            }
+        }
+    }
+}
+
+/// `weir check` is read by its parser; a built-in adapter's arguments are
+/// read by hand, the few a host appends (C.1).
 fn main() -> ExitCode {
-    match Cli::parse().command {
-        Command::Check { declaration } => check(&declaration),
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    match args.as_slice() {
+        ["check", ..] => match Cli::parse().command {
+            Command::Check { declaration } => check(&declaration),
+        },
+        ["capture", adapter @ ("folder" | "meeting"), rest @ ..] => capture(adapter, rest).into(),
+        _ => Exit::Usage.into(),
     }
 }
 
@@ -86,5 +134,65 @@ fn listing(text: &str) -> Result<Vec<String>, Vec<Problem>> {
         Ok(lines)
     } else {
         Err(problems)
+    }
+}
+
+/// A built-in adapter's run: its path, then the options a host appends.
+/// The cursor is taken and never read, since neither adapter keeps one (8).
+fn capture(adapter: &str, args: &[&str]) -> Exit {
+    let command = format!("capture {adapter}");
+    let mut path = None;
+    let mut raw_dir = None;
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        match *arg {
+            "--raw-dir" => match args.next() {
+                Some(dir) => raw_dir = Some(PathBuf::from(dir)),
+                None => return Exit::Usage,
+            },
+            "--cursor" => {
+                if args.next().is_none() {
+                    return Exit::Usage;
+                }
+            }
+            option if option.starts_with("--") => return Exit::Usage,
+            given if path.is_none() => path = Some(PathBuf::from(given)),
+            _ => return Exit::Usage,
+        }
+    }
+    let Some(path) = path else {
+        return Exit::Usage;
+    };
+    let Some(raw_dir) = raw_dir else {
+        return failed(
+            &command,
+            "--raw-dir <dir> is required: the raw place a host hands the run",
+        );
+    };
+    let run: fn(&Path, &Path) -> Result<Vec<Line>, String> = match adapter {
+        "folder" => folder::run,
+        _ => meeting::run,
+    };
+    match run(&path, &raw_dir) {
+        Ok(lines) => print(&command, lines.iter().map(Line::to_json)),
+        Err(why) => failed(&command, &why),
+    }
+}
+
+/// Says on standard error, in one line, why the command did not finish.
+fn failed(command: &str, why: &str) -> Exit {
+    eprintln!("weir {command}: {}", why.replace('\n', " "));
+    Exit::Failed
+}
+
+/// Prints `lines` to standard output, one a line.
+fn print(command: &str, mut lines: impl Iterator<Item = String>) -> Exit {
+    let mut out = io::BufWriter::new(io::stdout().lock());
+    let written = lines
+        .try_for_each(|line| writeln!(out, "{line}"))
+        .and_then(|()| out.flush());
+    match written {
+        Ok(()) => Exit::Done,
+        Err(error) => failed(command, &format!("standard output: {error}")),
     }
 }
