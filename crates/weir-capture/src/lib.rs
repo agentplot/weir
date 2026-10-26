@@ -17,6 +17,7 @@
 //! and every write is one the caller's inbox or bank makes (core.1).
 
 pub mod declaration;
+pub mod hash;
 pub mod key;
 pub mod line;
 
@@ -24,5 +25,6 @@ pub use declaration::{
     check_config, read_declarations, ConfigError, ConfigFailure, Declaration, DeclarationError,
     Invocation,
 };
+pub use hash::{content_hash, content_hash_reader};
 pub use key::{Key, KeyError};
 pub use line::{read_line, Completion, Excerpt, Failure, Line, Malformed, Nature, Offer};
