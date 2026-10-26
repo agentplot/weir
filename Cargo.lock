@@ -1292,6 +1292,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "weir-branch"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "tempfile",
+ "time",
+ "toml",
+]
+
+[[package]]
 name = "weir-cadence"
 version = "0.0.0"
 dependencies = [

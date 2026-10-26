@@ -7,7 +7,8 @@
 #                          inbox's layout
 #   crates/weir-adapters   the folder drop, the meeting file and the
 #                          signals-folder import
-#   crates/weir-branch     the shared-branch write protocol
+#   crates/weir-branch     the shared-branch write protocol, its lock and
+#                          the pack's protocol cases: landed
 #   crates/weir-kinds      the kind format, with an elaboration kind's
 #                          section: landed
 #   crates/weir-cadence    five-field cron, caught up once: landed
@@ -22,6 +23,7 @@ members = [
   "crates/weir-kinds",
   "crates/weir",
   "crates/weir-cadence",
+  "crates/weir-branch",
 ]
 
 [workspace.package]
