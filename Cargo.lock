@@ -1345,6 +1345,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "weir-pack"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tempfile",
+ "time",
+ "toml",
+ "weir-capture",
+]
+
+[[package]]
 name = "weir-signals"
 version = "0.0.0"
 dependencies = [
