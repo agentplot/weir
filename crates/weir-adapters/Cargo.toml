@@ -11,6 +11,7 @@ time.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
+weir-pack = { path = "../weir-pack" }
 
 [lib]
 doctest = false

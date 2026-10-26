@@ -11,7 +11,7 @@ use std::fmt;
 use toml::{Table, Value};
 
 use crate::clauses::{read_index, Clause, INDEX};
-use crate::pack::{Pack, Shape};
+use crate::pack::{Case, Pack, Shape};
 
 /// The file of a case the check reads.
 pub const CASE_FILE: &str = "case.toml";
@@ -83,6 +83,23 @@ impl fmt::Display for Fault {
             ),
             Fault::Uncited(clause) => write!(f, "{clause}: is cited by no case"),
         }
+    }
+}
+
+/// The clauses `case` cites in its `case.toml`'s `satisfies`, as the check
+/// reads them, or why they do not read.
+pub fn satisfies(case: &Case) -> Result<Vec<Clause>, String> {
+    let id = case.id();
+    let table: Table = case
+        .text(CASE_FILE)?
+        .parse()
+        .map_err(|error: toml::de::Error| format!("{id}: {}", error.message()))?;
+    match table.get("satisfies") {
+        Some(Value::Array(citations)) => citations
+            .iter()
+            .map(|citation| Clause::cited(citation).map_err(|why| format!("{id}: {why}")))
+            .collect(),
+        _ => Err(format!("{id}: `satisfies` is no list of clauses")),
     }
 }
 

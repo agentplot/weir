@@ -27,6 +27,6 @@ pub use adapter::{check_lines, check_meeting_lines, Breach, Meetings, RawPlace};
 pub use adapter_case::{
     read_adapter_case, AdapterCase, BuiltIn, BuiltInCase, ExpectedBreach, LinesCase,
 };
-pub use check::{check, Checked, Fault};
+pub use check::{check, satisfies, Checked, Fault};
 pub use clauses::{read_index, Clause, Index, Section};
 pub use pack::{Case, Pack, Shape};

@@ -1302,6 +1302,7 @@ dependencies = [
  "tempfile",
  "time",
  "weir-capture",
+ "weir-pack",
 ]
 
 [[package]]

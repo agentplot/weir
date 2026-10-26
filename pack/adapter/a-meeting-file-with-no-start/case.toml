@@ -1,0 +1,8 @@
+# A meeting file that states no start: offered at its last write, as the
+# folder drop offers a file (5, 62, 64).
+satisfies = [5, 62, 64]
+adapter = "meeting"
+input = "input/call.txt"
+
+[modified]
+"call.txt" = "2026-10-23T16:20:00Z"
