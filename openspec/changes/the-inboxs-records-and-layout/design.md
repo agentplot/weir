@@ -20,7 +20,11 @@ the crate, `weir-signals`, for the signal, move, batch, item, brief and
 send records and the inbox's layout. madswan-design's ruling of
 2026-10-26 (blueprints main f4aabd9) gives this unit the import
 operation and the built-in adapters unit the import line's type in
-`weir-capture` and the reader of crew's folders.
+`weir-capture` and the reader of crew's folders. Its batch 21 rulings
+(blueprints main d50535a) put two things in clause 39 and C.2 that this
+crate does: an imported `new-territory` is read as a join into a
+proposed item named for the move's target, and a reason or note given
+with any move is kept with it as its `note`.
 
 The rules it relies on, all in `docs/architecture/core.md`, the only
 page of `docs/architecture/` (no area page exists, so none is touched):
@@ -55,10 +59,10 @@ their inputs) and kit:testing.5 (proved by the checks alone).
   touches no repository and runs no `recfix` (47; core.1). Its tests run
   `recfix` over every file it forms.
 - The import line's type and its JSON, and reading crew's folders into
-  import lines: the built-in adapters unit's (ruling f4aabd9). Mapping
-  crew's `new-territory` to a join is the reader of crew's folders'
-  (record 0002, ruling 3; core.2, core.25); here any word not of the
-  six arrives unmoved.
+  import lines: the built-in adapters unit's (ruling f4aabd9). That
+  reader carries each move's word, target and reason or note as it
+  stands; reading `new-territory` as a join is the import operation's,
+  here (39).
 - Choosing a move, reading a capture into signals, writing a brief's
   text, sending or landing: the callers' (70; core.4).
 - A commit message for a write (50): the write protocol's.
@@ -162,9 +166,17 @@ second statement of the checks, and could drift from them.
   the reader skips; its presence is what makes the capture read. A
   capture's `unread` field is as it was written (41); a capture is
   unread when it has no `signals.rec`.
-- **`weir-move/1`**: `format`, `signal`, `move`, `target`, `by`, `at`,
-  `batch` where it stood in one, `replaces` on a replacement. A move has
-  no identity field: `replaces: <n>` names the replaced move by its
+- **`weir-move/1`**: `format`, `signal`, `move`, `target`, `note`
+  where the move has one, `by`, `at`, `batch` where it stood in one,
+  `replaces` on a replacement. `note` is the reason or note given with
+  the move, as given; a drop's note is its reason, the text of its
+  `target`, unless the move was given a note of its own (39; C.2).
+  `NewMove` and `Move` carry `note: Option<String>`; `make_move`,
+  `propose_batch` and the import write it, and the reader reads it, so a
+  record that holds one reads back with it. A note is never a
+  consequence: a move without its `target` is refused whatever its
+  note. A move has no identity field: `replaces: <n>` names the
+  replaced move by its
   number among its signal's moves in `moves.rec`, counting from 1, which
   is fixed once written since the file only grows. The words are spelled
   `drop`, `answered`, `challenge`, `join`, `attach`, `route`; every
@@ -243,7 +255,8 @@ as what an import line (C.1) carries: the capture's key, source and
 event time as the line's text, its title and link; the pointer or none;
 `came_in`, which must be `CameIn::Import`; the signals in the body's
 order with their numbers; and the moves, each with a signal number, a
-word kept as a string, a target, who and when. The key, source and event
+word kept as a string, a target, the reason or note the body gave with
+it or none, who and when. The key, source and event
 time are text, not `Key`, so the import operation itself refuses a line
 whose capture names no key, as 75a puts it, whatever reader built the
 value. The built-in adapters unit reads the line itself in
@@ -263,7 +276,18 @@ caller hands, unread when it has no signals) and its `signals.rec` are
 added, and each move is checked as `make_move` checks one, against the
 inbox as this import has grown it so far; one not taken is reported
 with its signal, its word and why, and its signal stays unmoved (39).
-An imported join makes or grows a proposed item with no brief. Nothing
+A move whose word is `new-territory` is read first as a join whose item
+is the move's target, as given, and then checked as any join: it makes
+or grows that proposed item, and one whose target is empty, is not an
+item's name, or names a sent item is not taken and is reported with the
+word it came with. Its record is a `join`; the word it came with is
+not kept beside it, since C.2's record has no field for it and the
+join is what the ruling says it is. Every move written carries the
+note the body gave with it, and a drop given none carries its reason
+as its note (39; C.2). An imported join makes or grows a proposed item
+with no brief. The word `new-territory` is the only word of crew's the
+crate holds, written as a constant with no tool's name beside it
+(core.2). Nothing
 is banked and no excerpt looked for (37). The whole import is one
 write, checked as every write is, with an `ImportReport`: the keys
 written, the held count, each capture refused, each move not taken.
@@ -303,11 +327,18 @@ planned crates names the signals crate landed.
   alone; the conversion from the line is one function, added by
   whichever unit lands second, and the two units touch no file in
   common.
-- [S9 says an imported `new-territory` arrives unmoved, while record
-  0002's ruling 3 and core.25 say it is a join] → Here every word not
-  of the six arrives unmoved, which keeps both if the reader of crew's
-  folders maps `new-territory` to a join before printing the line;
-  that is the built-in adapters unit's, and named for madswan-design.
+- [S9 still says an imported `new-territory` arrives unmoved, while
+  clause 39, core.25 and the batch 21 ruling read it as a join] → The
+  clause and the ruling govern: the import reads it as a join, and the
+  test of S9's "not taken, arrives unmoved, reported" uses a word of no
+  meaning, `promote`. S9's wording is named for madswan-design.
+- [C.1's import line spells no `note` in its moves] → `ImportedMove`
+  carries the note as an option, so the import keeps it whichever way
+  the line comes to spell it; the line's field is the built-in adapters
+  unit's, and named for madswan-design.
+- [A move record with no `note`] → The field is optional within
+  `weir-move/1`, so its major stays 1 (40); a reader meeting no `note`
+  reads none.
 - [`replaces` by number reads less plainly than an identity] → The
   number is fixed once written and needs no field C.2 does not name; the
   reader checks it against the moves before it.

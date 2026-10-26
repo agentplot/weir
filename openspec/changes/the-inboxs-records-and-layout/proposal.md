@@ -41,7 +41,9 @@ write protocol all build on one copy (plan step F2,
   refused naming the one that stands; only a replacement naming who
   made it and the move it replaces changes one. A move is one of drop,
   answered, challenge, join, attach and route, each with its
-  consequence, or is refused (29 to 31).
+  consequence, or is refused (29 to 31). A move may carry a note, kept
+  as given, and a drop's reason is its note as well, so nothing a
+  curator wrote is lost (39; C.2).
 - **Batches.** A batch's moves lie in its own file and do not stand
   while it is proposed; it stands whole, its moves added to
   `moves.rec`, or is refused whole naming each move that could not be
@@ -59,10 +61,13 @@ write protocol all build on one copy (plan step F2,
   whose capture names no key, source or event time refused and
   reported; each held by key, a key the inbox holds writing nothing, so
   a second import of one body writes nothing; no raw material
-  banked, no pointer of the host's own and no excerpt checked; a move
-  not of the six, or without its consequence, not taken and its signal
-  left unmoved, named in the import's report; a join making or growing a
-  proposed item with no brief (37 to 39, 63; S8, S9). Reading crew's
+  banked, no pointer of the host's own and no excerpt checked; every
+  move's reason or note kept with it as its note; a `new-territory`
+  move taken as a join into a proposed item named for its target; any
+  other move not of the six, or without its consequence, not taken and
+  its signal left unmoved, named in the import's report; a join making
+  or growing a proposed item with no brief (37 to 39, 63; S8, S9;
+  madswan-design's batch 21 rulings, blueprints main d50535a). Reading crew's
   folders into import lines, and the import line's own type in
   `weir-capture`, are the built-in adapters unit's (madswan-design's
   ruling, blueprints main f4aabd9).

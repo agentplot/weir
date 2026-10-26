@@ -154,6 +154,25 @@ A move SHALL be drop with its reason, answered with the claim or record that set
 - **WHEN** a join names an item that has been sent
 - **THEN** it is refused, naming the item as sent, for which an attach is the move
 
+### Requirement: A move keeps the note given with it
+
+A move given a reason or note SHALL keep it as its `note`, as given, in its `weir-move/1` record, and a drop given no note of its own SHALL carry its reason as its note, so a drop's reason is its consequence and its note at once (39; C.2). A note SHALL never stand for a missing consequence. A move record with no `note` SHALL read as a move with none.
+
+#### Scenario: A challenge with a note
+
+- **WHEN** a challenge of `release/x#1` names its claim and the note `the pin was chosen for the shim`
+- **THEN** its record holds that `note` as given, and reads back with it
+
+#### Scenario: A drop's reason is its note
+
+- **WHEN** a drop of `release/x#2` gives the reason `fixed by the tile cache` and no note
+- **THEN** its record holds that reason as its `target` and again as its `note`
+
+#### Scenario: A note is not a consequence
+
+- **WHEN** an answered move names no claim or record but gives a note
+- **THEN** it is refused, naming the missing consequence
+
 ### Requirement: A batch's moves do not stand while it is proposed
 
 A proposed batch SHALL be written whole to `inbox/moves/batches/<batch>.rec` under a name no batch of the inbox has had and holding no `/`, with who proposed it and when, and each move naming the batch; while proposed its moves SHALL NOT stand and its signals stay unmoved (31, 32; core.19).

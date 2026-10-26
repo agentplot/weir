@@ -36,6 +36,15 @@ An imported capture's signals SHALL be written as its reading, numbered from 1 i
 - **WHEN** an imported signal's excerpt stands in no raw material the importing machine holds
 - **THEN** it is written all the same
 
+### Requirement: An imported move keeps its note as read
+
+A reason or note the body gave with any imported move SHALL be kept with it as its note, as read, and an imported drop given no note SHALL carry its reason as its note (39; C.2).
+
+#### Scenario: A move's note kept as read
+
+- **WHEN** an import line carries an attach of signal 1 with the note `same root cause as the October outage`, and a drop of signal 2 with its reason and no note
+- **THEN** the attach's record holds that note as read, and the drop's record holds its reason as its target and as its note
+
 ### Requirement: An imported capture is held by key like any other
 
 An imported capture whose key the inbox holds SHALL write nothing, its signals and moves with it, and SHALL be counted held; importing one body twice SHALL write nothing the second time, and a later offer under an imported key SHALL be held (14, 38; core.10, core.25). The import SHALL write captures only through the import operation, never through `take`, and `take` SHALL hold a key an import wrote as it holds any other (64).
@@ -50,9 +59,28 @@ An imported capture whose key the inbox holds SHALL write nothing, its signals a
 - **WHEN** a capture was imported under `release/mise/2026.10.10` and an adapter later offers that key
 - **THEN** the offer is held
 
+### Requirement: An imported new-territory is a join into a proposed item named for its target
+
+An imported move whose word is `new-territory` SHALL be read as a join into the proposed item its target names, then checked and written as any imported join, its record's word `join` (39; core.25). One whose target is empty, is not an item's name, or names a sent item SHALL not be taken: its signal SHALL arrive unmoved, and the report SHALL name the move with the word it came with and why.
+
+#### Scenario: Two signals into new territory
+
+- **WHEN** two imported captures each carry a `new-territory` move whose target is `shim-timeouts`, which the inbox does not hold
+- **THEN** `moves.rec` gains two joins naming `shim-timeouts`, one `item.rec` for `shim-timeouts` is written, proposed, made by a join, with no `brief.md`, and both signals are its signals
+
+#### Scenario: New territory with no target
+
+- **WHEN** an imported `new-territory` move names no target
+- **THEN** the move is not taken, its signal arrives unmoved, and the report names it as `new-territory` with the missing consequence
+
+#### Scenario: New territory named for a path
+
+- **WHEN** an imported `new-territory` move's target is `intent/shim-timeouts`
+- **THEN** the move is not taken, and the report names it with the target as not an item's name
+
 ### Requirement: An imported move not of the six arrives unmoved
 
-An imported move whose word is not one of the six, that lacks its consequence, that names no signal of its capture, or that is a second move for one signal, SHALL not be taken; its signal SHALL arrive unmoved, and the import's report SHALL name the move and why (29, 30, 39; core.25).
+An imported move whose word is not one of the six and is not `new-territory`, that lacks its consequence, that names no signal of its capture, or that is a second move for one signal, SHALL not be taken; its signal SHALL arrive unmoved, and the import's report SHALL name the move and why (29, 30, 39; core.25).
 
 #### Scenario: A word not of the six
 
