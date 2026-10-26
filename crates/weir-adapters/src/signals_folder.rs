@@ -1319,6 +1319,77 @@ Claude Code does not fetch the tools again.
         assert!(why.starts_with("moves.rec cannot be read"), "{why}");
     }
 
+    /// Every file under `root`, by its path within it, with its bytes.
+    fn snapshot(root: &Path) -> BTreeMap<PathBuf, Vec<u8>> {
+        let mut files = BTreeMap::new();
+        let mut folders = vec![root.to_path_buf()];
+        while let Some(folder) = folders.pop() {
+            for entry in fs::read_dir(&folder).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    folders.push(path);
+                } else {
+                    let bytes = fs::read(&path).unwrap();
+                    files.insert(path.strip_prefix(root).unwrap().to_path_buf(), bytes);
+                }
+            }
+        }
+        files
+    }
+
+    fn printed(reading: &Reading) -> Vec<String> {
+        reading.lines.iter().map(ImportLine::to_json).collect()
+    }
+
+    #[test]
+    fn one_folder_read_twice() {
+        let body = two_signals();
+        with_moves(
+            &body,
+            &[
+                move_record(
+                    &format!("{TWO}/01-a"),
+                    "route",
+                    "Target: unit/fix-x\nDate: 2026-10-06\nBy: p\n",
+                ),
+                move_record(
+                    &format!("{SESSION}/01"),
+                    "new-territory",
+                    "Target: upstream: x\nDate: 2026-10-10\nBy: d\n",
+                ),
+                move_record(
+                    "elsewhere/01",
+                    "drop",
+                    "Reason: r\nDate: 2026-10-10\nBy: d\n",
+                ),
+            ],
+        );
+        let before = snapshot(&body.root());
+        let first = body.read();
+        let second = body.read();
+        assert_eq!(
+            snapshot(&body.root()),
+            before,
+            "the body's files are as they were"
+        );
+        assert_eq!(first, second);
+        assert_eq!(printed(&first), printed(&second));
+        assert_eq!(printed(&first).len(), 3);
+        for line in printed(&first) {
+            let read = weir_capture::read_import_line(&line).unwrap();
+            assert_eq!(read.to_json(), line);
+        }
+
+        // The same body at another path, as another machine holds it.
+        let elsewhere = tempfile::tempdir().unwrap();
+        for (path, bytes) in &before {
+            let to = elsewhere.path().join(path);
+            fs::create_dir_all(to.parent().unwrap()).unwrap();
+            fs::write(to, bytes).unwrap();
+        }
+        assert_eq!(printed(&read(elsewhere.path()).unwrap()), printed(&first));
+    }
+
     #[test]
     fn front_matter_is_read_as_crew_reads_it() {
         let (fields, body) = front_matter("---\na: 1\nb: x: y\nflag:\n\n---\n\n# T\n");
