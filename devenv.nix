@@ -101,10 +101,24 @@ in
     vale
   ];
 
+  # The commit hooks' config (.pre-commit-config.yaml) is linked at the top of
+  # the worktree, as devenv's files task links it on `devenv shell`: the
+  # script `devenv print-dev-env` prints runs enterShell and none of the
+  # tasks, and a place is made ready by sourcing that script, so a place's
+  # first commit passes the shared hooks before anyone enters its shell. A
+  # file of the user's own there is left as devenv leaves it.
+  #
   # moon's task archives (.moon/cache/outputs) are a link into the git common
   # dir, so every worktree shares them. The rest of .moon/cache records the
   # checkout's absolute paths and stays its own.
   enterShell = ''
+    if _hooks_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+      _hooks_config="$_hooks_root/${config.git-hooks.configPath}"
+      if [ -L "$_hooks_config" ] || [ ! -e "$_hooks_config" ]; then
+        ln -sfn ${config.git-hooks.configFile} "$_hooks_config"
+      fi
+    fi
+    unset _hooks_root _hooks_config
     if _moon_root="$(git rev-parse --show-toplevel 2>/dev/null)" &&
       _moon_common="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
       _moon_cache="$_moon_root/.moon/cache"
