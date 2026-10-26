@@ -11,8 +11,9 @@ use std::fmt;
 use weir_capture::rec::{self, Record};
 use weir_capture::{CameIn, Key, RawFile, Taken};
 
+use crate::format::Format;
 use crate::inbox::{Checked, Effect, InboxAt, InboxError, NotMoved};
-use crate::item::{Item, MadeBy};
+use crate::item::{Item, MadeBy, Outcome, SendRecord};
 use crate::layout::{check_name, Place};
 use crate::moves::{check_time, Decision, Move, NewMove, Proposal};
 use crate::signal::{signals_rec, ReadSignal, Signal, SignalId};
@@ -525,6 +526,157 @@ impl InboxAt {
         self.check(&write)?;
         Ok(write)
     }
+
+    /// The write of the brief of the item `item`: `brief.md`, its first
+    /// line naming `weir-brief/1` and the rest the text handed, unchanged,
+    /// rewriting that file alone (36, 41; core.21). The crate composes no
+    /// brief: it records the text curation or the operator hands (core.20).
+    /// Refused when the item is not held.
+    pub fn write_brief(&self, item: &str, text: &str) -> Result<Write, Refused> {
+        if !self.items.contains_key(item) {
+            return Err(NotTaken::new(item, "is no item the inbox holds").into());
+        }
+        let mut write = Write::new();
+        write.put(
+            Place::Brief(item.to_string()).path(),
+            format!("{}\n{text}", Format::brief_line()),
+        );
+        self.check(&write)?;
+        Ok(write)
+    }
+
+    /// The write of one send of `items` to `target`: a `weir-send/1` record
+    /// appended to each item's `sends.rec`, with the brief as it stands now
+    /// and the outcome `open`, so the send keeps the brief whatever it
+    /// becomes (36; core.20). Refused whole, naming each item and why, when
+    /// an item is not held, has no brief, is named twice, or was sent to
+    /// the target at that time already, so a target and a time name one
+    /// send; refused when it hands no item, names no target or no time.
+    pub fn send(&self, items: &[&str], target: &str, sent_at: &str) -> Result<Write, Refused> {
+        let what = items.join(", ");
+        if items.is_empty() {
+            return Err(
+                NotTaken::new(target, "is handed no item, and a send hands one or more").into(),
+            );
+        }
+        if target.is_empty() {
+            return Err(NotTaken::field(
+                what,
+                "target",
+                "is missing, and a send hands its items to one target",
+            )
+            .into());
+        }
+        check_time(sent_at).map_err(|why| NotTaken::field(&what, "sent_at", why))?;
+        let mut sends = Vec::with_capacity(items.len());
+        let mut not_taken = Vec::new();
+        for (n, name) in items.iter().enumerate() {
+            let Some(item) = self.items.get(*name) else {
+                not_taken.push(NotTaken::new(name, "is no item the inbox holds"));
+                continue;
+            };
+            let Some(brief) = &item.brief else {
+                not_taken.push(NotTaken::new(
+                    name,
+                    "has no brief, and a send keeps the brief as it was handed",
+                ));
+                continue;
+            };
+            if items[..n].contains(name) {
+                not_taken.push(NotTaken::new(name, "is handed twice in one send"));
+                continue;
+            }
+            if send_named(&item.sends, target, sent_at).is_some() {
+                not_taken.push(NotTaken::new(
+                    name,
+                    format!("was sent to `{target}` at `{sent_at}` already"),
+                ));
+                continue;
+            }
+            sends.push(SendRecord {
+                item: name.to_string(),
+                target: target.to_string(),
+                brief: Some(brief.clone()),
+                sent_at: sent_at.to_string(),
+                outcome: Outcome::Open,
+            });
+        }
+        if !not_taken.is_empty() {
+            return Err(Refused(not_taken));
+        }
+        let mut write = Write::new();
+        for send in sends {
+            let path = Place::Sends(send.item.clone()).path();
+            write.put(&path, self.appended(&path, &[send.to_record()]));
+        }
+        self.check(&write)?;
+        Ok(write)
+    }
+
+    /// The write of what became of the send of `item` to `target` at
+    /// `sent_at`: a record appended after it in `sends.rec`, naming the
+    /// send by its target and time and giving the outcome, the send staying
+    /// as written (36, 41; core.21). Refused when the item is not held,
+    /// has no such send or has it settled already, or when the outcome is
+    /// `open` or a landing or a conclusion naming nothing.
+    pub fn settle_send(
+        &self,
+        item: &str,
+        target: &str,
+        sent_at: &str,
+        outcome: &Outcome,
+    ) -> Result<Write, Refused> {
+        let Some(held) = self.items.get(item) else {
+            return Err(NotTaken::new(item, "is no item the inbox holds").into());
+        };
+        match outcome {
+            Outcome::Open => {
+                return Err(NotTaken::field(
+                    item,
+                    "outcome",
+                    "is open, and a send is settled by a landing, a conclusion or abandoned",
+                )
+                .into())
+            }
+            Outcome::Landing(what) | Outcome::Conclusion(what) if what.is_empty() => {
+                return Err(NotTaken::field(
+                    item,
+                    "outcome",
+                    format!("is `{outcome}`, which names nothing"),
+                )
+                .into())
+            }
+            _ => {}
+        }
+        let Some(settled) = send_named(&held.sends, target, sent_at) else {
+            return Err(
+                NotTaken::new(item, format!("has no send to `{target}` at `{sent_at}`")).into(),
+            );
+        };
+        if let Some(earlier) = settled {
+            return Err(NotTaken::field(
+                item,
+                "outcome",
+                format!(
+                    "of the send to `{target}` at `{sent_at}` is `{}` already",
+                    earlier.outcome
+                ),
+            )
+            .into());
+        }
+        let record = SendRecord {
+            item: item.to_string(),
+            target: target.to_string(),
+            brief: None,
+            sent_at: sent_at.to_string(),
+            outcome: outcome.clone(),
+        };
+        let path = Place::Sends(item.to_string()).path();
+        let mut write = Write::new();
+        write.put(&path, self.appended(&path, &[record.to_record()]));
+        self.check(&write)?;
+        Ok(write)
+    }
 }
 
 /// Whether `excerpt` stands, byte for byte, in one of `raw` (26). An empty
@@ -536,4 +688,16 @@ fn stands_in(excerpt: &[u8], raw: &[RawFile]) -> bool {
                 .windows(excerpt.len())
                 .any(|window| window == excerpt)
         })
+}
+
+/// The send of `sends` to `target` at `sent_at`, with what became of it
+/// where that is recorded: none when there is no such send.
+fn send_named<'a>(
+    sends: &'a [SendRecord],
+    target: &str,
+    sent_at: &str,
+) -> Option<Option<&'a SendRecord>> {
+    let names_it = |record: &&SendRecord| record.target == target && record.sent_at == sent_at;
+    sends.iter().filter(|r| r.is_send()).find(names_it)?;
+    Some(sends.iter().filter(|r| !r.is_send()).find(names_it))
 }

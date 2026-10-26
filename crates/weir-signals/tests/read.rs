@@ -19,6 +19,12 @@ const MOVE: &str = "format: weir-move/1\n\
                     by: curation\n\
                     at: 2026-10-25T09:00:00Z\n";
 
+const ITEM: &str = "format: weir-item/1\n\
+                    item: shim-timeout\n\
+                    made_by: join\n\
+                    named_by: curation\n\
+                    named_at: 2026-10-25T09:00:00Z\n";
+
 #[test]
 fn a_later_major() {
     let later = MOVE.replace("weir-move/1", "weir-move/2");
@@ -41,7 +47,10 @@ fn a_later_major() {
 
 #[test]
 fn a_record_of_another_format_where_it_lies() {
-    let error = refused(&[("inbox/items/shim-timeout/sends.rec", MOVE)]);
+    let error = refused(&[
+        ("inbox/items/shim-timeout/item.rec", ITEM),
+        ("inbox/items/shim-timeout/sends.rec", MOVE),
+    ]);
     assert_eq!(error.path, "inbox/items/shim-timeout/sends.rec");
     assert_eq!(error.field.as_deref(), Some("format"));
     assert!(
@@ -135,10 +144,8 @@ fn a_record_with_no_format() {
         error.to_string(),
         "`inbox/moves/moves.rec`, record 2: `format` is missing"
     );
-    let item = "format: weir-item/1\nitem: shim-timeout\nmade_by: join\n\
-                named_by: curation\nnamed_at: 2026-10-25T09:00:00Z\n";
     let error = refused(&[
-        ("inbox/items/shim-timeout/item.rec", item),
+        ("inbox/items/shim-timeout/item.rec", ITEM),
         ("inbox/items/shim-timeout/brief.md", "# Shim\n"),
     ]);
     assert_eq!(error.path, "inbox/items/shim-timeout/brief.md");

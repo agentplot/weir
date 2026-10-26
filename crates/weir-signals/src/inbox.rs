@@ -264,8 +264,8 @@ impl InboxAt {
                     item.brief = Some(brief.to_string());
                 }
                 Place::Sends(name) => {
-                    let sends = read_sends(path, text, name)?;
-                    beside_item(&mut self.items, path, name)?.sends = sends;
+                    let item = beside_item(&mut self.items, path, name)?;
+                    item.sends = read_sends(path, text, name)?;
                 }
             }
         }
