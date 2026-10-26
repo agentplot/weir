@@ -1,0 +1,5 @@
+# A thing that has never run is due, though its first named time has not come.
+satisfies = [59]
+schedule = "0 9 * * *"
+now = "2026-11-03T08:00:00-05:00[America/New_York]"
+due = true

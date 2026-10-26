@@ -1,0 +1,29 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# weir-cadence: when a scheduled thing is due (59, 60, 83 to 85). One task
+# per check (core.39), each declaring everything it reads (kit:testing.3).
+language: 'rust'
+
+tasks:
+  format:
+    command: 'cargo fmt -p weir-cadence --check'
+    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  lint:
+    command: 'cargo clippy -p weir-cadence --all-targets -- -D warnings'
+    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  typecheck:
+    command: 'cargo check -p weir-cadence --all-targets'
+    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  # The tests answer cadence's cases in the pack, which are read from the
+  # tree beside the crate.
+  test:
+    command: 'cargo test -p weir-cadence'
+    inputs: ['/crates/weir-cadence/**/*', '/pack/cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}

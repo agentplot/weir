@@ -1,0 +1,7 @@
+# The same instants read in Los Angeles: the last run was 09:00 the day
+# before, and 09:00 has not come again.
+satisfies = [59]
+schedule = "0 9 * * *"
+last_run = "2026-11-02T17:00:00Z"
+now = "2026-11-03T06:30:00-08:00[America/Los_Angeles]"
+due = false

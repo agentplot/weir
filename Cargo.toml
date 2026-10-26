@@ -10,14 +10,19 @@
 #   crates/weir-branch     the shared-branch write protocol
 #   crates/weir-kinds      the kind format, with an elaboration kind's
 #                          section: landed
-#   crates/weir-cadence    five-field cron, caught up once
+#   crates/weir-cadence    five-field cron, caught up once: landed
 #   the conformance pack   contract lines in, the records a host must
 #                          write from them out
 #   crates/weir            the `weir` command line, a caller of the
 #                          crates: landed, with `check`
 [workspace]
 resolver = "2"
-members = ["crates/weir-capture", "crates/weir-kinds", "crates/weir"]
+members = [
+  "crates/weir-capture",
+  "crates/weir-kinds",
+  "crates/weir",
+  "crates/weir-cadence",
+]
 
 [workspace.package]
 version = "0.0.0"
@@ -35,7 +40,12 @@ sha2 = "0.11"
 jsonschema = { version = "0.60", default-features = false }
 tempfile = "3"
 clap = { version = "4", features = ["derive"] }
+# croner finds the times a cron pattern names, over jiff's zoned times.
+croner = { version = "4", default-features = false, features = ["jiff"] }
+jiff = "0.2"
 
+# The lints every crate takes with `[lints] workspace = true`: clippy's own,
+# which each crate's lint task holds at -D warnings.
 [workspace.lints.clippy]
 too_many_arguments = "allow"
 type_complexity = "allow"
