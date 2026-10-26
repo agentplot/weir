@@ -82,6 +82,20 @@ fn came_in<S: Serializer>(came_in: &CameIn, serializer: S) -> Result<S::Ok, S::E
     serializer.collect_str(came_in)
 }
 
+#[derive(Serialize)]
+struct Wrapped<'a> {
+    import: &'a ImportLine,
+}
+
+impl ImportLine {
+    /// The line as an import prints it: one line of JSON in C.1's order,
+    /// every newline inside a value escaped, an absent option left out, and
+    /// no newline at its end.
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(&Wrapped { import: self }).expect("an import line is always JSON")
+    }
+}
+
 const ADAPTER_KEYS: [&str; 3] = ["capture", "cursor", "done"];
 
 /// The import line `text` is, or why it is malformed.
@@ -660,5 +674,52 @@ mod tests {
             let line = with_move(entry);
             assert_eq!(refused(&line).field.as_deref(), Some(field), "{line}");
         }
+    }
+
+    #[test]
+    fn a_line_round_trips() {
+        let line = ImportLine {
+            capture: ImportLineCapture {
+                key: Key::parse("2026-10-09-swancloud-design-6d65f646").unwrap(),
+                source: "crew-session".into(),
+                event_at: "2026-10-09T22:21:18Z".into(),
+                title: None,
+                url: Some("https://example.org/x".into()),
+            },
+            pointer: None,
+            came_in: CameIn::Import("crew-folders".into()),
+            signals: vec![ImportLineSignal {
+                n: 1,
+                kind: Nature::Constraint,
+                asserted_by: "swancloud-design".into(),
+                assertion: "Claude Code does not fetch the tools again.".into(),
+                subjects: vec![],
+                argues_with: vec!["flake.nix".into()],
+                excerpt: "first line\nsecond \"quoted\" line\nthird line".into(),
+                position: "22:21:18Z".into(),
+            }],
+            moves: vec![ImportLineMove {
+                signal: 1,
+                word: "join".into(),
+                target: Some("upstream-x".into()),
+                by: Some("swancloud-design".into()),
+                at: None,
+            }],
+        };
+        let written = line.to_json();
+        assert!(!written.contains('\n'), "{written}");
+        assert!(!written.contains("pointer"), "{written}");
+        assert!(!written.contains("title"), "{written}");
+        assert!(!written.contains("\"at\""), "{written}");
+        assert_eq!(read_import_line(&written), Ok(line));
+    }
+
+    #[test]
+    fn a_line_is_written_in_c1s_order() {
+        let written = read_import_line(RELEASE).unwrap().to_json();
+        assert_eq!(
+            written,
+            r#"{"import":{"capture":{"key":"release/mise/2026.10.10","source":"release","event_at":"2026-10-10T14:02:11Z","title":"mise 2026.10.10"},"pointer":"mac-studio:~/.local/state/x/","came_in":"import:crew-folders","signals":[{"n":1,"kind":"ask","asserted_by":"jdx/mise","assertion":"mise 2026.10.10 is released.","subjects":["release"],"argues_with":[],"excerpt":"notes","position":"release notes"}],"moves":[{"signal":1,"move":"route","target":"unit/bump-mise","by":"planner","at":"2026-10-11T00:00:00Z"}]}}"#
+        );
     }
 }
