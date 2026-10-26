@@ -29,12 +29,12 @@ pub struct Cut {
     pub left_out: Option<LeftOut>,
 }
 
-/// The line the host adds to a cut excerpt (20).
+/// The line the host adds to a cut excerpt (20), in C.1's one spelling:
+/// the numbers in decimal, and `lines` and `bytes` whatever they are, so
+/// every host writes the same (24).
 pub fn closing_line(left_out: LeftOut) -> String {
     let LeftOut { lines, bytes } = left_out;
-    let lines_word = if lines == 1 { "line" } else { "lines" };
-    let bytes_word = if bytes == 1 { "byte" } else { "bytes" };
-    format!("{OPEN}{lines} {lines_word} and {bytes} {bytes_word}{CLOSE}")
+    format!("{OPEN}{lines} lines and {bytes} bytes{CLOSE}")
 }
 
 /// `text` kept within `limit` bytes. A text within the limit is kept whole,
@@ -118,10 +118,10 @@ mod tests {
     }
 
     #[test]
-    fn the_closing_line_says_one_line_and_one_byte() {
+    fn one_line_and_one_byte_left_out() {
         assert_eq!(
             closing_line(LeftOut { lines: 1, bytes: 1 }),
-            "[cut: 1 line and 1 byte left out, banked whole with the capture]"
+            "[cut: 1 lines and 1 bytes left out, banked whole with the capture]"
         );
         assert_eq!(
             closing_line(LeftOut {
@@ -218,7 +218,7 @@ mod tests {
         );
         assert!(excerpt
             .text
-            .starts_with("aaaaaaaaaa\n[cut: 1 line and 200 bytes"));
+            .starts_with("aaaaaaaaaa\n[cut: 1 lines and 200 bytes"));
     }
 
     #[test]
