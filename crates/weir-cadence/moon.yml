@@ -7,21 +7,21 @@ language: 'rust'
 tasks:
   format:
     command: 'cargo fmt -p weir-cadence --check'
-    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/rust-toolchain.toml', '/devenv.nix', '/devenv.lock', '/.prototools']
+    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
   lint:
     command: 'cargo clippy -p weir-cadence --all-targets -- -D warnings'
-    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/rust-toolchain.toml', '/devenv.nix', '/devenv.lock', '/.prototools']
+    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
   typecheck:
     command: 'cargo check -p weir-cadence --all-targets'
-    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/rust-toolchain.toml', '/devenv.nix', '/devenv.lock', '/.prototools']
+    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
   test:
     command: 'cargo test -p weir-cadence'
-    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/rust-toolchain.toml', '/devenv.nix', '/devenv.lock', '/.prototools']
+    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
