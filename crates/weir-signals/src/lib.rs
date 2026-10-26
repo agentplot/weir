@@ -12,7 +12,9 @@
 pub mod format;
 pub mod inbox;
 pub mod layout;
+pub mod signal;
 
 pub use format::{Format, FormatError};
 pub use inbox::{Held, InboxAt, InboxError};
 pub use layout::Place;
+pub use signal::{ReadSignal, Signal, SignalId};

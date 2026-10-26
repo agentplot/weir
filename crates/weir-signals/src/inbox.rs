@@ -11,6 +11,7 @@ use weir_capture::{Capture, Key};
 
 use crate::format::Format;
 use crate::layout::Place;
+use crate::signal::{Signal, SignalId, EMPTY_READING};
 
 /// An inbox as one tip holds it. The name keeps it apart from
 /// `weir_capture::Inbox`, the trait a host implements for `take`.
@@ -25,6 +26,9 @@ pub struct InboxAt {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Held {
     pub capture: Capture,
+    /// Its own signal or its reading, from its `signals.rec`; none while
+    /// it is unread (19, 28).
+    pub signals: Option<Vec<Signal>>,
 }
 
 /// Why an inbox could not be read: the path, and where there is one, the
@@ -127,18 +131,24 @@ impl InboxAt {
             match place {
                 Place::Capture(key) => {
                     let capture = read_capture(path, text, key)?;
-                    self.captures.insert(key.clone(), Held { capture });
+                    self.captures.insert(
+                        key.clone(),
+                        Held {
+                            capture,
+                            signals: None,
+                        },
+                    );
                 }
                 // Every capture's place orders before every signals' place,
                 // so the capture beside these signals is read by now.
                 Place::Signals(key) => {
-                    if !self.captures.contains_key(key) {
+                    let Some(held) = self.captures.get_mut(key) else {
                         return Err(InboxError::at(
                             path,
                             "lies beside no `capture.rec`: a capture's signals lie beside the capture",
                         ));
-                    }
-                    records(path, text, &[Format::Signal])?;
+                    };
+                    held.signals = Some(read_signals(path, text, key)?);
                 }
                 Place::Moves => {
                     records(path, text, &[Format::Move])?;
@@ -168,6 +178,18 @@ impl InboxAt {
     /// The capture the inbox holds under `key`.
     pub fn capture(&self, key: &Key) -> Option<&Capture> {
         self.captures.get(key).map(|held| &held.capture)
+    }
+
+    /// The capture's own signal or its reading, or none while it is
+    /// unread.
+    pub fn signals(&self, key: &Key) -> Option<&[Signal]> {
+        self.captures.get(key)?.signals.as_deref()
+    }
+
+    /// The signal `id` names, where the inbox holds it.
+    pub fn signal(&self, id: &SignalId) -> Option<&Signal> {
+        let n = usize::try_from(id.n).ok()?.checked_sub(1)?;
+        self.signals(&id.key)?.get(n)
     }
 
     /// Every key the inbox holds, in order.
@@ -210,4 +232,52 @@ fn read_capture(path: &str, text: &str, key: &Key) -> Result<Capture, InboxError
         ));
     }
     Ok(capture)
+}
+
+/// The signals of the `signals.rec` at `path`, beside the capture of `key`:
+/// each naming that key, numbered from 1 in order (27), or none, for a
+/// reading of no signals, where the file names its format in its one line.
+fn read_signals(path: &str, text: &str, key: &Key) -> Result<Vec<Signal>, InboxError> {
+    let records = records(path, text, &[Format::Signal])?;
+    if records.is_empty() {
+        if !text.lines().any(|line| line == EMPTY_READING) {
+            return Err(InboxError::at(
+                path,
+                format!(
+                    "holds no record, and a reading of no signals is the one line `{EMPTY_READING}`"
+                ),
+            ));
+        }
+        return Ok(Vec::new());
+    }
+    let mut signals = Vec::with_capacity(records.len());
+    for (n, record) in (1..).zip(&records) {
+        let signal =
+            Signal::from_record(record).map_err(|error| InboxError::field(path, Some(n), error))?;
+        let id = &signal.signal;
+        if &id.key != key {
+            return Err(InboxError::field(
+                path,
+                Some(n),
+                RecError::field(
+                    "signal",
+                    format!("is `{id}`, which names another capture than `{key}`"),
+                ),
+            ));
+        }
+        if id.n != n as u64 {
+            return Err(InboxError::field(
+                path,
+                Some(n),
+                RecError::field(
+                    "signal",
+                    format!(
+                        "is `{id}` where `{key}#{n}` stands: a capture's signals are numbered from 1 in reading order"
+                    ),
+                ),
+            ));
+        }
+        signals.push(signal);
+    }
+    Ok(signals)
 }
