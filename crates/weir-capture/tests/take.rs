@@ -360,6 +360,14 @@ fn nothing_banked_no_pointer() {
         .any(|call| matches!(call, Call::Bank(_))));
 }
 
+fn done(listed: u64, failed: &str) -> String {
+    format!(r#"{{"done": {{"listed": {listed}, "failed": [{failed}]}}}}"#)
+}
+
+fn cursor(cursor: &str) -> String {
+    format!(r#"{{"cursor": "{cursor}"}}"#)
+}
+
 /// Forty kibibytes of short lines.
 fn forty_kibibytes() -> String {
     let mut text = String::new();
@@ -376,18 +384,23 @@ fn notes_and_excerpt_both_banked() {
     let place = raw_place(&[("notes.md", NOTES)]);
     let (mut inbox, mut bank, calls) = host();
     let text = forty_kibibytes();
-    let lines = [offer(
-        "release/mise/2026.10.10",
-        &format!("{}{}", raw(&["notes.md"]), excerpt(&text)),
-    )];
+    let lines = [
+        offer(
+            "release/mise/2026.10.10",
+            &format!("{}{}", raw(&["notes.md"]), excerpt(&text)),
+        ),
+        done(1, ""),
+    ];
     let report = take(
         &lines,
         Some(place.path()),
         &take_on("deneb"),
         &mut inbox,
         &mut bank,
-    );
+    )
+    .finish(true);
     assert_eq!(keys(&report), ["release/mise/2026.10.10"]);
+    assert!(report.complete);
     let banked = &bank.banked["release/mise/2026.10.10"];
     assert_eq!(banked.files[0].bytes, NOTES);
     assert_eq!(banked.whole_excerpt.as_deref(), Some(text.as_str()));
@@ -562,4 +575,115 @@ fn a_refused_write_with_nothing_banked_discards_nothing() {
         .borrow()
         .iter()
         .any(|call| matches!(call, Call::Discard(_))));
+}
+
+fn five() -> Vec<String> {
+    (1..=5)
+        .map(|n| offer(&format!("deploy/web/{n}"), ""))
+        .collect()
+}
+
+#[test]
+fn an_adapter_that_exits_without_its_completion() {
+    let mut lines = five();
+    lines.insert(3, cursor("c2"));
+    for exited_ok in [true, false] {
+        let (mut inbox, mut bank, _) = host();
+        let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank).finish(exited_ok);
+        assert_eq!(report.taken.len(), 5);
+        assert_eq!(inbox.written.len(), 5);
+        assert!(!report.complete);
+        assert_eq!(report.cursor, None);
+        assert_eq!(report.listed, None);
+    }
+}
+
+#[test]
+fn the_next_run_offers_the_five_again() {
+    let (mut inbox, mut bank, calls) = host();
+    for n in 1..=5 {
+        inbox.held.insert(format!("deploy/web/{n}"));
+    }
+    let mut lines = five();
+    lines.push(cursor("c3"));
+    lines.push(done(5, ""));
+    let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank).finish(true);
+    assert_eq!(report.held, 5);
+    assert!(report.taken.is_empty());
+    assert!(inbox.written.is_empty());
+    assert!(!calls
+        .borrow()
+        .iter()
+        .any(|call| matches!(call, Call::Write(_) | Call::Bank(_))));
+    assert!(report.complete);
+    assert_eq!(report.cursor.as_deref(), Some("c3"));
+}
+
+#[test]
+fn a_completion_with_failures_and_success() {
+    let (mut inbox, mut bank, _) = host();
+    let lines = [
+        cursor("c1"),
+        offer("release/a/1", ""),
+        cursor("c2"),
+        done(2, r#"{"what": "github:jdx/mise", "why": "HTTP 502"}"#),
+    ];
+    let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank).finish(true);
+    assert!(report.complete);
+    assert_eq!(report.cursor.as_deref(), Some("c2"));
+    assert_eq!(report.listed, Some(2));
+    assert_eq!(report.failed.len(), 1);
+    assert_eq!(report.failed[0].what, "github:jdx/mise");
+    assert_eq!(report.failed[0].why, "HTTP 502");
+}
+
+#[test]
+fn a_completion_then_a_failing_exit() {
+    let (mut inbox, mut bank, _) = host();
+    let lines = [offer("release/a/1", ""), cursor("c2"), done(1, "")];
+    let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank).finish(false);
+    assert!(!report.complete);
+    assert_eq!(report.cursor, None);
+    assert_eq!(report.last_cursor.as_deref(), Some("c2"));
+}
+
+#[test]
+fn an_intake_keeps_no_cursor() {
+    let (mut inbox, mut bank, _) = host();
+    let intake = Take::new("deneb", at("2026-10-17T04:30:05Z"), LIMIT, CameIn::Intake).unwrap();
+    let lines = [offer("deploy/a/1", ""), cursor("c1"), done(1, "")];
+    let report = take(&lines, None, &intake, &mut inbox, &mut bank).finish(true);
+    assert!(report.complete);
+    assert_eq!(report.cursor, None);
+    assert_eq!(inbox.written[0].capture.came_in, CameIn::Intake);
+}
+
+#[test]
+fn the_report_serializes_to_json() {
+    let (mut inbox, mut bank, _) = host();
+    inbox.held.insert("release/held/1".into());
+    let lines = [
+        offer("release/a/1", ""),
+        offer("release/held/1", ""),
+        offer("moves/x", ""),
+        "not json".into(),
+        cursor("c9"),
+        done(4, r#"{"what": "x", "why": "HTTP 502"}"#),
+    ];
+    let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank).finish(true);
+    let json = serde_json::to_value(&report).unwrap();
+    assert_eq!(json["taken"], serde_json::json!(["release/a/1"]));
+    assert_eq!(json["held"], 1);
+    assert_eq!(json["refused"][0]["line"], 3);
+    assert_eq!(json["refused"][0]["key"], "moves/x");
+    assert_eq!(json["refused"][1]["line"], 4);
+    assert!(json["refused"][1].get("key").is_none());
+    assert_eq!(json["listed"], 4);
+    assert_eq!(
+        json["failed"],
+        serde_json::json!([{"what": "x", "why": "HTTP 502"}])
+    );
+    assert_eq!(json["complete"], true);
+    assert_eq!(json["cursor"], "c9");
+    assert!(json.get("last_cursor").is_none());
 }

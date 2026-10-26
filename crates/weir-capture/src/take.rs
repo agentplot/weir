@@ -10,13 +10,14 @@ use std::fmt;
 use std::fs;
 use std::path::Path;
 
+use serde::Serialize;
 use time::format_description::well_known::Rfc3339;
 use time::{OffsetDateTime, UtcOffset};
 
 use crate::capture::{CameIn, Capture};
 use crate::cut::{cut, LeftOut, SMALLEST_LIMIT};
 use crate::key::Key;
-use crate::line::{read_line, Line, Nature, Offer};
+use crate::line::{read_line, Failure, Line, Nature, Offer};
 
 /// Why an inbox or a bank refused, in its own words.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -180,20 +181,51 @@ impl Take {
 
 /// One line refused: its number, from 1, the key it offered where it had
 /// one, and why (15).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Refused {
     pub line: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub key: Option<String>,
     pub reason: String,
 }
 
-/// What taking reports of a run or an intake (23, 76).
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+/// What taking reports of a run or an intake (23, 76), which the host
+/// keeps or prints as JSON (C.2: JSON only in flight).
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct Report {
     /// The keys taken, in the order of their lines.
     pub taken: Vec<Key>,
     pub held: u64,
     pub refused: Vec<Refused>,
+    /// How many events the completion said the listing held, where a
+    /// completion was read.
+    pub listed: Option<u64>,
+    /// Each failure the completion named.
+    pub failed: Vec<Failure>,
+    /// The last cursor a run's lines held. Only a run keeps a cursor: an
+    /// intake's or an import's lines keep none.
+    #[serde(skip)]
+    pub last_cursor: Option<String>,
+    /// Set by [`Report::finish`].
+    pub complete: bool,
+    /// The cursor kept, set by [`Report::finish`].
+    pub cursor: Option<String>,
+}
+
+impl Report {
+    /// The report of a run that has ended: complete only when a completion
+    /// was read and the adapter exited reporting success, and the last
+    /// cursor read kept only then (9, 23; core.15). An intake, where no
+    /// adapter ran, finishes with `true`.
+    pub fn finish(mut self, exited_ok: bool) -> Report {
+        self.complete = exited_ok && self.listed.is_some();
+        self.cursor = if self.complete {
+            self.last_cursor.clone()
+        } else {
+            None
+        };
+        self
+    }
 }
 
 /// Takes `lines`, a run's or an intake's, in the seven steps of C.1: each
@@ -203,7 +235,9 @@ pub struct Report {
 /// held, and nothing is banked or written for it (14); every other offer's
 /// raw files are read from `raw_place` and banked whole, with its excerpt's
 /// whole text when cut, before its capture is written, pointing at what
-/// was banked (17, 18, 21).
+/// was banked (17, 18, 21). The report holds what the lines took, held and
+/// refused, their completion and their last cursor, for the host to
+/// [`Report::finish`] once the adapter has exited (23).
 pub fn take<L: AsRef<str>>(
     lines: impl IntoIterator<Item = L>,
     raw_place: Option<&Path>,
@@ -222,7 +256,15 @@ pub fn take<L: AsRef<str>>(
                 key: malformed.key.clone(),
                 reason: malformed.to_string(),
             }),
-            Ok(Line::Cursor(_)) | Ok(Line::Done(_)) => {}
+            Ok(Line::Cursor(cursor)) => {
+                if matches!(how.came_in, CameIn::Run(_)) {
+                    report.last_cursor = Some(cursor);
+                }
+            }
+            Ok(Line::Done(done)) => {
+                report.listed = Some(done.listed);
+                report.failed = done.failed;
+            }
             Ok(Line::Offer(offer)) => {
                 if taken_here.contains(&offer.key) || inbox.holds(&offer.key) {
                     report.held += 1;
