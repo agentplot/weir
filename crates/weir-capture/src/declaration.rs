@@ -1,5 +1,6 @@
 //! An adapter's declaration: how it is started, the shape of its
-//! configuration, and the secrets it needs, by name (11, 72; C.1).
+//! configuration, and the secrets it needs, by name (11, 72; C.1). The
+//! shape is a JSON Schema, draft 2020-12 (section 10, question 8).
 
 use std::fmt;
 
@@ -107,8 +108,79 @@ fn strings(adapter: &Table, name: &str, path: &str) -> Result<Vec<String>, Decla
         .collect()
 }
 
+/// Why a configuration was refused.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ConfigError {
+    /// The schema is not a draft 2020-12 schema, or refers to something it
+    /// does not hold: nothing it refers to is fetched (core.1).
+    Schema(String),
+    /// The configuration fails the schema, at each place named.
+    Fails(Vec<ConfigFailure>),
+}
+
+/// One place a configuration fails its schema: the JSON Pointer of the
+/// instance, empty for the whole, and what fails there.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ConfigFailure {
+    pub path: String,
+    pub message: String,
+}
+
+impl fmt::Display for ConfigFailure {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.path.is_empty() {
+            write!(f, "the configuration: {}", self.message)
+        } else {
+            write!(f, "`{}`: {}", self.path, self.message)
+        }
+    }
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConfigError::Schema(reason) => write!(f, "the schema cannot be used: {reason}"),
+            ConfigError::Fails(failures) => {
+                let failures: Vec<String> = failures.iter().map(ToString::to_string).collect();
+                write!(
+                    f,
+                    "the configuration fails its schema: {}",
+                    failures.join("; ")
+                )
+            }
+        }
+    }
+}
+
+impl std::error::Error for ConfigError {}
+
+/// Checks `config` against `schema` as draft 2020-12, naming every place
+/// it fails. The crate's `jsonschema` is built with none of its features
+/// that resolve a reference by fetching it, by network or from a file.
+pub fn check_config(
+    schema: &serde_json::Value,
+    config: &serde_json::Value,
+) -> Result<(), ConfigError> {
+    let validator = jsonschema::draft202012::new(schema)
+        .map_err(|error| ConfigError::Schema(error.to_string()))?;
+    let failures: Vec<ConfigFailure> = validator
+        .iter_errors(config)
+        .map(|error| ConfigFailure {
+            path: error.instance_path().to_string(),
+            message: error.to_string(),
+        })
+        .collect();
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(ConfigError::Fails(failures))
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
 
     #[test]
@@ -224,5 +296,55 @@ mod tests {
             Some("adapter.x")
         );
         assert_eq!(read_declarations("[adapter.x").unwrap_err().field, None);
+    }
+
+    fn folder_schema() -> serde_json::Value {
+        json!({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {"folder": {"type": "string"}, "depth": {"type": "integer"}},
+            "required": ["folder"]
+        })
+    }
+
+    #[test]
+    fn a_configuration_missing_a_required_property_is_refused() {
+        let Err(ConfigError::Fails(failures)) = check_config(&folder_schema(), &json!({})) else {
+            panic!("a configuration with no folder was taken");
+        };
+        assert_eq!(failures.len(), 1);
+        assert_eq!(failures[0].path, "");
+        assert!(failures[0].message.contains("folder"), "{}", failures[0]);
+    }
+
+    #[test]
+    fn a_configuration_that_fits_is_taken() {
+        assert_eq!(
+            check_config(&folder_schema(), &json!({"folder": "/tmp/drop"})),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn every_place_a_configuration_fails_is_named() {
+        let Err(ConfigError::Fails(failures)) =
+            check_config(&folder_schema(), &json!({"folder": 3, "depth": "deep"}))
+        else {
+            panic!("a configuration of the wrong shape was taken");
+        };
+        let mut paths: Vec<&str> = failures.iter().map(|f| f.path.as_str()).collect();
+        paths.sort();
+        assert_eq!(paths, ["/depth", "/folder"]);
+    }
+
+    #[test]
+    fn a_reference_is_never_fetched() {
+        // A schema that, fetched, would take any object: the check fails
+        // because nothing is fetched.
+        let schema = json!({"$ref": "https://json.schemastore.org/package.json"});
+        let Err(ConfigError::Schema(reason)) = check_config(&schema, &json!({})) else {
+            panic!("a remote $ref was resolved");
+        };
+        assert!(reason.contains("json.schemastore.org"), "{reason}");
     }
 }

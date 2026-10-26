@@ -20,6 +20,8 @@ pub mod declaration;
 pub mod key;
 pub mod line;
 
-pub use declaration::{read_declarations, Declaration, DeclarationError};
+pub use declaration::{
+    check_config, read_declarations, ConfigError, ConfigFailure, Declaration, DeclarationError,
+};
 pub use key::{Key, KeyError};
 pub use line::{read_line, Completion, Excerpt, Failure, Line, Malformed, Nature, Offer};
