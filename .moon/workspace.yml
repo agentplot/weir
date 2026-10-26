@@ -12,6 +12,7 @@ $schema: 'https://moonrepo.dev/schemas/workspace.json'
 
 projects:
   capture: 'crates/weir-capture'
+  weir-kinds: 'crates/weir-kinds'
   root: '.'
 
 # --affected compares against the merge-base with main.
