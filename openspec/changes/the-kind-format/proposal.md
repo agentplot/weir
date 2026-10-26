@@ -18,9 +18,16 @@ no format of its own (purpose; 51 to 58). flume's core waits on it
   and how many times (51, 52, 53, C.4).
 - Every stage ends on exactly one deliverable, spelled one of six ways,
   or is a conversation with none (51, 54).
+- A stage's quiet time is one whole number followed by `s`, `m` or `h`,
+  as `45m` (57, C.4).
 - A declaration is checked whole. One that fails is refused with every
   field that fails it named, each with its reason, and nothing of it is
-  returned (57, 81).
+  returned (57, 81). Two stages of one kind sharing a name, and an
+  `on_fail` naming no stage of its kind, are refused the same way (57,
+  C.4).
+- The format gives no default for `quiet`, `on_fail`, `max_send_backs`
+  or an elaboration's `ending`: each comes back left out when it is
+  left out, and what that means is the reader's (58, C.4).
 - A table or field the format does not name comes back unread and never
   fails the read (56, 82). An elaboration kind's section is one of
   these to a reader of places, and is read, and checked, only when its
@@ -32,8 +39,9 @@ no format of its own (purpose; 51 to 58). flume's core waits on it
   now one command: `weir check <declaration>` reads a declaration, the
   elaboration section included, and either lists its kinds or names
   every field that fails it (section 9).
-- The workspace gains its Rust toolchain, pinned once and checked on
-  every host that runs the gate (core.39, core.40).
+- The workspace gains its Rust toolchain, pinned in `.prototools` alone
+  and checked on every host that runs the gate, and its one shell lists
+  recutils and shellcheck (core.39, core.40).
 
 ## Capabilities
 
@@ -50,11 +58,13 @@ None.
 ## Impact
 
 - New crates `crates/weir-kinds` and `crates/weir`, each a workspace
-  member and a moon project of its own.
-- The workspace's first Rust: `.prototools` and `rust-toolchain.toml`
-  pin it, `.moon/toolchains.yml` reads the pin, a root task fails when
-  the two pins or the tools on the path disagree, and treefmt formats
-  Rust and shell.
+  member and a moon project of its own, named `kinds` and `weir`.
+- The workspace's first Rust: `.prototools` pins it, `.moon/toolchains.yml`
+  reads the pin, a root task fails when a tool on the path is another
+  version, and treefmt formats Rust and shell. No other file names the
+  version.
+- `devenv.nix` lists recutils and shellcheck once, for every crate of
+  the workspace; `devenv.lock` stays tracked.
 - New dependencies: `toml` for reading, `clap` for the command line.
 - millpond, flume and sounding can depend on `weir-kinds` at a tag;
   flume's own kinds read from a declaration (S10).
@@ -72,6 +82,7 @@ moon.yml
 check-toolchain.sh
 treefmt.nix
 devenv.nix
+devenv.lock
 crates/weir-kinds/**
 crates/weir/**
 ```

@@ -7,15 +7,19 @@ lists `members = []`, and moon runs only the root's `format` and
 `prose`. This change brings the first Rust, so it also brings the
 toolchain every later crate shares. Two other units of the bolt, the
 capture contract and cadence, are planned beside this one and need the
-same toolchain; whichever lands first carries it, and the others take
-it at their merge.
+same toolchain and the same shell. Each carries them in the one shape
+the design's ruling on batch 18 fixes, and the bolt's conductor aligns
+the three branches before the second lands.
 
 It satisfies clauses 51 to 58, 81 and 82 of the statement, with C.4 as
-the profile and S10 to S12 as its scenarios. flume's C.2 is the reader
-this crate serves first: it names the same fields, adds a `[profiles]`
-table of its own beside the kinds, and keeps its own defaults for
-`quiet`, `on_fail` and `max_send_backs`. sounding's C.3 names the
-elaboration section's fields and their meaning.
+the profile and S10 to S12 as its scenarios. C.4 fixes quiet's grammar,
+refuses two stages of one kind sharing a name and an `on_fail` naming no
+stage of its kind, and gives no default for `quiet`, `on_fail`,
+`max_send_backs` or an elaboration's `ending` (57, 58). flume's C.2 is
+the reader this crate serves first: it names the same fields, adds a
+`[profiles]` table of its own beside the kinds, and keeps its own
+defaults for `quiet`, `on_fail` and `max_send_backs`. sounding's C.3
+names the elaboration section's fields and their meaning.
 
 There are no area pages under `docs/architecture/`; `core.md` binds
 everywhere this change goes.
@@ -42,7 +46,7 @@ everywhere this change goes.
 - A reader's own refusals, such as flume refusing a stage with two
   agents (flume 23): weir reads what the format allows.
 - Defaults a reader keeps: flume's 30-minute quiet, its send-back
-  default, sounding's ending when none is declared.
+  default, sounding's ending when none is declared (58, C.4).
 
 ## Decisions
 
@@ -99,8 +103,8 @@ The format applies a default only where the statement or C.4 gives
 one, or where a flag's absence can mean only false: `version` 1,
 `branch` the kind's name, `starts_unready`, `lands`, `wait` and
 `conversation` false. `quiet`, `on_fail`, `max_send_backs` and an
-elaboration's `ending` come back as `None` when left out, because
-their defaults differ by reader (flume C.2; sounding 30).
+elaboration's `ending` come back as `None` when left out: C.4 gives
+them no default, and what each means left out is the reader's (58).
 
 ### The checks
 
@@ -123,23 +127,19 @@ Refused, each naming the field:
   with a spelling not of the six; a stage with neither one deliverable
   nor `conversation = true`; a conversation with `deliverables` (51,
   54);
-- `agents` not an array of tables; `quiet` not a duration;
-  `max_send_backs` not an integer of at least 0;
-- `on_fail` not a string, or naming no stage of its kind (52);
-- a stage name used twice in one kind.
-
-The last two are this design's reading of 52: a send-back "names the
-stage", which a name shared by two stages does not do.
+- `agents` not an array of tables; `quiet` not a quiet time as the next
+  section gives it; `max_send_backs` not an integer of at least 0;
+- `on_fail` not a string, or naming no stage of its kind (52, 57, C.4);
+- a stage name used twice in one kind, named at the second stage's
+  `name` (57, C.4).
 
 ### quiet's grammar
 
-`quiet` is a string of one to three parts, hours, minutes and seconds
-in that order, each a whole number followed by `h`, `m` or `s`:
-`"45m"`, `"1h30m"`, `"90s"`. Any other string, or a value not a
-string, is refused naming the field. The format reads it into a
-`Duration` so that two readers never read one declaration's quiet time
-two ways (58). C.4's example, `"45m"`, is the only form the statement
-shows.
+`quiet` is a string holding one whole number followed by one unit, `s`,
+`m` or `h`: `"45m"`, `"90s"`, `"2h"` (57, C.4). Any other string, two
+parts such as `"1h30m"` among them, or a value not a string, is refused
+naming the field. The format reads it into a `Duration` so that two
+readers never read one declaration's quiet time two ways (58).
 
 ### The elaboration section
 
@@ -149,10 +149,10 @@ the elaboration reader's read (55). It reads the kind's
 checks the section whole the way `read_kinds` checks the rest:
 `inputs`, `conclusion` and `lands` arrays of strings (empty when left
 out), `ending` one of `self-closing`, `standing`, `with-operator` (an
-`Ending`, `None` when left out), `transcripts` a boolean (false when
-left out), and any other key kept in the section's own `sections`.
-`read_kinds` never looks inside it, so a reader of places never fails
-on it (56, core.30).
+`Ending`, `None` when left out, 58), `transcripts` a boolean (false
+when left out), and any other key kept in the section's own
+`sections`. `read_kinds` never looks inside it, so a reader of places
+never fails on it (56, core.30).
 
 ### weir check
 
@@ -167,27 +167,43 @@ then exits 0. On refusal it prints one line per problem,
 read is named with the system's reason on standard error, exit 2. It
 opens the file read-only and writes nothing (58).
 
-### The toolchain
+### The toolchain and the shell
 
 Rust is pinned in `.prototools` at 1.98.1, the version tailrace runs,
-and read by `.moon/toolchains.yml` with `versionFromPrototools`
-(kit:toolchain.2). `rust-toolchain.toml` names the same channel with
-`clippy` and `rustfmt`, so rustup runs that toolchain anywhere in the
-tree. `check-toolchain.sh`, run by a root `toolchain` task tagged
-`check-fast` and never cached, fails when the two pins differ or when
-`rustc`, `cargo`, `clippy` or `rustfmt` on the path is another version
-(core.40). treefmt gains `rustfmt`, through a devenv wrapper that
-activates the pinned toolchain, and `shellcheck` with `shfmt` for the
-script (core.39). tailrace's setup is the precedent for each piece.
+and nowhere else; `.moon/toolchains.yml` reads it with
+`versionFromPrototools` (kit:toolchain.2). The shell's
+`proto activate` puts that toolchain's own `bin` first on `PATH`, so
+`rustc`, `cargo`, `clippy` and `rustfmt` in the shell are the pinned
+build's with no file telling rustup which to run. proto installs Rust
+through rustup, and its Rust plugin takes no setting of its own, so the
+components come with rustup's default profile.
 
-Each crate is a moon project, `weir-kinds` and `weir`, with `format`
-(`cargo fmt -p <crate> --check`), `lint` (`cargo clippy -p <crate>
---all-targets -- -D warnings`), `typecheck` (`cargo check -p <crate>
---all-targets`) and `test` (`cargo test -p <crate>`), each tagged
-`check-fast` and declaring the crate's files, `/Cargo.toml`,
-`/Cargo.lock`, `/rust-toolchain.toml`, `/devenv.nix`, `/devenv.lock`
-and `/.prototools` as inputs (core.39, kit:testing.1, kit:testing.3).
-`weir`'s inputs take `weir-kinds`'s files too.
+`check-toolchain.sh`, run by a root `toolchain` task tagged `check-fast`
+and never cached, reads the pin from `.prototools` and fails, naming
+the tool, when `rustc`, `cargo`, `clippy-driver` or `rustfmt` on the
+path is missing or another build; a host whose rustup installs a
+minimal profile fails here, and the message says to add the missing
+component to the pinned toolchain (core.40). No `rust-toolchain.toml`
+is kept.
+
+treefmt gains `rustfmt`, through a devenv wrapper that activates the
+pinned toolchain, and `shellcheck` with `shfmt` for the script
+(core.39). `devenv.nix` lists `pkgs.recutils` and `pkgs.shellcheck`
+once in its packages, for every crate of the workspace: recutils for the
+records' checks (core.24), shellcheck for the scripts the shell runs.
+`devenv.lock` stays tracked. Where a unit of the bolt that landed first
+already brought one of these lines, the line holds as it is.
+
+Each crate is a moon project named for its crate without the `weir-`
+prefix: `crates/weir-kinds` is `kinds`, and `crates/weir` is `weir`.
+Each has `format` (`cargo fmt -p <crate> --check`), `lint`
+(`cargo clippy -p <crate> --all-targets -- -D warnings`), `typecheck`
+(`cargo check -p <crate> --all-targets`) and `test`
+(`cargo test -p <crate>`), each tagged `check-fast` and declaring the
+crate's files, `/Cargo.toml`, `/Cargo.lock`, `/devenv.nix`,
+`/devenv.lock` and `/.prototools` as inputs (core.39, kit:testing.1,
+kit:testing.3). `weir` depends on `kinds`, and its inputs take
+`weir-kinds`'s files too.
 
 ### Tests and their fixtures
 
@@ -204,19 +220,20 @@ fixture's bytes before and after.
 
 core.1 (the crate answers from its inputs; the command line is the
 caller that reads the file), core.2, core.3 (a declaration names a
-secret only by name; nothing here reads one), core.30, core.31,
-core.32, core.37, core.39, core.40; kit:testing.1, kit:testing.3,
-kit:testing.5, kit:toolchain.2. It departs from none.
+secret only by name; nothing here reads one), core.24, core.30,
+core.31, core.32, core.37, core.39, core.40; kit:testing.1,
+kit:testing.3, kit:testing.5, kit:toolchain.2. It departs from none.
 
 ## Risks / Trade-offs
 
-- [The other two units of the bolt add the same toolchain files] →
-  each names them in its touches, so crew names the overlap; the second
-  to merge takes the first's files and drops its own copy.
-- [quiet's grammar, the duplicate-name check and the elaboration
-  defaults are this design's, not the statement's] → each is small and
-  stated here; if the statement fixes them otherwise, the change is to
-  one check and its test.
+- [The other two units of the bolt add the same toolchain and shell
+  lines] → each names them in its touches, so crew names the overlap,
+  and all three carry the one shape the ruling fixes; the second to
+  land keeps the first's lines and adds only its crate's.
+- [With no `rust-toolchain.toml`, a rustup proxy outside the shell runs
+  the host's default toolchain] → every check runs in the shell, where
+  the pinned toolchain's `bin` comes first, and `root:toolchain` fails
+  on any tool found elsewhere.
 - [Re-exporting `toml` ties callers to its version] → a breaking bump
   of `toml` is a breaking bump of `weir-kinds`; the family's tools
   depend on weir at a tag.

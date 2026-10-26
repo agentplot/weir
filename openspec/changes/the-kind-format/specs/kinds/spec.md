@@ -30,19 +30,30 @@ kind's name, and `starts_unready` and `lands` left out as false.
 ### Requirement: A stage reads with its name, prompt and end
 A stage SHALL read with its name, its prompt as written, and either its
 one deliverable or that it is a conversation (53). It SHALL read its
-agents with every setting each holds, whether it waits on its caller's
-word (false when left out), how long its agent may be quiet, the stage a
-failed submission sends a place back to (`on_fail`) and how many times
-a place may go back (`max_send_backs`), the last three only when
-declared.
+agents with their settings, whether it waits (false when left out), and
+its `quiet`, `on_fail` and `max_send_backs`, each of the last three
+returned left out when left out (52, 53, 58, C.4).
 
 #### Scenario: A stage reads with its settings
 - **WHEN** a stage declares `name = "review"`, a prompt, `conversation = true`, `wait = true`, `agents = [{ beside = "operator" }]`, `on_fail = "code"` and `max_send_backs = 3`
 - **THEN** it reads as a conversation named `review` that waits on its caller's word, with one agent holding `beside = "operator"`, sending a failed place back to `code` at most three times
 
+#### Scenario: Settings left out are returned left out
+- **WHEN** a stage declares no `quiet`, `on_fail` or `max_send_backs`
+- **THEN** it reads with each of the three left out, and no value stands in for any of them
+
+### Requirement: A stage's quiet time is one whole number of s, m or h
+A stage's `quiet` SHALL be a string holding one whole number followed
+by `s`, `m` or `h`, and SHALL read as the duration it names (57, C.4).
+Any other value SHALL be refused naming the field.
+
 #### Scenario: A stage's quiet time reads as a duration
-- **WHEN** a stage declares `quiet = "45m"`, and another `quiet = "1h30m"`
-- **THEN** the first reads as forty-five minutes and the second as ninety
+- **WHEN** three stages declare `quiet = "45m"`, `quiet = "90s"` and `quiet = "2h"`
+- **THEN** they read as forty-five minutes, ninety seconds and two hours
+
+#### Scenario: A quiet time of more than one part is refused
+- **WHEN** a stage declares `quiet = "1h30m"`
+- **THEN** the declaration is refused naming that stage's `quiet` field
 
 ### Requirement: A deliverable is one of six spellings
 A stage that is not a conversation SHALL declare exactly one
@@ -73,9 +84,10 @@ none (51, 54, C.4).
 ### Requirement: A declaration is checked whole and refused naming the field
 A declaration SHALL be refused whole when any kind has no stage, any
 stage has no name or no prompt, any field the format names has the wrong
-shape, or any deliverable is not of the six (57). The refusal SHALL name
-every field that fails, each by its path and with its reason, and SHALL
-return no kind (81).
+shape, any deliverable is not of the six, two stages of one kind share a
+name, or an `on_fail` names no stage of its kind (57, C.4). The refusal
+SHALL name every field that fails, each by its path and with its reason,
+and SHALL return no kind (81).
 
 #### Scenario: A kind with no stage is refused
 - **WHEN** a kind declares no stages, or `stages = []`
@@ -86,7 +98,7 @@ return no kind (81).
 - **THEN** the declaration is refused naming `kinds.bump.stages[1].prompt`
 
 #### Scenario: A field of the wrong shape is refused
-- **WHEN** a kind declares `version = "two"`, `version = 0` or `lands = "yes"`, or a stage declares `quiet = 45`
+- **WHEN** a kind declares `version = "two"`, `version = 0` or `lands = "yes"`, or a stage declares `quiet = 45` or `quiet = "1.5h"`
 - **THEN** the declaration is refused naming that field
 
 #### Scenario: A send-back naming no stage of its kind is refused
@@ -125,7 +137,8 @@ malformed section never refuses them. Read as an elaboration, the
 section SHALL give its inputs, the sections a conclusion adds, its
 ending, one of `self-closing`, `standing` and `with-operator`, whether
 earlier transcripts are handed, and what lands, checked whole and
-refused naming the field (55, 57).
+refused naming the field (55, 57). An ending left out SHALL be returned
+left out (58, C.4).
 
 #### Scenario: Both readers read one elaboration kind
 - **WHEN** a declaration holds `writeback` with stages and an elaboration section declaring `inputs`, `conclusion`, `ending = "self-closing"`, `transcripts = false` and `lands`
@@ -134,6 +147,10 @@ refused naming the field (55, 57).
 #### Scenario: A malformed elaboration section
 - **WHEN** an elaboration section declares `ending = "sometimes"`
 - **THEN** a read of the kinds still succeeds, and a read of the elaboration is refused naming `kinds.writeback.elaboration.ending`
+
+#### Scenario: An elaboration section with no ending
+- **WHEN** an elaboration section declares its inputs and no `ending`
+- **THEN** a read of the elaboration gives its inputs with the ending left out, and is not refused
 
 #### Scenario: A kind with no elaboration section
 - **WHEN** a kind has no `elaboration` table
