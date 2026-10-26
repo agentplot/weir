@@ -4,7 +4,9 @@
 //! imported twice writes nothing the second time (38); nothing is banked,
 //! no pointer of the host's own is written and no excerpt is looked for
 //! (37); a move not of the six, or without its consequence, is not taken,
-//! and its signal arrives unmoved (39). The import line itself is read in
+//! and its signal arrives unmoved, but for the one word read as a join
+//! into a proposed item named for its target; every move keeps the note
+//! the body gave with it (39). The import line itself is read in
 //! `weir-capture`; what it carries is handed here as [`ImportedCapture`].
 
 use time::format_description::well_known::Rfc3339;
@@ -14,7 +16,7 @@ use weir_capture::{CameIn, Capture, Key};
 
 use crate::inbox::{Checked, Effect, Held, InboxAt, ItemAt};
 use crate::layout::Place;
-use crate::moves::{check_time, NewMove};
+use crate::moves::{check_time, NewMove, Word};
 use crate::signal::{signals_rec, ReadSignal, Signal, SignalId};
 use crate::write::{joined_item, NotTaken, Refused, Write};
 
@@ -46,6 +48,10 @@ pub struct ImportedSignal {
     pub signal: ReadSignal,
 }
 
+/// The one word not of the six an import takes: a move of it is read as a
+/// join into the proposed item its target names (39; core.25).
+pub const NEW_TERRITORY: &str = "new-territory";
+
 /// One move of an imported capture, naming its signal by number, its word
 /// kept as it stands in the body (39).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -53,6 +59,8 @@ pub struct ImportedMove {
     pub signal: u64,
     pub word: String,
     pub target: String,
+    /// The reason or note the body gave with it, or none (39; C.2).
+    pub note: Option<String>,
     pub by: String,
     pub at: String,
 }
@@ -115,8 +123,11 @@ impl InboxAt {
     /// has no signals, and its signals as its reading, no excerpt looked
     /// for (37). Each of its moves is checked as [`InboxAt::make_move`]
     /// checks one, against the inbox as the import has grown it; one not
-    /// taken is reported, its signal left unmoved, and an imported join
-    /// makes or grows a proposed item with no brief (39).
+    /// taken is reported with the word it came with, its signal left
+    /// unmoved, and an imported join makes or grows a proposed item with no
+    /// brief. A move of [`NEW_TERRITORY`] is read as a join whose item is
+    /// its target, and written as one. Every move written keeps the note
+    /// the body gave, and a drop given none carries its reason (39; C.2).
     pub fn import(
         &self,
         captures: &[ImportedCapture],
@@ -185,18 +196,22 @@ impl InboxAt {
             );
             report.written.push(key.clone());
             for imported_move in &imported.moves {
+                let word = match imported_move.word.as_str() {
+                    NEW_TERRITORY => Word::Join.as_str(),
+                    word => word,
+                };
                 let new = NewMove {
                     signal: SignalId::new(key.clone(), imported_move.signal),
-                    word: imported_move.word.clone(),
+                    word: word.to_string(),
                     target: imported_move.target.clone(),
-                    note: None,
+                    note: imported_move.note.clone(),
                     by: imported_move.by.clone(),
                     at: imported_move.at.clone(),
                     replaces: None,
                 };
                 let not_moved = |field: Option<String>, why: String| MoveNotTaken {
                     signal: new.signal.clone(),
-                    word: new.word.clone(),
+                    word: imported_move.word.clone(),
                     field,
                     why,
                 };

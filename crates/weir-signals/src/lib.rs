@@ -27,7 +27,7 @@ pub mod write;
 pub use format::{Format, FormatError};
 pub use import::{
     CaptureRefused, ImportReport, Imported, ImportedCapture, ImportedMove, ImportedSignal,
-    MoveNotTaken,
+    MoveNotTaken, NEW_TERRITORY,
 };
 pub use inbox::{InboxAt, InboxError, ItemAt, Unmoved, Weight};
 pub use item::{Item, MadeBy, Outcome, SendRecord};

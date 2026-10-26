@@ -1,7 +1,8 @@
 //! The import operation, held to the scenarios of inbox-import: captures
 //! read before their inbox existed, written as the body gave them, held by
 //! key like any other, taken whole or not at all, in one write with its
-//! report (37 to 39, 63, 75a; S8, S9).
+//! report, each move keeping its note and the one word read as a join
+//! taken as one (37 to 39, 63, 75a; S8, S9; C.2).
 
 mod common;
 
@@ -11,6 +12,7 @@ use weir_capture::take::{take, Bank, Inbox, RawFile, Refusal, Take, Taken};
 use weir_capture::{CameIn, Key};
 use weir_signals::{
     Imported, ImportedCapture, ImportedMove, ImportedSignal, InboxAt, ReadSignal, Word,
+    NEW_TERRITORY,
 };
 
 use common::{after, empty, key, recsel_value, signal};
@@ -57,6 +59,7 @@ fn a_move(signal: u64, word: &str, target: &str) -> ImportedMove {
         signal,
         word: word.into(),
         target: target.into(),
+        note: None,
         by: "the operator".into(),
         at: AT.into(),
     }
@@ -343,11 +346,11 @@ fn not_moved(report: &weir_signals::ImportReport) -> Vec<(String, String, Option
 
 #[test]
 fn a_word_not_of_the_six() {
-    // S9, with a word a body of another tool's might carry.
+    // S9, with words of no meaning here that a body might carry.
     let mut capture = line("release/x", 2);
     capture.moves = vec![
         a_move(1, "promote", "the roadmap"),
-        a_move(2, "new-territory", "pin-mise"),
+        a_move(2, "New-Territory", "pin-mise"),
     ];
     let Imported { write, report } = import(&empty(), &[capture]);
     assert_eq!(
@@ -356,7 +359,7 @@ fn a_word_not_of_the_six() {
             ("release/x#1".into(), "promote".into(), Some("move".into())),
             (
                 "release/x#2".into(),
-                "new-territory".into(),
+                "New-Territory".into(),
                 Some("move".into())
             ),
         ]
@@ -503,4 +506,192 @@ fn two_joins_into_one_item() {
         .map(|id| id.to_string())
         .collect();
     assert_eq!(ids, ["meeting/file/ab12#1", "release/a#1"]);
+}
+
+/// The ids of the signals of the item `name` in `inbox`.
+fn item_ids(inbox: &InboxAt, name: &str) -> Vec<String> {
+    inbox
+        .item_signals(name)
+        .iter()
+        .map(|id| id.to_string())
+        .collect()
+}
+
+#[test]
+fn two_signals_into_new_territory() {
+    let mut first = line("release/a", 1);
+    first.moves = vec![a_move(1, NEW_TERRITORY, "shim-timeouts")];
+    let mut second = line("meeting/file/ab12", 2);
+    second.moves = vec![a_move(2, NEW_TERRITORY, "shim-timeouts")];
+    let Imported { write, report } = import(&empty(), &[first, second]);
+    assert!(report.not_moved.is_empty(), "{report:?}");
+    let write = write.unwrap();
+    let items: Vec<&String> = write
+        .files
+        .keys()
+        .filter(|path| path.starts_with("inbox/items/"))
+        .collect();
+    assert_eq!(items, ["inbox/items/shim-timeouts/item.rec"]);
+    let moves = &write.files["inbox/moves/moves.rec"];
+    assert_eq!(moves.matches("move: join\n").count(), 2, "{moves}");
+    assert_eq!(
+        moves.matches("target: shim-timeouts\n").count(),
+        2,
+        "{moves}"
+    );
+    assert!(!moves.contains(NEW_TERRITORY), "{moves}");
+    let inbox = after(&empty(), &write);
+    let item = inbox.item("shim-timeouts").unwrap();
+    assert_eq!(item.item.made_by, weir_signals::MadeBy::Join);
+    assert_eq!(item.brief, None);
+    assert!(!item.is_sent());
+    assert_eq!(
+        item_ids(&inbox, "shim-timeouts"),
+        ["meeting/file/ab12#2", "release/a#1"]
+    );
+    for id in ["release/a#1", "meeting/file/ab12#2"] {
+        assert_eq!(inbox.standing(&signal(id)).unwrap().1.word, Word::Join);
+    }
+}
+
+#[test]
+fn new_territory_with_no_target() {
+    let mut capture = line("release/x", 1);
+    capture.moves = vec![a_move(1, NEW_TERRITORY, "")];
+    let Imported { write, report } = import(&empty(), &[capture]);
+    assert_eq!(
+        not_moved(&report),
+        [(
+            "release/x#1".into(),
+            NEW_TERRITORY.into(),
+            Some("target".into())
+        )]
+    );
+    assert!(
+        report.not_moved[0]
+            .why
+            .starts_with("is missing, and a join carries the item it makes or grows"),
+        "{report:?}"
+    );
+    let write = write.unwrap();
+    assert!(!write.files.contains_key("inbox/moves/moves.rec"));
+    let inbox = after(&empty(), &write);
+    assert_eq!(inbox.standing(&signal("release/x#1")), None);
+}
+
+#[test]
+fn new_territory_named_for_a_path() {
+    let mut capture = line("release/x", 1);
+    capture.moves = vec![a_move(1, NEW_TERRITORY, "intent/shim-timeouts")];
+    let Imported { write, report } = import(&empty(), &[capture]);
+    assert_eq!(
+        not_moved(&report),
+        [(
+            "release/x#1".into(),
+            NEW_TERRITORY.into(),
+            Some("target".into())
+        )]
+    );
+    assert!(
+        report.not_moved[0]
+            .why
+            .contains("`intent/shim-timeouts`, which is no item's name"),
+        "{report:?}"
+    );
+    let write = write.unwrap();
+    assert!(!write
+        .files
+        .keys()
+        .any(|path| path.starts_with("inbox/items/")));
+    assert_eq!(after(&empty(), &write).unmoved().len(), 1);
+}
+
+/// An inbox holding the sent item `sent-item`, joined by `release/held#1`.
+fn with_a_sent_item() -> InboxAt {
+    let mut held = line("release/held", 1);
+    held.moves = vec![a_move(1, "join", "sent-item")];
+    let inbox = imported(&empty(), &[held]);
+    let inbox = after(
+        &inbox,
+        &inbox.write_brief("sent-item", "the brief\n").unwrap(),
+    );
+    after(
+        &inbox,
+        &inbox
+            .send(&["sent-item"], "agentplot/weir fix", AT)
+            .unwrap(),
+    )
+}
+
+#[test]
+fn new_territory_into_a_sent_item() {
+    let inbox = with_a_sent_item();
+    let mut capture = line("release/x", 1);
+    capture.moves = vec![a_move(1, NEW_TERRITORY, "sent-item")];
+    let Imported { write, report } = import(&inbox, &[capture]);
+    assert_eq!(
+        not_moved(&report),
+        [(
+            "release/x#1".into(),
+            NEW_TERRITORY.into(),
+            Some("target".into())
+        )]
+    );
+    assert!(
+        report.not_moved[0].why.contains("which is sent"),
+        "{report:?}"
+    );
+    let inbox = after(&inbox, &write.unwrap());
+    assert_eq!(inbox.standing(&signal("release/x#1")), None);
+    assert_eq!(item_ids(&inbox, "sent-item"), ["release/held#1"]);
+}
+
+#[test]
+fn a_moves_note_kept_as_read() {
+    let inbox = with_a_sent_item();
+    let mut capture = line("release/x", 3);
+    capture.moves = vec![
+        ImportedMove {
+            note: Some("same root cause as the October outage".into()),
+            ..a_move(1, "attach", "sent-item")
+        },
+        a_move(2, "drop", "fixed by the tile cache"),
+        ImportedMove {
+            note: Some("seen twice this week".into()),
+            ..a_move(3, NEW_TERRITORY, "shim-timeouts")
+        },
+    ];
+    let Imported { write, report } = import(&inbox, &[capture]);
+    assert!(report.not_moved.is_empty(), "{report:?}");
+    let write = write.unwrap();
+    let moves = &write.files["inbox/moves/moves.rec"];
+    assert!(
+        moves.contains(
+            "move: attach\ntarget: sent-item\nnote: same root cause as the October outage\n"
+        ),
+        "{moves}"
+    );
+    assert!(
+        moves.contains(
+            "move: drop\ntarget: fixed by the tile cache\nnote: fixed by the tile cache\n"
+        ),
+        "{moves}"
+    );
+    assert!(
+        moves.contains("move: join\ntarget: shim-timeouts\nnote: seen twice this week\n"),
+        "{moves}"
+    );
+    let inbox = after(&inbox, &write);
+    let note = |id: &str| inbox.standing(&signal(id)).unwrap().1.note.clone();
+    assert_eq!(
+        note("release/x#1").as_deref(),
+        Some("same root cause as the October outage")
+    );
+    assert_eq!(
+        note("release/x#2").as_deref(),
+        Some("fixed by the tile cache")
+    );
+    assert_eq!(note("release/x#3").as_deref(), Some("seen twice this week"));
+    // A move of another word given no note has none.
+    assert_eq!(note("release/held#1"), None);
 }

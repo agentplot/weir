@@ -1,4 +1,5 @@
-//! The crate's code names no tool of the family (core.2).
+//! The crate's code names no tool of the family, and holds the one word of
+//! another tool's it reads once, as a constant (core.2).
 
 use std::fs;
 use std::path::Path;
@@ -48,4 +49,30 @@ fn the_code_names_no_tool_of_the_family() {
         })
         .collect();
     assert_eq!(named, Vec::<String>::new());
+}
+
+#[test]
+fn the_word_read_as_a_join_is_spelled_once() {
+    let mut found = Vec::new();
+    files(
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("src"),
+        &mut found,
+    );
+    let spelled: Vec<String> = found
+        .iter()
+        .flat_map(|(path, text)| {
+            text.lines()
+                .filter(|line| line.contains("new-territory"))
+                .map(move |line| format!("{path}: {}", line.trim()))
+        })
+        .collect();
+    assert_eq!(
+        spelled,
+        [format!(
+            "{}: pub const NEW_TERRITORY: &str = \"new-territory\";",
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("src/import.rs")
+                .display()
+        )]
+    );
 }
