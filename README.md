@@ -44,7 +44,7 @@ public, and none keeps state or knows which tool or host uses it.
 | `.config/kit.toml` | the kit standard's profile this repository follows |
 
 ```sh
-devenv shell -- check-fast   # format and prose, through moon
+devenv shell -- check-fast   # format, prose and the commit hooks, through moon
 devenv shell -- prose        # the prose, through Vale
 ```
 

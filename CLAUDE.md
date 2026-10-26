@@ -35,10 +35,10 @@ Every tool runs through the shell, one command at a time:
 
 | layer | what | how long |
 |---|---|---|
-| `check-fast` | format (treefmt) and the README's prose (Vale) | seconds |
+| `check-fast` | format (treefmt), the README's prose (Vale), and a new place's first commit through the hooks | seconds |
 
 `devenv shell -- check-fast` runs them (`moon run :#check-fast`);
-`devenv shell -- moon run root:format` and `prose` run one each. Each
+`devenv shell -- moon run root:format`, `prose` and `hooks` run one each. Each
 crate brings its cargo tests and lint as a moon project of its own when
 it lands.
 

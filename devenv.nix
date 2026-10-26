@@ -101,10 +101,24 @@ in
     vale
   ];
 
+  # The commit hooks' config (.pre-commit-config.yaml) is linked at the top of
+  # the worktree, as devenv's files task links it on `devenv shell`: the
+  # script `devenv print-dev-env` prints runs enterShell and none of the
+  # tasks, and a place is made ready by sourcing that script, so a place's
+  # first commit passes the shared hooks before anyone enters its shell. A
+  # file of the user's own there is left as devenv leaves it.
+  #
   # moon's task archives (.moon/cache/outputs) are a link into the git common
   # dir, so every worktree shares them. The rest of .moon/cache records the
   # checkout's absolute paths and stays its own.
   enterShell = ''
+    if _hooks_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+      _hooks_config="$_hooks_root/${config.git-hooks.configPath}"
+      if [ -L "$_hooks_config" ] || [ ! -e "$_hooks_config" ]; then
+        ln -sfn ${config.git-hooks.configFile} "$_hooks_config"
+      fi
+    fi
+    unset _hooks_root _hooks_config
     if _moon_root="$(git rev-parse --show-toplevel 2>/dev/null)" &&
       _moon_common="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
       _moon_cache="$_moon_root/.moon/cache"
@@ -182,4 +196,44 @@ in
       fi
     done
   '';
+
+  # A new place's first commit, made before anyone enters its shell: in an
+  # empty repository holding the files the hooks read, the script `devenv
+  # print-dev-env` prints for this checkout is sourced, as a place is made
+  # ready, and commits are made through prek's hooks installed as above. The
+  # hooks find their config: a message convco refuses is refused, and a
+  # conventional one lands.
+  scripts.hooks = {
+    description = "A new place commits through the shared hooks before its shell is entered";
+    exec = ''
+      set -euo pipefail
+      cd "$(git rev-parse --show-toplevel)"
+      tmp="$(mktemp -d)"
+      trap 'rm -rf "$tmp"' EXIT
+      if ! env -i HOME="$HOME" PATH="$PATH" TMPDIR="''${TMPDIR:-/tmp}" \
+        devenv print-dev-env >"$tmp/toolchain" 2>"$tmp/toolchain.log"; then
+        cat "$tmp/toolchain.log" >&2
+        exit 1
+      fi
+      mkdir "$tmp/place"
+      cp devenv.nix treefmt.nix .versionrc "$tmp/place/"
+      cd "$tmp/place"
+      env -i HOME="$HOME" PATH="$PATH" TMPDIR="''${TMPDIR:-/tmp}" \
+        GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
+        bash -c '
+          git init -q
+          source "$1" >/dev/null 2>&1
+          set -euo pipefail
+          export PREK_HOME="$2"
+          "$3" install -q -t pre-commit -t commit-msg
+          git add devenv.nix treefmt.nix .versionrc
+          commit() { git -c user.name=weir -c user.email=weir@localhost commit -q -m "$1"; }
+          if commit "update" 2>/dev/null; then
+            echo "hooks: a message convco refuses was committed" >&2
+            exit 1
+          fi
+          commit "chore: a new place commits"
+        ' hooks "$tmp/toolchain" "$tmp/prek" ${lib.getExe config.git-hooks.package}
+    '';
+  };
 }
