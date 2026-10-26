@@ -2,16 +2,21 @@
 
 ## Context
 
-The tree holds no crate yet: `Cargo.toml` lists the planned crates in a
-comment with `members = []`, the root moon project runs treefmt and
-Vale, and `.prototools` pins moon alone. This change adds the first
-crate the statement names for cadence, `weir-cadence` (section 9), and
-with it the Rust toolchain every crate after it shares. The proposal
-says why; the `cadence` spec says what the crate answers.
+On main the tree holds no crate: `Cargo.toml` lists the planned crates
+in a comment with `members = []`, the root moon project runs treefmt and
+Vale, and `.prototools` pins moon alone. Two units of this bolt come
+ahead of this one, the capture contract and the kind format, and each
+brings the same Rust toolchain and shell. This change adds the crate
+the statement names for cadence, `weir-cadence` (section 9), cadence's
+cases in the conformance pack (C.7), and whatever of the shared
+toolchain has not landed before it. The proposal says why; the
+`cadence` spec says what the crate answers.
 
 The clauses it satisfies: 59 and 60 (A.9), 83 to 85 (B.5), 86 for
-cadence binding one clock, the profile C.5, scenario S13, and ruling 7
-of section 10 (the machine's local time). It bears on 69, keeping no
+cadence binding one clock, the profiles C.5 and, for cadence's case
+shape, C.7, scenario S13, and ruling 7 of section 10 (the machine's
+local time). It bears on 67, which counts a cadence case as it counts
+the others. It bears on 69, keeping no
 state, through the clock seam.
 
 The rules it relies on, all in `docs/architecture/core.md`, the only
@@ -24,12 +29,16 @@ page there (no area page exists, so none is touched):
   its clock, which core.1's details allow (83).
 - **core.2**: no tool of the family is named in the crate, its doc
   comments included. The host that calls cadence is "the caller".
+- **core.35**: every case of the pack cites the clauses it exercises,
+  and the pack runs with no network and fixed inputs. The pack's case
+  files are, with the signals-folder import, where core.2 allows a
+  tool's name; cadence's need none.
 - **core.37**: the code cites 59, 60 and 83 to 85 by number and
   restates none of them.
 - **core.39** and **core.40**: the crate is a moon project of its own
   with one task per check, every new file type is claimed by a
-  formatter, and the Rust pinned in two files has a check that fails
-  when they differ.
+  formatter, and Rust is pinned in one file, with a check that fails
+  when a tool the gate runs is another build.
 
 Of the kit standard: kit:testing.1 and kit:testing.3 (layered moon
 tasks declaring their inputs), kit:testing.5 (proved by the checks
@@ -47,17 +56,21 @@ alone), kit:toolchain.2 (the language toolchain pinned in
 - A five-field cron reader whose accepted language is exactly
   five-field cron, so a schedule that reads here reads the same in a
   crontab.
-- The Rust toolchain in the tree, done once in the shape the family's
-  first Rust repository set (tailrace), so the bolt's other crates add
-  only their own lines.
+- Cases in the pack that prove 59 and 60, in the shape C.7 gives
+  cadence, answered by the crate's own tests.
+- The Rust toolchain and shell in the tree as the batch 18 ruling sets
+  them, line for line what the bolt's other crate units carry.
 
 **Non-Goals:**
 
 - Keeping a last run, or deciding what "a thing" is: the caller keeps
   both (69). weir gives no store and no identifier for a thing.
 - A tick, a timer or anything that waits: weir starts nothing (69).
-- A `weir` command line for cadence, and the conformance pack's cases
-  for 59 and 60 (see Open Questions).
+- A `weir` command line for cadence.
+- The pack's runner and its check of citations (67), `weir conform`,
+  and the host and adapter case shapes: the pack's own unit. This
+  change writes cadence's cases and answers them; the pack's check
+  later counts them with the rest.
 
 ## Decisions
 
@@ -182,35 +195,94 @@ so no test shares an environment variable with another thread.
 The recording clock of the two-calls scenario is a test double in the
 crate's tests, counting calls to `now` and `last_run`.
 
-### The toolchain, as tailrace set it
+### Cadence's cases in the pack
 
-- `.prototools` pins `rust = "1.98.1"`, the family's pin today;
-  `.moon/toolchains.yml` adds `rust: {versionFromPrototools: true}`.
-- `rust-toolchain.toml` names the same channel with the `clippy` and
-  `rustfmt` components and the `minimal` profile, so rustup in this
-  tree never falls back to a host's default toolchain.
-- `check-toolchain.sh` fails when `rust-toolchain.toml` and
-  `.prototools` differ or when rustc, cargo, clippy or rustfmt report
-  another version, run by a root `toolchain` task tagged `check-fast`
-  with `cache: false`, since it reads tools outside the tree (core.40).
+C.7 gives cadence a case shape of its own: a schedule, a last run or
+none, a now with the zone it is read in, and whether the thing is due.
+Each case is one TOML file under `pack/cadence/`, named for what it
+shows, at the pack's place in the tree so the pack's runner reads it
+there when it lands:
+
+```toml
+# Three hourly times slept through: one answer on waking (S13).
+satisfies = [60]
+schedule = "0 * * * *"
+last_run = "2026-11-03T11:00:00Z"
+now = "2026-11-03T09:20:00-05:00[America/New_York]"
+due = true
+```
+
+- `satisfies`: the clauses the case exercises, at least one (67,
+  core.35).
+- `schedule`: the five-field cron text, read by `Schedule::parse`.
+- `last_run`: an RFC 3339 instant with its offset, read as a
+  `jiff::Timestamp`; left out, the thing has never run (84).
+- `now`: an RFC 9557 time, the instant with its offset and the IANA
+  zone in brackets, read as a `jiff::Zoned`. One field carries the now
+  and its zone, and jiff refuses an offset the zone did not have at
+  that instant, so a case cannot say two things.
+- `due`: what cadence must answer.
+
+A field the shape does not hold is refused (`deny_unknown_fields`), so
+a misspelt `last-run` never reads as a thing that has never run. TOML
+is the family's format for declarations, and taplo already formats
+every `*.toml` in the tree, so the pack's files add no file type.
+
+The cases are the spec's due scenarios that a single question
+answers: never run; before, at and on the next named time; the
+fraction before it; a last run later than now; the same instant in
+Europe/Berlin and America/Los_Angeles; the three steps of S13; the
+skipped and the repeated time in America/New_York; and the weekday
+with day of month unrestricted. Each cites 59, and those of S13 cite
+60 as well.
+
+`tests/pack.rs` in the crate reads every `*.toml` under
+`pack/cadence/`, found from `CARGO_MANIFEST_DIR`, through `serde` and
+`toml` as dev-dependencies, and gives each to `is_due`. It fails,
+naming the file, when a case does not read, cites no clause or is
+answered otherwise than it says, and fails when no case cites 59 or no
+case cites 60. The wrong-shape scenario is held by unit tests on the
+case reader in the same file, from inline text, so the pack holds no
+case that is wrong on purpose. Whether a cited number names a clause,
+and whether every Part A clause is cited, is 67's check, the pack's.
+
+### The toolchain and the shell, as the batch 18 ruling sets them
+
+- `.prototools` pins `rust = "1.98.1"`, the family's pin today, and no
+  other file names the version; `.moon/toolchains.yml` adds
+  `rust: {versionFromPrototools: true}` (kit:toolchain.2). The shell's
+  `proto activate` puts that toolchain's own `bin` first on `PATH`, so
+  `rustc`, `cargo`, `clippy` and `rustfmt` are the pinned build's with
+  no file telling rustup which to run. No `rust-toolchain.toml` is
+  kept.
+- `check-toolchain.sh` reads the pin from `.prototools` and fails,
+  naming the tool and the version it found, when `rustc`, `cargo`,
+  `clippy-driver` or `rustfmt` on the path is missing or another build;
+  the message for a missing component says to add it to the pinned
+  toolchain. A root `toolchain` task runs it, tagged `check-fast`, with
+  `cache: false`, since it reads tools outside the tree (core.40).
 - `treefmt.nix` enables `rustfmt` (edition 2021), and `shellcheck` and
   `shfmt` for the check script; `devenv.nix` hands treefmt a `rustfmt`
-  that activates the pinned toolchain first. `Cargo.toml` and
-  `rust-toolchain.toml` are TOML, already taplo's; `Cargo.lock` is
-  already excluded by `*.lock`.
+  that activates the pinned toolchain first. `Cargo.lock` is already
+  excluded by `*.lock`.
+- `devenv.nix` lists `pkgs.recutils` and `pkgs.shellcheck` once in its
+  packages, for every crate of the workspace: recutils for the records'
+  checks (core.24), shellcheck for the scripts the shell runs.
+  `devenv.lock` stays tracked.
 - `Cargo.toml` adds `crates/weir-cadence` to `members`, `edition =
   "2021"` and `version = "0.0.0"` to `[workspace.package]`, and `jiff`
   and `croner` to `[workspace.dependencies]`.
 
-The bolt's other crate units need the same toolchain. Whichever lands
-first in the bolt brings it; a later one finds it there and adds only
-its crate's lines, and crew names the overlap in the Touches blocks.
+The capture contract and the kind format carry the same lines. Where
+one of them landed first, its line holds as it is and this change adds
+only what is missing.
 
 ### The crate's moon project
 
 `crates/weir-cadence/moon.yml`, project `cadence` in
-`.moon/workspace.yml`, `language: 'rust'`, four tasks tagged
-`check-fast`, each run from the workspace root:
+`.moon/workspace.yml`, the crate's name without the `weir-` prefix,
+`language: 'rust'`, four tasks tagged `check-fast`, each run from the
+workspace root:
 
 | task | command |
 |---|---|
@@ -220,8 +292,8 @@ its crate's lines, and crew names the overlap in the Touches blocks.
 | `test` | `cargo test -p weir-cadence` |
 
 Each declares its inputs: `/crates/weir-cadence/**/*`, `/Cargo.toml`,
-`/Cargo.lock`, `/rust-toolchain.toml`, `/devenv.nix`, `/devenv.lock`
-and `/.prototools` (kit:testing.3).
+`/Cargo.lock`, `/devenv.nix`, `/devenv.lock` and `/.prototools`, and
+`test` also `/pack/cadence/**/*` (kit:testing.3).
 
 ## Risks / Trade-offs
 
@@ -231,16 +303,19 @@ and `/.prototools` (kit:testing.3).
 - [croner 4's `jiff` feature lags `jiff`'s releases] → the workspace
   takes the `jiff` version croner's feature requires, and the lockfile
   holds both together.
-- [The siblings' toolchain lines conflict at merge] → the lines are the
-  same as tailrace's, so a second unit's merge is a no-op on them.
+- [The pack's own unit lays out its folders otherwise] → cadence's
+  cases are plain files under one folder, and moving them moves one
+  path in `tests/pack.rs` and in the `test` task's inputs.
+- [A host's rustup installs a minimal profile, without clippy or
+  rustfmt] → `check-toolchain.sh` fails naming the missing tool and
+  says to add the component to the pinned toolchain.
 - [A schedule naming a day that never comes reads as never due] →
   accepted: it is valid five-field cron, and cron itself never runs it.
 
 ## Open Questions
 
-- The conformance pack has no case shape for cadence: C.7 describes
-  host cases (lines in, records out) and adapter checks, while 67 and
-  core.35 ask a case to cite every Part A clause, 59 and 60 among them.
-  Until the design gives cadence a case shape, the crate's own tests
-  prove 59 and 60, and the pack's check will report them uncited once
-  it exists. This change does not need the answer.
+- The pack's layout: C.7 says the pack is files in weir's repository
+  and names `lines.jsonl` for a host case, but fixes no folder and no
+  file format for a cadence case. This change places them at
+  `pack/cadence/<case>.toml`; the pack's unit reads them there or moves
+  them.
