@@ -15,3 +15,7 @@
 //! Every function answers from its arguments alone: the machine's name, the
 //! taken-at time, the limit and the raw place are the caller's to hand in,
 //! and every write is one the caller's inbox or bank makes (core.1).
+
+pub mod key;
+
+pub use key::{Key, KeyError};
