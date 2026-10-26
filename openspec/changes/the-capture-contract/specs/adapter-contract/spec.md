@@ -40,7 +40,7 @@ An offer SHALL be read only when it holds `key`, `source` and `event_at`, the ev
 
 ### Requirement: A key names nothing in an inbox but its own capture
 
-A key SHALL be one or more `/`-separated segments, and SHALL be refused when it starts with `/`, holds a `..` segment, or has `captures`, `moves` or `items` as its first segment (3, 4; C.1; core.7). A key with an empty segment or a `.` segment SHALL be refused too, since it names the same place as another key (42).
+A key SHALL be one or more `/`-separated segments, and SHALL be refused when it starts with `/`; when a segment is empty, `.` or `..`; when a segment is the name of a file the inbox's layout places, `capture.rec`, `signals.rec`, `moves.rec`, `item.rec`, `brief.md` or `sends.rec`, since each segment is a folder; or when its first segment is `captures`, `moves` or `items` (3, 4; C.1; C.2; core.7).
 
 #### Scenario: A key that reaches another root is refused
 - **WHEN** keys `moves/x`, `captures/x`, `items/x`, `/release/x` and `release/../x` are checked
@@ -49,6 +49,10 @@ A key SHALL be one or more `/`-separated segments, and SHALL be refused when it 
 #### Scenario: A key that names another key's place is refused
 - **WHEN** keys `release//x`, `release/x/`, `release/./x` and the empty key are checked
 - **THEN** each is refused, naming the rule it breaks
+
+#### Scenario: A key that names a file of the layout is refused
+- **WHEN** keys `release/capture.rec`, `release/x/signals.rec`, `capture.rec`, `deploy/moves.rec`, `deploy/item.rec`, `deploy/brief.md` and `deploy/sends.rec` are checked
+- **THEN** each is refused, naming the segment and the file it would stand where
 
 #### Scenario: A key of plain segments is taken
 - **WHEN** the key `release/mise/2026.10.10` is checked

@@ -103,7 +103,7 @@ The field order is C.2's: `format`, `key`, `source`, `event_at`, `title`,
 3339 in UTC.
 
 Tests hold every record the crate writes to `recfix` (GNU recutils,
-added to `devenv.nix`'s packages), so a record a later write would
+in `devenv.nix`'s packages), so a record a later write would
 refuse (core.24) is caught here. Alternative: bind librec or shell out
 from the crate. Rejected: the crate would start a process or link a
 system library at run time (core.1); only the tests run `recfix`.
@@ -124,11 +124,22 @@ inside a value is escaped and the line stays one line.
 
 ### The key rule
 
-`Key::parse` refuses an empty key, a leading `/`, a `..` segment and a
-first segment of `captures`, `moves` or `items` (4; C.1; core.7). It also
-refuses an empty segment (`a//b`, a trailing `/`) and a `.` segment, since
-each would name the same folder as another key once segments become
-folders (42), and two events never share a place.
+`Key::parse` refuses, naming the rule, what C.1 refuses: an empty key, a
+leading `/`, an empty segment (`a//b`, a trailing `/`), a `.` or `..`
+segment, a segment that is the name of a file the layout places, and a
+first segment of `captures`, `moves` or `items` (3, 4; C.1; core.7).
+
+The layout's file names are C.2's fixed ones: `capture.rec`,
+`signals.rec`, `moves.rec`, `item.rec`, `brief.md` and `sends.rec`, held
+in one constant beside the roots. A batch's file, `batches/<batch>.rec`,
+has no fixed name and lies under `moves/`, which no key reaches, so it
+adds none. The rule is refused in any segment, not only the last, since
+each segment is a folder (42) and a capture's folder holds
+`capture.rec` and `signals.rec`: a key `x/capture.rec` would put a folder
+where capture `x`'s record lies. Alternative: refuse only `capture.rec`
+and `signals.rec`, the two that lie under `captures/`. Rejected: C.1
+names every file the layout places, and the constant is the one place a
+later record's file name is added.
 
 ### Raw paths are checked against the raw place on disk
 
@@ -150,15 +161,15 @@ appends the closing line:
 [cut: <n> lines and <b> bytes left out, banked whole with the capture]
 ```
 
-`<n>` counts the lines of the remainder (a last line with no `\n`
-counts), `<b>` its bytes, singular `line`/`byte` at 1. When no line
-fits, the closing line alone is the excerpt (20). `Take::new` refuses a
-limit shorter than the closing line with both numbers at their widest,
-so the closing line always fits. Cutting at a `\n` never splits a UTF-8
-character.
-
-The statement fixes what the closing line says, not its words; this
-crate fixes them once so every host writes the same (24).
+This is C.1's spelling, the one every host writes (24): `<n>` counts the
+lines of the remainder (a last line with no `\n` counts) and `<b>` its
+bytes, in decimal, and every other character is as written, `lines` and
+`bytes` whatever the numbers. When no line fits, the closing line alone
+is the excerpt (20). A limit too short to hold the closing line alone is
+refused (C.1): `Take::new` refuses a limit shorter than the closing line
+with both numbers at their widest, before any line is read, so the
+closing line fits whatever the text. Cutting at a `\n` never splits a
+UTF-8 character.
 
 ### The cut text is banked beside the raw files
 
@@ -210,44 +221,58 @@ lowercase hex, through the `sha2` crate (C.6).
 in `[workspace.dependencies]`; `tempfile` for tests. Versions are the
 current releases the coder resolves into `Cargo.lock`.
 
-### The toolchain and the moon project
+### The toolchain, the shell and the moon project
 
-As tailrace does, the family's Rust precedent:
+One shell for the workspace, as madswan-design ruled for this bolt's
+three units (blueprints main 53f6d44, batch 18); this unit lands first,
+so it carries what the ruling gives the first unit:
 
-- `.prototools` pins `rust = "1.98.1"`; `.moon/toolchains.yml` reads it
-  with `versionFromPrototools` (kit:toolchain.2).
-- `rust-toolchain.toml` names the same channel with `clippy` and
-  `rustfmt`, `profile = "minimal"`, so rustup never reaches a host's
-  default toolchain; `check-toolchain.sh`, run by a root `toolchain`
-  task tagged `check-fast` and never cached, fails when the two pins
-  differ or the tools on `PATH` are not the pinned build (core.40).
-- `treefmt.nix` enables `rustfmt` (edition 2021) for `.rs` and `shfmt`
-  for `.sh` (core.39; kit:agents.4); `Cargo.toml` and
-  `rust-toolchain.toml` are already claimed by taplo's `*.toml`.
+- `.prototools` alone pins Rust, `rust = "1.98.1"`, its comment saying
+  no other file names the version; `.moon/toolchains.yml` reads it with
+  `versionFromPrototools` (core.40; kit:toolchain.2). No
+  `rust-toolchain.toml`: the shell's proto activation puts the pinned
+  toolchain's `bin` first on `PATH`, so no file need tell rustup which
+  toolchain to run.
+- `check-toolchain.sh`, run by a root `toolchain` task tagged
+  `check-fast` and never cached, reads the pin from `.prototools` and
+  fails, naming the tool and the version found, when `rustc`, `cargo`,
+  `clippy-driver` or `rustfmt` on `PATH` is missing or another build;
+  for a missing component it says to add it to the pinned toolchain
+  (core.40). Its inputs are `/check-toolchain.sh`, `/.prototools`,
+  `/devenv.nix` and `/devenv.lock`.
+- `devenv.nix` lists `pkgs.recutils` and `pkgs.shellcheck` once in its
+  packages, each with a comment saying what it is for: recutils for the
+  records' checks (core.24), shellcheck for the shell's scripts.
+  `devenv.lock` stays tracked. The kind format and cadence find both in
+  place and add neither.
+- `treefmt.nix` enables `rustfmt` (edition 2021) for `.rs`, given the
+  pinned toolchain's `rustfmt` by `devenv.nix`, and `shellcheck` then
+  `shfmt` (indent 2) in one pipeline for `.sh` (core.39; kit:agents.4);
+  `Cargo.toml` is already claimed by taplo's `*.toml`.
 - The crate is `crates/weir-capture`, in the workspace's `members`, and
-  the moon project `capture` in `.moon/workspace.yml`, with
+  the moon project `capture` (the crate's name without `weir-`, as the
+  ruling names every crate's project) in `.moon/workspace.yml`, with
   `language: rust` and four tasks, each tagged `check-fast` and run from
   the workspace root: `format` (`cargo fmt -p weir-capture --check`),
   `lint` (`cargo clippy -p weir-capture --all-targets -- -D warnings`),
   `typecheck` (`cargo check -p weir-capture --all-targets`) and `test`
   (`cargo test -p weir-capture`). Each declares its inputs: the crate,
-  `/Cargo.toml`, `/Cargo.lock`, `/rust-toolchain.toml`, `/devenv.nix`,
-  `/devenv.lock` and `/.prototools` (core.39; kit:testing.1,
-  kit:testing.3).
+  `/Cargo.toml`, `/Cargo.lock`, `/devenv.nix`, `/devenv.lock` and
+  `/.prototools` (core.39; kit:testing.1, kit:testing.3).
 - Tests build their inputs in code and in temporary directories, so the
   change adds no fixture file type for treefmt to claim.
 
 ## Risks / Trade-offs
 
 - [Two other units of this bolt, the kind format and cadence, are
-  planned beside this one and each needs the Rust toolchain] → This
-  change brings the toolchain whole and names its shared files in
-  `## Touches`; crew orders the units on the overlap, and the later
-  one's code builds on this toolchain instead of adding its own.
-- [The closing line's words are this change's, not the statement's] →
-  They are fixed in one function and one test, so a later change of
-  words reaches every host at once through the shared crate; excerpts
-  already written keep the words they were cut with (41).
+  planned beside this one and each needs the Rust toolchain and the
+  shell] → This unit lands first, so it carries the toolchain and the
+  shell's packages whole, as the others' changes describe them, and
+  names its shared files in `## Touches`; the later units find each
+  line in place and add only what is missing.
+- [`1 lines and 1 bytes` reads oddly] → It is C.1's one spelling; a
+  singular form would be a second spelling, which two hosts could
+  disagree on (24).
 - [A pointer's path is the bank's, which is the host's] → Two hosts
   with different banks write different pointer paths. The scenarios of
   24 hold the bank fixed; the pack's later cases do the same.
@@ -257,6 +282,4 @@ As tailrace does, the family's Rust precedent:
 
 ## Open Questions
 
-- Whether a key segment may equal a record's file name (`x/capture.rec`
-  lies where capture `x`'s record does). The layout is fixed by the
-  inbox's records unit; this crate's key rule follows C.1 as written.
+None.

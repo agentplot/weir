@@ -84,7 +84,7 @@ A capture whose offer carried an own excerpt SHALL be handed to the inbox togeth
 
 ### Requirement: The cut keeps whole lines and says what it left out
 
-An own excerpt's text within the limit SHALL be kept whole with no line added. A longer text SHALL be kept from its start through the last whole line that fits together with one closing line, `[cut: <n> lines and <b> bytes left out, banked whole with the capture]` (`1 line`, `1 byte` when one); when no line fits, the closing line alone is the excerpt. A limit shorter than the longest closing line SHALL be refused (20; core.12).
+An own excerpt's text within the limit SHALL be kept whole with no line added. A longer text SHALL be kept from its start through the last whole line that fits together with the closing line `[cut: <n> lines and <b> bytes left out, banked whole with the capture]`, C.1's one spelling, or as the closing line alone when no line fits. A limit too short to hold the closing line alone SHALL be refused (20, 24; C.1; core.12).
 
 #### Scenario: A text within the limit
 - **WHEN** a 300-byte text is cut at a limit of 8192 bytes
@@ -93,6 +93,14 @@ An own excerpt's text within the limit SHALL be kept whole with no line added. A
 #### Scenario: A forty-kibibyte text (S1)
 - **WHEN** a 40 KiB text of short lines is cut at a limit of 8192 bytes
 - **THEN** the excerpt is a prefix of the text ending at a line's end, followed by the closing line naming the lines and bytes left out, and it is at most 8192 bytes
+
+#### Scenario: One line and one byte left out
+- **WHEN** a cut leaves out one line of one byte
+- **THEN** the closing line is `[cut: 1 lines and 1 bytes left out, banked whole with the capture]`
+
+#### Scenario: A limit too short for the closing line
+- **WHEN** a host sets a limit shorter than the closing line with both numbers at their widest
+- **THEN** taking is refused before any line is read, naming the limit and the smallest it may be
 
 #### Scenario: A first line longer than the limit
 - **WHEN** a text whose first line is 10000 bytes is cut at a limit of 8192 bytes
