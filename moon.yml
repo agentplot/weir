@@ -11,6 +11,14 @@ tasks:
     inputs: ['/**/*', '!/.devenv/**', '!/.moon/cache/**']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
+  # rustc, cargo, clippy-driver and rustfmt are the build .prototools pins,
+  # on whichever host runs the gate (core.40). It reads the tools it checks
+  # from outside the tree, so it never replays.
+  toolchain:
+    command: 'sh check-toolchain.sh'
+    inputs: ['/check-toolchain.sh', '/rust-toolchain.toml', '/.prototools', '/devenv.nix', '/devenv.lock']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true, cache: false}
   # The README's prose, through Vale (.vale.ini, styles/Weir).
   prose:
     command: 'vale README.md'
