@@ -41,4 +41,4 @@
 
 ## 8. The checks
 
-- [ ] 8.1 The checks of the projects this change touches pass: `devenv shell -- moon run root:format root:prose signals:format signals:lint signals:typecheck signals:test`.
+- [x] 8.1 The checks of the projects this change touches pass: `devenv shell -- moon run root:format root:prose signals:format signals:lint signals:typecheck signals:test`.
