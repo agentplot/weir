@@ -1,0 +1,61 @@
+# S5: two machines take one release at once. The first lands its capture
+# while the second forms its write; formed again on the first's commit,
+# the second finds the key held there and writes nothing.
+satisfies = [44, 46]
+remote = true
+stale_after_seconds = 60
+
+[start]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+
+[[write]]
+who = "host@two"
+what = "take release/acme/v1"
+
+[write.add]
+path = "inbox/captures/release/acme/v1/capture.rec"
+text = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+machine: two
+"""
+
+[[write.meanwhile]]
+try = 1
+who = "host@one"
+what = "take release/acme/v1"
+
+[write.meanwhile.add]
+path = "inbox/captures/release/acme/v1/capture.rec"
+text = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+machine: one
+"""
+
+[[expect.write]]
+outcome = "nothing"
+tries = 2
+
+[[expect.commit]]
+what = "take release/acme/v1"
+asked_by = "host@one"
+
+[expect.tip]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+"inbox/captures/release/acme/v1/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+machine: one
+"""

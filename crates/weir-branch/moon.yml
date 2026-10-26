@@ -1,0 +1,30 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# weir-branch: the shared-branch write protocol. One task per check, each run
+# from the workspace root (core.39). The pack's protocol cases are inputs: the
+# tests run every one of them.
+language: 'rust'
+
+tasks:
+  format:
+    command: 'cargo fmt -p weir-branch --check'
+    inputs: ['/crates/weir-branch/**/*', '/pack/branch/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  lint:
+    command: 'cargo clippy -p weir-branch --all-targets -- -D warnings'
+    inputs: ['/crates/weir-branch/**/*', '/pack/branch/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  typecheck:
+    command: 'cargo check -p weir-branch --all-targets'
+    inputs: ['/crates/weir-branch/**/*', '/pack/branch/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  # The tests run git and recfix, both from devenv.nix, against repositories
+  # they make in temporary folders.
+  test:
+    command: 'cargo test -p weir-branch'
+    inputs: ['/crates/weir-branch/**/*', '/pack/branch/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}

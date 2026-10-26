@@ -1,0 +1,67 @@
+# Two writers read one tip; the first lands while the second forms its
+# write, so the second's push is refused, and its write is formed again on
+# the first's commit and lands there. Both stand, in two commits.
+satisfies = [44, 45, 46, 79, 80]
+remote = true
+stale_after_seconds = 60
+
+[start]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+
+[[write]]
+who = "host@two"
+what = "take release/acme/v2"
+
+[write.add]
+path = "inbox/captures/release/acme/v2/capture.rec"
+text = """
+format: weir-capture/1
+key: release/acme/v2
+source: releases
+"""
+
+[[write.meanwhile]]
+try = 1
+who = "host@one"
+what = "take release/acme/v1"
+
+[write.meanwhile.add]
+path = "inbox/captures/release/acme/v1/capture.rec"
+text = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""
+
+[[expect.write]]
+outcome = "landed"
+tries = 2
+
+[[expect.commit]]
+what = "take release/acme/v1"
+asked_by = "host@one"
+
+[[expect.commit]]
+what = "take release/acme/v2"
+asked_by = "host@two"
+
+[expect.tip]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+"inbox/captures/release/acme/v1/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""
+"inbox/captures/release/acme/v2/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v2
+source: releases
+"""

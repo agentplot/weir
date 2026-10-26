@@ -1,0 +1,32 @@
+# A write to a branch that does not exist: the branch is made at the
+# write's commit, which has no parent.
+satisfies = [44, 79]
+remote = true
+stale_after_seconds = 60
+
+[[write]]
+who = "host@one"
+what = "take release/acme/v1"
+
+[write.add]
+path = "inbox/captures/release/acme/v1/capture.rec"
+text = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""
+
+[[expect.write]]
+outcome = "landed"
+tries = 1
+
+[[expect.commit]]
+what = "take release/acme/v1"
+asked_by = "host@one"
+
+[expect.tip]
+"inbox/captures/release/acme/v1/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""

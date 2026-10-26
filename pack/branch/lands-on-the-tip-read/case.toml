@@ -1,0 +1,45 @@
+# One write on a branch with files: one commit, its one parent the tip
+# read, its tree the tip's with the write's file added, its message naming
+# what it did and who asked.
+satisfies = [44, 45, 47, 50, 78, 79]
+remote = true
+stale_after_seconds = 60
+
+[start]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+
+[[write]]
+who = "host@one"
+what = "take release/acme/v1"
+
+[write.add]
+path = "inbox/captures/release/acme/v1/capture.rec"
+text = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""
+
+[[expect.write]]
+outcome = "landed"
+tries = 1
+
+[[expect.commit]]
+what = "take release/acme/v1"
+asked_by = "host@one"
+
+[expect.tip]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+"inbox/captures/release/acme/v1/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""
