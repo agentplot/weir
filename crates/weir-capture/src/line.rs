@@ -1,10 +1,13 @@
 //! An adapter's lines, JSON Lines on standard output: each exactly one of
 //! an offer, a cursor or a completion (1; C.1; core.5). A line is read to a
 //! JSON value first and each field checked by name, so a refusal names the
-//! field, and a field the contract does not name is ignored (core.6).
+//! field, and a field the contract does not name is ignored (core.6). A
+//! line is written as one line of compact JSON, which reads back the same
+//! (C.1; core.34).
 
 use std::fmt;
 
+use serde::Serialize;
 use serde_json::{Map, Value};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
@@ -12,31 +15,38 @@ use time::OffsetDateTime;
 use crate::key::Key;
 
 /// One line an adapter tells its host (1).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum Line {
+    #[serde(rename = "capture")]
     Offer(Offer),
     /// Opaque: kept as given, and never parsed or compared (8; core.9).
+    #[serde(rename = "cursor")]
     Cursor(String),
+    #[serde(rename = "done")]
     Done(Completion),
 }
 
 /// What is handed to a host for one event (2; C.1).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Offer {
     pub key: Key,
     pub source: String,
     /// The time at the source, in RFC 3339 with its offset, as offered
     /// (5; core.8).
     pub event_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
     /// Paths relative to the raw place, none with a `..` segment (6).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub raw: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub excerpt: Option<Excerpt>,
 }
 
 /// An own excerpt: every field of a signal (7, 25).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Excerpt {
     /// Verbatim and whole, never empty.
     pub text: String,
@@ -50,7 +60,8 @@ pub struct Excerpt {
 
 /// Which of five a signal is, spelled in the field `kind` (25; section 10,
 /// question 2).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Nature {
     Constraint,
     Ask,
@@ -60,14 +71,14 @@ pub enum Nature {
 }
 
 /// The mark a complete run ends with (9).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Completion {
     pub listed: u64,
     pub failed: Vec<Failure>,
 }
 
 /// One event the listing could not offer, and why (9).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Failure {
     pub what: String,
     pub why: String,
@@ -111,6 +122,14 @@ impl Nature {
 impl fmt::Display for Nature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
+    }
+}
+
+impl Line {
+    /// The line as an adapter prints it: one line of JSON, every newline
+    /// inside a value escaped, with no newline at its end.
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).expect("a line is always JSON")
     }
 }
 
@@ -599,6 +618,51 @@ mod tests {
         let malformed = refused(r#"{"done": {"listed": 2, "failed": [{"what": "x"}]}}"#);
         assert_eq!(malformed.field.as_deref(), Some("done.failed[0].why"));
         assert_eq!(malformed.to_string(), "`done.failed[0].why` is missing");
+    }
+
+    #[test]
+    fn lines_are_written_as_the_host_reads_them() {
+        let offer = Line::Offer(Offer {
+            key: Key::parse("release/mise/2026.10.10").unwrap(),
+            source: "release".into(),
+            event_at: "2026-10-10T16:02:11+02:00".into(),
+            title: Some("mise 2026.10.10".into()),
+            url: Some("https://github.com/jdx/mise/releases/tag/v2026.10.10".into()),
+            raw: vec!["mise-2026.10.10/notes.md".into()],
+            excerpt: Some(Excerpt {
+                text: "## Fixes\n\n- the shim\n- the \"quoted\" path\r\n".into(),
+                kind: Nature::Ask,
+                asserted_by: "jdx/mise".into(),
+                assertion: "mise 2026.10.10 is released.".into(),
+                subjects: vec!["release".into(), "mise".into()],
+                argues_with: vec![],
+                position: "release notes".into(),
+            }),
+        });
+        let bare = Line::Offer(Offer {
+            key: Key::parse("deploy/a/1").unwrap(),
+            source: "deploy".into(),
+            event_at: "2026-10-10T14:02:11Z".into(),
+            title: None,
+            url: None,
+            raw: vec![],
+            excerpt: None,
+        });
+        let cursor = Line::Cursor("page=3&since=2026-10-17\n".into());
+        let done = Line::Done(Completion {
+            listed: 14,
+            failed: vec![Failure {
+                what: "github:jdx/mise".into(),
+                why: "HTTP 502".into(),
+            }],
+        });
+        for line in [offer, bare, cursor, done] {
+            let written = line.to_json();
+            assert!(!written.contains('\n'), "{written}");
+            assert_eq!(read_line(&written), Ok(line));
+        }
+        let written = Line::Cursor("c1".into()).to_json();
+        assert_eq!(written, r#"{"cursor":"c1"}"#);
     }
 
     #[test]
