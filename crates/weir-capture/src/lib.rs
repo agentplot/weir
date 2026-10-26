@@ -23,6 +23,7 @@ pub mod hash;
 pub mod key;
 pub mod line;
 pub mod rec;
+pub mod take;
 
 #[cfg(test)]
 mod testing;
@@ -37,3 +38,4 @@ pub use hash::{content_hash, content_hash_reader};
 pub use key::{Key, KeyError};
 pub use line::{read_line, Completion, Excerpt, Failure, Line, Malformed, Nature, Offer};
 pub use rec::{RecError, Record};
+pub use take::{Bank, Inbox, OwnSignal, RawFile, Refusal, Take, TakeError, Taken};
