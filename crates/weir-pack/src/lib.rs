@@ -17,10 +17,12 @@
 //! hands what it found here to compare. Every function answers from its
 //! arguments alone (core.1).
 
+pub mod adapter;
 pub mod check;
 pub mod clauses;
 pub mod pack;
 
+pub use adapter::{check_lines, check_meeting_lines, Breach, Meetings, RawPlace};
 pub use check::{check, Checked, Fault};
 pub use clauses::{read_index, Clause, Index, Section};
 pub use pack::{Case, Pack, Shape};
