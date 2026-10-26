@@ -9,7 +9,7 @@ dependsOn: [weir-kinds]
 tasks:
   format:
     command: 'cargo fmt -p weir --check'
-    inputs: &inputs ['/crates/weir/**/*', '/crates/weir-kinds/**/*', '/Cargo.toml', '/Cargo.lock', '/rust-toolchain.toml', '/devenv.nix', '/devenv.lock', '/.prototools']
+    inputs: &inputs ['/crates/weir/**/*', '/crates/weir-kinds/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
   lint:
