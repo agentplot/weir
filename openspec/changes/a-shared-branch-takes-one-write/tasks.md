@@ -8,7 +8,7 @@
 ## 2. Reading a branch and running git
 
 - [x] 2.1 The `git` module runs every command as `git --git-dir <dir>` with the design's variables removed from its environment and `GIT_TERMINAL_PROMPT=0` and `LC_ALL=C` set, and a test run with `GIT_DIR` and `GIT_INDEX_FILE` pointing elsewhere reads and writes only the git directory named; proved by `devenv shell -- moon run branch:test`.
-- [ ] 2.2 `Branch` and `Tip`: a remote read fetches into the cache's `refs/weir/<branch>`, making the cache with `git init --bare` when it is missing, and reads a branch the remote does not hold as no tip by `ls-remote --exit-code`; a branch with no remote is read with `rev-parse --verify --quiet`; `Tip::file` and `Tip::files(prefix)` read text at the tip's commit alone and name a path that is not UTF-8 (78, 80, I7); the spec's "A branch is read at one tip" scenarios pass for both kinds of branch; proved by `devenv shell -- moon run branch:test`.
+- [x] 2.2 `Branch` and `Tip`: a remote read fetches into the cache's `refs/weir/<branch>`, making the cache with `git init --bare` when it is missing, and reads a branch the remote does not hold as no tip by `ls-remote --exit-code`; a branch with no remote is read with `rev-parse --verify --quiet`; `Tip::file` and `Tip::files(prefix)` read text at the tip's commit alone and name a path that is not UTF-8 (78, 80, I7); the spec's "A branch is read at one tip" scenarios pass for both kinds of branch; proved by `devenv shell -- moon run branch:test`.
 
 ## 3. Forming, checking and committing a write
 
