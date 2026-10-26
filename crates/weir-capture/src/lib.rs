@@ -17,5 +17,7 @@
 //! and every write is one the caller's inbox or bank makes (core.1).
 
 pub mod key;
+pub mod line;
 
 pub use key::{Key, KeyError};
+pub use line::{read_line, Completion, Excerpt, Failure, Line, Malformed, Nature, Offer};
