@@ -4,7 +4,7 @@
 
 - [x] 1.1 Pin Rust once: add `rust = "1.98.1"` to `.prototools`, a `rust:` block with `versionFromPrototools: true` to `.moon/toolchains.yml`, and `rust-toolchain.toml` naming channel `1.98.1` with `clippy` and `rustfmt` on the minimal profile, each with a comment saying what it pins and why. True when `devenv shell -- moon run root:format` passes with the new TOML files formatted by taplo.
 - [ ] 1.2 Add `check-toolchain.sh`, which fails naming the difference when `rust-toolchain.toml`'s channel is not `.prototools`' pin or when `rustc`, `cargo`, `clippy` or `rustfmt` on the path is another build, and a root `toolchain` task in `moon.yml` that runs it, tagged `check-fast`, with `cache: false` (core.40). True when `devenv shell -- moon run root:toolchain` passes.
-- [ ] 1.3 Have treefmt claim the new file types: in `treefmt.nix`, `rustfmt` (edition 2021) for `*.rs`, and `shellcheck` then `shfmt` (indent 2) for `*.sh`; in `devenv.nix`, a `rustfmt` wrapper that activates the pinned toolchain, set as treefmt's `programs.rustfmt.package` (core.39). True when `devenv shell -- moon run root:format` passes with `check-toolchain.sh` and a `.rs` file in the tree.
+- [x] 1.3 Have treefmt claim the new file types: in `treefmt.nix`, `rustfmt` (edition 2021) for `*.rs`, and `shellcheck` then `shfmt` (indent 2) for `*.sh`; in `devenv.nix`, a `rustfmt` wrapper that activates the pinned toolchain, set as treefmt's `programs.rustfmt.package` (core.39). True when `devenv shell -- moon run root:format` passes with `check-toolchain.sh` and a `.rs` file in the tree.
 
 ## 2. The kinds crate
 
