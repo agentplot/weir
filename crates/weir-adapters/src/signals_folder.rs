@@ -12,13 +12,18 @@
 //! gives the same lines (38; S8; core.14), and no file a pointer names is
 //! ever opened (37; core.11, core.25).
 
+use std::collections::BTreeMap;
 use std::fmt;
 use std::fs;
+use std::io;
 use std::path::Path;
 
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
-use weir_capture::{CameIn, ImportLine, ImportLineCapture, ImportLineSignal, Key, Nature};
+use weir_capture::{
+    rec, CameIn, ImportLine, ImportLineCapture, ImportLineMove, ImportLineSignal, Key, Nature,
+    Record,
+};
 
 use crate::event_time::day_start;
 
@@ -31,11 +36,12 @@ pub const HELP: &str = "print one import line per capture of crew's signals fold
                         import operation to write";
 
 /// What a body's reading gives: one line per capture read whole, each
-/// capture not read whole with why.
+/// capture not read whole with why, and each move not carried with why.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Reading {
     pub lines: Vec<ImportLine>,
     pub not_read: Vec<NotRead>,
+    pub not_carried: Vec<NotCarried>,
 }
 
 /// A capture folder not read whole: the folder, the file and why (15, 28).
@@ -56,8 +62,31 @@ impl fmt::Display for NotRead {
     }
 }
 
+/// A move of `moves.rec` carried in no line: the signal it names as
+/// written, its word and why (15).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NotCarried {
+    pub signal: String,
+    pub word: String,
+    pub why: String,
+}
+
+impl fmt::Display for NotCarried {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "move `{}` of signal {} not carried: {}",
+            self.word, self.signal, self.why
+        )
+    }
+}
+
+/// The files that hold a body's moves: at its root, where a flywheel branch
+/// keeps them, and in `signals/`, where a blueprints repository did.
+const MOVES: [&str; 2] = ["moves.rec", "signals/moves.rec"];
+
 /// The body at `root` read into import lines, or why it cannot be read: a
-/// root with no `signals/` folder.
+/// root with no `signals/` folder, or a `moves.rec` that cannot be read.
 pub fn read(root: &Path) -> Result<Reading, String> {
     let signals = root.join("signals");
     if !signals.is_dir() {
@@ -67,13 +96,143 @@ pub fn read(root: &Path) -> Result<Reading, String> {
         ));
     }
     let mut reading = Reading::default();
+    // Each capture folder, with its line's place and its signal files when
+    // it was read whole.
+    let mut captures: BTreeMap<String, Option<(usize, Vec<String>)>> = BTreeMap::new();
     for capture in capture_folders(&signals)? {
         match read_capture(&signals.join(&capture), &capture) {
-            Ok(line) => reading.lines.push(line),
-            Err((file, why)) => reading.not_read.push(NotRead { capture, file, why }),
+            Ok((line, files)) => {
+                captures.insert(capture, Some((reading.lines.len(), files)));
+                reading.lines.push(line);
+            }
+            Err((file, why)) => {
+                captures.insert(capture.clone(), None);
+                reading.not_read.push(NotRead { capture, file, why });
+            }
+        }
+    }
+    for file in MOVES {
+        for record in moves(&root.join(file), file)? {
+            let Some(signal) = record.get("Signal") else {
+                continue;
+            };
+            let word = record.get("Move").unwrap_or_default();
+            let not_carried = |why: String| NotCarried {
+                signal: signal.to_string(),
+                word: word.to_string(),
+                why,
+            };
+            if word.is_empty() {
+                reading
+                    .not_carried
+                    .push(not_carried("it names no move".to_string()));
+                continue;
+            }
+            match signal_number(signal, &captures) {
+                Ok((line, n)) => reading.lines[line].moves.push(carried(&record, word, n)),
+                Err(why) => reading.not_carried.push(not_carried(why)),
+            }
         }
     }
     Ok(reading)
+}
+
+/// The records of the moves file at `path`, `name` within the body; none
+/// when there is no such file.
+fn moves(path: &Path, name: &str) -> Result<Vec<Record>, String> {
+    match fs::read_to_string(path) {
+        Ok(text) => rec::read(&text).map_err(|error| format!("{name} cannot be read: {error}")),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Vec::new()),
+        Err(error) => Err(format!("{name} cannot be read: {error}")),
+    }
+}
+
+/// The place of the line of the capture a signal's id names, by its full
+/// id, `<capture>/<NN>-<slug>`, or its short one, `<capture>/<NN>`, and the
+/// signal's number in it; or why the body holds no such signal it read.
+fn signal_number(
+    id: &str,
+    captures: &BTreeMap<String, Option<(usize, Vec<String>)>>,
+) -> Result<(usize, u64), String> {
+    let Some((capture, signal)) = id.rsplit_once('/') else {
+        return Err("it is no signal's id, <capture>/<NN>-<slug>".to_string());
+    };
+    let (line, files) = match captures.get(capture) {
+        None => return Err(format!("no capture of this body is `{capture}`")),
+        Some(None) => return Err(format!("its capture `{capture}` was not read")),
+        Some(Some((line, files))) => (*line, files),
+    };
+    let stems: Vec<&str> = files
+        .iter()
+        .map(|file| file.strip_suffix(".md").unwrap_or(file))
+        .collect();
+    let matched: Vec<usize> = match stems.iter().position(|stem| *stem == signal) {
+        Some(at) => vec![at],
+        None if signal.len() == 2 && signal.bytes().all(|byte| byte.is_ascii_digit()) => stems
+            .iter()
+            .enumerate()
+            .filter(|(_, stem)| stem.starts_with(signal))
+            .map(|(at, _)| at)
+            .collect(),
+        None => Vec::new(),
+    };
+    match matched.as_slice() {
+        [at] => Ok((line, *at as u64 + 1)),
+        [] => Err(format!(
+            "its capture `{capture}` holds no signal `{signal}`"
+        )),
+        _ => Err(format!(
+            "its capture `{capture}` holds more than one signal numbered `{signal}`"
+        )),
+    }
+}
+
+/// A move as its line carries it: crew's words as the six, `drop` with its
+/// `Reason` as its consequence, `new-territory` as a join into a proposed
+/// item named for its target, and any other word as it stands (30, 31, 39;
+/// section 10, question 3; core.25).
+fn carried(record: &Record, word: &str, signal: u64) -> ImportLineMove {
+    let field = |name: &str| {
+        record
+            .get(name)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+    };
+    let (word, target) = match word {
+        "drop" => (
+            "drop".to_string(),
+            field("Reason").or_else(|| field("Target")),
+        ),
+        "new-territory" => (
+            "join".to_string(),
+            field("Target").and_then(|target| item_name(&target)),
+        ),
+        word => (word.to_string(), field("Target")),
+    };
+    ImportLineMove {
+        signal,
+        word,
+        target,
+        by: field("By"),
+        at: field("Date").map(|date| day_start(&date).unwrap_or(date)),
+    }
+}
+
+/// The name of a proposed item made from `target`: lowercase ASCII letters
+/// and digits kept, every other run of characters one `-`, trimmed of `-`,
+/// so it holds no `/` and lies as one folder (35); none when nothing is
+/// left.
+fn item_name(target: &str) -> Option<String> {
+    let mut name = String::new();
+    for c in target.chars() {
+        if c.is_ascii_alphanumeric() {
+            name.push(c.to_ascii_lowercase());
+        } else if !name.ends_with('-') {
+            name.push('-');
+        }
+    }
+    let name = name.trim_matches('-');
+    (!name.is_empty()).then(|| name.to_string())
 }
 
 /// The names of the folders under `signals/` holding a `capture.md`, in
@@ -89,8 +248,10 @@ fn capture_folders(signals: &Path) -> Result<Vec<String>, String> {
     Ok(names)
 }
 
-/// A capture's line, or the file it could not be read whole from and why.
-fn read_capture(folder: &Path, name: &str) -> Result<ImportLine, (String, String)> {
+/// A capture's line, with its moves still to be carried, and its signal
+/// files in their order; or the file it could not be read whole from and
+/// why.
+fn read_capture(folder: &Path, name: &str) -> Result<(ImportLine, Vec<String>), (String, String)> {
     let not_read = |why: String| ("capture.md".to_string(), why);
     let text = fs::read_to_string(folder.join("capture.md"))
         .map_err(|error| not_read(format!("cannot be read: {error}")))?;
@@ -124,13 +285,13 @@ fn read_capture(folder: &Path, name: &str) -> Result<ImportLine, (String, String
         .lines()
         .find_map(|line| line.strip_prefix("# "))
         .map(|title| title.trim_end().to_string());
-    let signals = signal_files(folder)
-        .map_err(|why| (".".to_string(), why))?
+    let files = signal_files(folder).map_err(|why| (".".to_string(), why))?;
+    let signals = files
         .iter()
         .zip(1..)
         .map(|(file, n)| read_signal(folder, name, file, n))
         .collect::<Result<_, _>>()?;
-    Ok(ImportLine {
+    let line = ImportLine {
         capture: ImportLineCapture {
             key,
             source,
@@ -142,7 +303,8 @@ fn read_capture(folder: &Path, name: &str) -> Result<ImportLine, (String, String
         came_in: CameIn::Import(BODY.to_string()),
         signals,
         moves: Vec::new(),
-    })
+    };
+    Ok((line, files))
 }
 
 /// Whether `name` is a signal's file as crew names one, `NN-<slug>.md`, the
@@ -868,6 +1030,293 @@ Claude Code does not fetch the tools again.
         let signal = &body.read().lines[0].signals[0];
         assert_eq!(signal.excerpt, "the words");
         assert_eq!(signal.position, format!("signals/{SESSION}/01-a.md"));
+    }
+
+    /// A capture of two signals, `01-a` and `02-b`, beside the release.
+    fn two_signals() -> Body {
+        let body = Body::flywheel();
+        body.capture(
+            "2026-10-05-planner-0a1b2c3d",
+            &SESSION_CAPTURE.replace(SESSION, "2026-10-05-planner-0a1b2c3d"),
+            &[
+                ("01-a.md", &signal("ask", "", SAID)),
+                ("02-b.md", &signal("ask", "", SAID)),
+            ],
+        );
+        body
+    }
+
+    fn move_record(signal: &str, word: &str, fields: &str) -> String {
+        format!("\nSignal: {signal}\nMove: {word}\n{fields}")
+    }
+
+    fn with_moves(body: &Body, records: &[String]) {
+        body.file(
+            "moves.rec",
+            &format!("{MOVES_DESCRIPTOR}{}", records.concat()),
+        );
+    }
+
+    fn moves_of<'a>(reading: &'a Reading, key: &str) -> &'a [ImportLineMove] {
+        &reading
+            .lines
+            .iter()
+            .find(|line| line.capture.key.as_str() == key)
+            .expect(key)
+            .moves
+    }
+
+    const TWO: &str = "2026-10-05-planner-0a1b2c3d";
+
+    #[test]
+    fn a_route_and_a_drop() {
+        let body = two_signals();
+        with_moves(
+            &body,
+            &[
+                move_record(
+                    &format!("{TWO}/01-a"),
+                    "route",
+                    "Target: unit/fix-x\nDate: 2026-10-06\nBy: swancloud-planner\n",
+                ),
+                move_record(
+                    &format!("{TWO}/02-b"),
+                    "drop",
+                    "Reason: the same defect as another\nDate: 2026-10-06\nBy: swancloud-design\n",
+                ),
+            ],
+        );
+        let reading = body.read();
+        let moves = moves_of(&reading, TWO);
+        assert_eq!(
+            moves[0].clone(),
+            ImportLineMove {
+                signal: 1,
+                word: "route".into(),
+                target: Some("unit/fix-x".into()),
+                by: Some("swancloud-planner".into()),
+                at: Some("2026-10-06T00:00:00Z".into()),
+            }
+        );
+        assert_eq!(moves[1].signal, 2);
+        assert_eq!(moves[1].word, "drop");
+        assert_eq!(
+            moves[1].target.as_deref(),
+            Some("the same defect as another")
+        );
+        assert!(reading.not_carried.is_empty(), "{:?}", reading.not_carried);
+        assert!(moves_of(&reading, SESSION).is_empty());
+    }
+
+    #[test]
+    fn a_signal_named_by_its_short_id() {
+        let body = two_signals();
+        with_moves(
+            &body,
+            &[move_record(
+                &format!("{TWO}/02"),
+                "answered",
+                "Target: docs/adr/0002\nDate: 2026-10-07\nBy: d\n",
+            )],
+        );
+        let reading = body.read();
+        let moves = moves_of(&reading, TWO);
+        assert_eq!(moves.len(), 1);
+        assert_eq!(moves[0].signal, 2);
+        assert_eq!(moves[0].word, "answered");
+        assert_eq!(moves[0].target.as_deref(), Some("docs/adr/0002"));
+    }
+
+    #[test]
+    fn crews_words_are_carried_as_the_six() {
+        let body = two_signals();
+        with_moves(
+            &body,
+            &[
+                move_record(
+                    &format!("{TWO}/01-a"),
+                    "attach",
+                    "Target: intent/x\nReason: fits\nDate: 2026-10-07\nBy: d\n",
+                ),
+                move_record(
+                    &format!("{TWO}/02-b"),
+                    "challenge",
+                    "Target: book/p.md\nDate: not a day\nBy: d\n",
+                ),
+                move_record(
+                    &format!("{SESSION}/01-no-refetch"),
+                    "drop",
+                    "Target: noise\nDate: 2026-10-07\nBy: d\n",
+                ),
+            ],
+        );
+        let reading = body.read();
+        let two = moves_of(&reading, TWO);
+        assert_eq!(
+            (two[0].word.as_str(), two[0].target.as_deref()),
+            ("attach", Some("intent/x"))
+        );
+        assert_eq!(
+            (two[1].word.as_str(), two[1].target.as_deref()),
+            ("challenge", Some("book/p.md"))
+        );
+        assert_eq!(two[1].at.as_deref(), Some("not a day"));
+        let session = moves_of(&reading, SESSION);
+        assert_eq!(
+            (session[0].word.as_str(), session[0].target.as_deref()),
+            ("drop", Some("noise"))
+        );
+    }
+
+    #[test]
+    fn a_word_not_of_the_six_is_carried_as_it_stands() {
+        let body = two_signals();
+        with_moves(
+            &body,
+            &[move_record(
+                &format!("{TWO}/01-a"),
+                "promote",
+                "Target: x\nDate: 2026-10-12\nBy: curation\n",
+            )],
+        );
+        let reading = body.read();
+        let moves = moves_of(&reading, TWO);
+        assert_eq!(moves[0].word, "promote");
+        assert_eq!(moves[0].target.as_deref(), Some("x"));
+        assert_eq!(moves[0].by.as_deref(), Some("curation"));
+    }
+
+    #[test]
+    fn crews_new_territory() {
+        let body = two_signals();
+        with_moves(
+            &body,
+            &[
+                move_record(
+                    &format!("{TWO}/01-a"),
+                    "new-territory",
+                    "Target: upstream: Claude Code's HTTP MCP reconnection\nDate: 2026-10-10\nBy: d\n",
+                ),
+                move_record(&format!("{TWO}/02-b"), "new-territory", "Date: 2026-10-10\nBy: d\n"),
+                move_record(&format!("{SESSION}/01"), "new-territory", "Target: — !\nDate: 2026-10-10\nBy: d\n"),
+            ],
+        );
+        let reading = body.read();
+        let two = moves_of(&reading, TWO);
+        assert_eq!(two[0].word, "join");
+        assert_eq!(
+            two[0].target.as_deref(),
+            Some("upstream-claude-code-s-http-mcp-reconnection")
+        );
+        assert_eq!(
+            (two[1].word.as_str(), two[1].target.as_deref()),
+            ("join", None)
+        );
+        let session = moves_of(&reading, SESSION);
+        assert_eq!(
+            (session[0].word.as_str(), session[0].target.as_deref()),
+            ("join", None)
+        );
+    }
+
+    #[test]
+    fn a_move_of_a_signal_in_another_body() {
+        let body = two_signals();
+        with_moves(
+            &body,
+            &[
+                move_record(
+                    "2026-10-02-weekly-planning/01-pin-mise",
+                    "route",
+                    "Target: unit/pin\nDate: 2026-10-03\nBy: p\n",
+                ),
+                move_record(
+                    &format!("{TWO}/03"),
+                    "drop",
+                    "Reason: r\nDate: 2026-10-03\nBy: p\n",
+                ),
+                move_record(
+                    &format!("{TWO}/01-a"),
+                    "drop",
+                    "Reason: r\nDate: 2026-10-03\nBy: p\n",
+                ),
+            ],
+        );
+        let reading = body.read();
+        assert_eq!(reading.lines.len(), 3);
+        assert_eq!(moves_of(&reading, TWO).len(), 1);
+        assert_eq!(reading.not_carried.len(), 2);
+        let other = &reading.not_carried[0];
+        assert_eq!(other.signal, "2026-10-02-weekly-planning/01-pin-mise");
+        assert_eq!(other.word, "route");
+        assert!(other.why.contains("no capture of this body"), "{other}");
+        assert_eq!(
+            other.to_string(),
+            "move `route` of signal 2026-10-02-weekly-planning/01-pin-mise not carried: \
+             no capture of this body is `2026-10-02-weekly-planning`"
+        );
+        assert!(
+            reading.not_carried[1].why.contains("no signal `03`"),
+            "{:?}",
+            reading.not_carried
+        );
+    }
+
+    #[test]
+    fn a_move_of_a_capture_not_read_is_not_carried() {
+        let body = two_signals();
+        body.file(
+            &format!("signals/{TWO}/03-c.md"),
+            &signal("finding", "", SAID),
+        );
+        with_moves(
+            &body,
+            &[move_record(
+                &format!("{TWO}/01-a"),
+                "drop",
+                "Reason: r\nDate: 2026-10-03\nBy: p\n",
+            )],
+        );
+        let reading = body.read();
+        assert_eq!(reading.lines.len(), 2);
+        assert_eq!(reading.not_carried.len(), 1);
+        assert!(
+            reading.not_carried[0].why.contains("was not read"),
+            "{:?}",
+            reading.not_carried
+        );
+    }
+
+    #[test]
+    fn a_corpus_keeps_its_moves_in_signals() {
+        let body = Body::new();
+        body.capture(
+            "2026-10-02-weekly-planning",
+            &meeting_capture("2026-10-02-weekly-planning"),
+            &[("01-pin-mise.md", &signal("ask", "", SAID))],
+        )
+        .file(
+            "signals/moves.rec",
+            &format!(
+                "{MOVES_DESCRIPTOR}{}",
+                move_record(
+                    "2026-10-02-weekly-planning/01-pin-mise",
+                    "route",
+                    "Target: unit/pin\nDate: 2026-10-03\nBy: p\n"
+                )
+            ),
+        );
+        let reading = body.read();
+        assert_eq!(reading.lines[0].moves.len(), 1);
+        assert_eq!(reading.lines[0].moves[0].word, "route");
+    }
+
+    #[test]
+    fn a_moves_file_that_cannot_be_read() {
+        let body = Body::flywheel();
+        body.file("moves.rec", "not a record\n");
+        let why = read(&body.root()).unwrap_err();
+        assert!(why.starts_with("moves.rec cannot be read"), "{why}");
     }
 
     #[test]
