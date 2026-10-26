@@ -22,6 +22,7 @@ pub mod line;
 
 pub use declaration::{
     check_config, read_declarations, ConfigError, ConfigFailure, Declaration, DeclarationError,
+    Invocation,
 };
 pub use key::{Key, KeyError};
 pub use line::{read_line, Completion, Excerpt, Failure, Line, Malformed, Nature, Offer};

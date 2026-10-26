@@ -2,9 +2,15 @@
 //! configuration, and the secrets it needs, by name (11, 72; C.1). The
 //! shape is a JSON Schema, draft 2020-12 (section 10, question 8).
 
+use std::ffi::OsString;
 use std::fmt;
+use std::path::Path;
 
 use toml::{Table, Value};
+
+/// The environment variable that names the file holding a run's
+/// configuration (C.1).
+pub const CAPTURE_CONFIG: &str = "CAPTURE_CONFIG";
 
 /// One `[adapter.<name>]` table.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -16,6 +22,35 @@ pub struct Declaration {
     pub config: String,
     /// The secrets' names; a declaration holds no secret's value (core.3).
     pub secrets: Vec<String>,
+}
+
+/// How a run is started: the command line, and the names of the
+/// environment variables the host places, holding no value (11, 73;
+/// core.3).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Invocation {
+    pub args: Vec<OsString>,
+    /// [`CAPTURE_CONFIG`], then each secret's name, as declared.
+    pub env: Vec<String>,
+}
+
+impl Declaration {
+    /// The run of this adapter with the raw place `raw_dir` and, when one
+    /// is kept, the cursor of its last complete run (8; C.1). It starts
+    /// nothing.
+    pub fn invocation(&self, raw_dir: &Path, cursor: Option<&str>) -> Invocation {
+        let mut args: Vec<OsString> = self.command.iter().map(OsString::from).collect();
+        args.push("--raw-dir".into());
+        args.push(raw_dir.into());
+        if let Some(cursor) = cursor {
+            args.push("--cursor".into());
+            args.push(cursor.into());
+        }
+        let env = std::iter::once(CAPTURE_CONFIG.to_string())
+            .chain(self.secrets.iter().cloned())
+            .collect();
+        Invocation { args, env }
+    }
 }
 
 /// A declaration refused, naming the field where there is one
@@ -346,5 +381,41 @@ mod tests {
             panic!("a remote $ref was resolved");
         };
         assert!(reason.contains("json.schemastore.org"), "{reason}");
+    }
+
+    fn meetings() -> Declaration {
+        read_declarations(
+            r#"
+            [adapter.meetings]
+            command = ["meetings", "capture"]
+            config = "config.schema.json"
+            secrets = ["MEETINGS_TOKEN"]
+            "#,
+        )
+        .unwrap()
+        .remove(0)
+    }
+
+    fn words(args: &[OsString]) -> Vec<&str> {
+        args.iter().map(|arg| arg.to_str().unwrap()).collect()
+    }
+
+    #[test]
+    fn a_run_with_a_cursor() {
+        let run = meetings().invocation(Path::new("/r/1"), Some("c9"));
+        assert_eq!(
+            words(&run.args),
+            ["meetings", "capture", "--raw-dir", "/r/1", "--cursor", "c9"]
+        );
+        assert_eq!(run.env, ["CAPTURE_CONFIG", "MEETINGS_TOKEN"]);
+    }
+
+    #[test]
+    fn a_first_run_has_no_cursor() {
+        let run = meetings().invocation(Path::new("/r/1"), None);
+        assert_eq!(
+            words(&run.args),
+            ["meetings", "capture", "--raw-dir", "/r/1"]
+        );
     }
 }
