@@ -1292,6 +1292,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "weir-adapters"
+version = "0.0.0"
+dependencies = [
+ "tempfile",
+ "time",
+ "weir-capture",
+]
+
+[[package]]
 name = "weir-cadence"
 version = "0.0.0"
 dependencies = [
