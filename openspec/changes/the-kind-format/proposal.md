@@ -83,6 +83,7 @@ check-toolchain.sh
 treefmt.nix
 devenv.nix
 devenv.lock
+crates/weir-capture/moon.yml
 crates/weir-kinds/**
 crates/weir/**
 ```
