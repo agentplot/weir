@@ -1,0 +1,52 @@
+//! The capture contract of the statement in agentplot/blueprints
+//! `design/weir/requirements.md`: what an adapter tells a host, and what a
+//! host does with it, fixed once so that every host given the same lines
+//! writes the same records (24).
+//!
+//! The crate holds an adapter's lines, offers, cursors and completions, read
+//! and written as JSON Lines (1 to 10; C.1); the import line, the fourth
+//! line, which an import prints and a host's import operation alone reads,
+//! never `take` (63, 75a; C.1); the key rule (3, 4); an
+//! adapter's declaration, its configuration's schema and the command line a
+//! run is started with (11, 12, 72 to 74); the sha256 content hash the
+//! built-in adapters key files by (C.6); the cut of an own excerpt (20);
+//! the capture's record, `weir-capture/1`, in recutils (16, 17, 22; C.2);
+//! `take`, the seven steps a host takes lines in, through the inbox and
+//! the raw bank the host hands it (13 to 24, 75 to 77; C.1); and the
+//! report of a run, an intake or an import, written and read as
+//! `weir-report/1`, the object a host prints last (23, 76; C.7).
+//!
+//! Every function answers from its arguments alone: the machine's name, the
+//! taken-at time, the limit and the raw place are the caller's to hand in,
+//! and every write is one the caller's inbox or bank makes (core.1).
+
+pub mod capture;
+pub mod cut;
+pub mod declaration;
+pub mod hash;
+pub mod import;
+pub mod key;
+pub mod line;
+pub mod rec;
+pub mod take;
+
+#[cfg(test)]
+mod testing;
+
+pub use capture::{CameIn, Capture};
+pub use cut::{closing_line, cut, Cut, LeftOut, SMALLEST_LIMIT};
+pub use declaration::{
+    check_config, read_declarations, ConfigError, ConfigFailure, Declaration, DeclarationError,
+    Invocation,
+};
+pub use hash::{content_hash, content_hash_reader};
+pub use import::{
+    read_import_line, ImportLine, ImportLineCapture, ImportLineMove, ImportLineSignal,
+};
+pub use key::{Key, KeyError};
+pub use line::{read_line, Completion, Excerpt, Failure, Line, Malformed, Nature, Offer};
+pub use rec::{RecError, Record};
+pub use take::{
+    read_report, take, Bank, Inbox, OwnSignal, RawFile, Refusal, Refused, Report, ReportError,
+    Take, TakeError, Taken, REPORT_FORMAT,
+};

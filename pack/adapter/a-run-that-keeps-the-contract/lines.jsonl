@@ -1,0 +1,6 @@
+{"capture": {"key": "release/acme/1.0", "source": "release", "event_at": "2026-10-10T14:02:11Z", "title": "acme 1.0", "url": "https://example.org/acme/releases/v1.0", "raw": ["acme-1.0/notes.md", "acme-1.0/release.json"], "excerpt": {"text": "## acme 1.0\n\n- the shim fixed\n- the \"quoted\" path\n", "kind": "ask", "asserted_by": "acme", "assertion": "acme 1.0 is released; the repository pins 0.9.", "subjects": ["release", "acme"], "argues_with": ["packages/acme/default.nix"], "position": "release notes"}}}
+{"capture": {"key": "release/acme/0.9", "source": "release", "event_at": "2026-09-18T09:00:00+02:00", "raw": ["acme-0.9/notes.md"]}}
+{"capture": {"key": "release/acme/0.9", "source": "release", "event_at": "2026-09-18T09:00:00+02:00", "raw": ["acme-0.9/notes.md"]}}
+{"capture": {"key": "deploy/acme/prod-41", "source": "deploy", "event_at": "2026-10-12T08:15:00-04:00", "title": "prod 41"}}
+{"cursor": "page=3&since=2026-10-17"}
+{"done": {"listed": 4, "failed": [{"what": "github:acme/beta", "why": "HTTP 502"}]}}

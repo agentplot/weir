@@ -1,0 +1,9 @@
+# A folder of two files: one whose name begins with its day, offered at
+# that day's start, and one offered at its last write (5, 61, 64).
+satisfies = [5, 61, 64]
+adapter = "folder"
+input = "input/inbox"
+
+[modified]
+"2026-10-19-retro.md" = "2026-10-25T12:00:00Z"
+"plan.txt" = "2026-10-22T07:45:00Z"

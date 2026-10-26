@@ -1,0 +1,9 @@
+# A run that exited reporting success with no completion breaks 9, with no
+# line.
+satisfies = [9]
+exited_ok = true
+passes = false
+
+[[breach]]
+clause = 9
+reason_holds = "exited reporting success with no completion"

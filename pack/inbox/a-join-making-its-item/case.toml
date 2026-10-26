@@ -1,0 +1,11 @@
+# A join naming a name no item has had makes that item, proposed, its
+# signals read from the standing moves that name it and no weight
+# recorded.
+satisfies = [30, 31, 34]
+
+[operation.move]
+signal = "release/acme/1.0#1"
+word = "join"
+target = "acme-bump"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"

@@ -1,0 +1,15 @@
+# Event times with no offset, breaking 5: the time at the source is
+# written with its offset (C.1).
+satisfies = [5]
+exited_ok = true
+passes = false
+
+[[breach]]
+line = 1
+clause = 5
+reason_holds = "not an RFC 3339 time with an offset"
+
+[[breach]]
+line = 2
+clause = 5
+reason_holds = "not an RFC 3339 time with an offset"

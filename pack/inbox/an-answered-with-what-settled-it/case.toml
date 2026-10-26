@@ -1,0 +1,11 @@
+# An answered carries the claim or record that settled the signal, and
+# keeps the note given with it.
+satisfies = [30, 31]
+
+[operation.move]
+signal = "release/acme/1.0#3"
+word = "answered"
+target = "packages/acme/default.nix pins 1.0 since 4f2c1e0"
+note = "the shim is behind a flag now"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"

@@ -1,0 +1,6 @@
+# The next named time has not come since the last run.
+satisfies = [59]
+schedule = "0 * * * *"
+last_run = "2026-11-03T09:00:00-05:00"
+now = "2026-11-03T09:59:59-05:00[America/New_York]"
+due = false

@@ -1,0 +1,22 @@
+[package]
+name = "weir-pack"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "The conformance pack: its cases built in, the check that every case cites a clause and every counted clause is cited, the adapter checks and the meeting checks, and the host cases read and compared with what a host reports and writes (statement 65 to 68, 87; C.7)."
+
+[dependencies]
+weir-capture = { path = "../weir-capture" }
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+time.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true

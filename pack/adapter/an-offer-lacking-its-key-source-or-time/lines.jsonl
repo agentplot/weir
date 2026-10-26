@@ -1,0 +1,5 @@
+{"capture": {"source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/acme/1.0", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/acme/1.0", "source": "release"}}
+{"capture": {"key": "release/acme/0.9", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"done": {"listed": 4, "failed": []}}

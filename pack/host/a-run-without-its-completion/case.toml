@@ -1,0 +1,29 @@
+# An adapter exits without its completion after offering five captures
+# (S4): the five stand, no cursor is kept, and the run is recorded
+# incomplete. The next run is handed no cursor, since no complete run kept
+# one; it offers the five again with its completion, writes nothing for
+# them and keeps its cursor.
+satisfies = [8, 9, 14, 23]
+limit = 8192
+
+[[step]]
+run = "first.sh"
+lines = "first.jsonl"
+taken = [
+  "release/acme/2.1",
+  "release/acme/2.2",
+  "release/acme/2.3",
+  "release/acme/2.4",
+  "release/acme/2.5",
+]
+held = 0
+complete = false
+
+[[step]]
+run = "again.sh"
+lines = "again.jsonl"
+taken = []
+held = 5
+listed = 5
+cursor = "c-after-five"
+complete = true

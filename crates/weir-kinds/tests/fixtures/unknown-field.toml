@@ -1,0 +1,9 @@
+# Fields the format does not name, on a kind and on a stage (56).
+[kinds.tidy]
+owner = "docs"
+
+[[kinds.tidy.stages]]
+name = "code"
+prompt = "prompts/tidy.md"
+deliverables = ["commits"]
+colour = 3

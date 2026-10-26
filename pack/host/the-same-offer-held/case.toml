@@ -1,0 +1,15 @@
+# The same adapter runs the next day and offers the same release again
+# (S2): the inbox holds its key, so nothing is written or banked, the
+# later offer changes nothing of the capture, and the run counts it held.
+satisfies = [14, 16, 23]
+limit = 8192
+
+[[step]]
+run = "adapter.sh"
+lines = "lines.jsonl"
+raw = "raw"
+taken = []
+held = 1
+listed = 1
+cursor = "2026-10-18T04:30:05Z"
+complete = true

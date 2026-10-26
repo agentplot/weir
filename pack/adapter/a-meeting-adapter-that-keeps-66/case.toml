@@ -1,0 +1,15 @@
+# A meeting adapter's run that keeps 66: each capture keyed by its service
+# and the meeting's own identity, at the meeting's start, with the
+# transcript as served and a plain copy, and no own excerpt; the meeting
+# too short to hold anything left out and counted in the completion. Its
+# lines keep the contract besides (3, 5, 6).
+satisfies = [66, 3, 5, 6]
+exited_ok = true
+passes = true
+
+[meeting]
+short = 1
+
+[meeting.starts]
+"meeting/wispr/m-1" = "2026-10-20T15:00:00-04:00"
+"meeting/wispr/m-2" = "2026-10-21T09:30:00-04:00"

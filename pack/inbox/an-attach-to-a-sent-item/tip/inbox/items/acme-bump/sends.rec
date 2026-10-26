@@ -1,0 +1,9 @@
+format: weir-send/1
+item: acme-bump
+target: agentplot/weir change
+brief: # Bump acme
++
++ The repository pins 0.9, and 1.0 is out.
++
+sent_at: 2026-10-22T10:00:00Z
+outcome: open

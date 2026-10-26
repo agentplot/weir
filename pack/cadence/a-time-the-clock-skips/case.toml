@@ -1,0 +1,7 @@
+# 02:30 is skipped on 2026-03-08 in New York, and named at 03:00, the
+# first minute after the skip.
+satisfies = [59]
+schedule = "30 2 * * *"
+last_run = "2026-03-07T02:30:00-05:00"
+now = "2026-03-08T03:00:00-04:00[America/New_York]"
+due = true

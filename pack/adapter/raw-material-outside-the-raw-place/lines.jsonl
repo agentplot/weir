@@ -1,0 +1,5 @@
+{"capture": {"key": "release/acme/1.0", "source": "release", "event_at": "2026-10-10T14:02:11Z", "raw": ["acme-1.0/notes.md"]}}
+{"capture": {"key": "release/acme/0.9", "source": "release", "event_at": "2026-10-10T14:02:11Z", "raw": ["../notes.md"]}}
+{"capture": {"key": "release/acme/0.8", "source": "release", "event_at": "2026-10-10T14:02:11Z", "raw": ["/etc/hosts"]}}
+{"capture": {"key": "release/acme/0.7", "source": "release", "event_at": "2026-10-10T14:02:11Z", "raw": ["acme-0.7/notes.md"]}}
+{"done": {"listed": 4, "failed": []}}

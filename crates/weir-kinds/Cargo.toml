@@ -1,0 +1,15 @@
+[package]
+name = "weir-kinds"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "The kind format, read and checked: a declaration's kinds, their stages and deliverables, and an elaboration kind's section."
+
+[dependencies]
+toml.workspace = true
+
+[dev-dependencies]
+serde.workspace = true
+
+[lib]
+doctest = false

@@ -1,0 +1,15 @@
+format: weir-move/1
+signal: release/acme/1.0#1
+move: drop
+target: superseded by acme 1.1
+note: superseded by acme 1.1
+by: curation
+at: 2026-10-20T08:00:00Z
+
+format: weir-move/1
+signal: release/acme/1.0#1
+move: route
+target: chore: bump acme
+by: the operator
+at: 2026-10-21T09:00:00Z
+replaces: 1

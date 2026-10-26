@@ -1,0 +1,6 @@
+# Three hourly times slept through: one answer on waking (S13).
+satisfies = [59, 60]
+schedule = "0 * * * *"
+last_run = "2026-11-03T06:00:00-05:00"
+now = "2026-11-03T09:20:00-05:00[America/New_York]"
+due = true

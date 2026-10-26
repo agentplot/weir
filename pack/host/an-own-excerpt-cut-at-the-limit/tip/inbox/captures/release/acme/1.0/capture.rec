@@ -1,0 +1,11 @@
+format: weir-capture/1
+key: release/acme/1.0
+source: release
+event_at: 2026-10-10T14:02:11Z
+title: acme 1.0
+url: https://example.org/acme/releases/v1.0
+pointer: <this machine>:<the bank's path>
+came_in: run:an-own-excerpt-cut-at-the-limit
+machine: <this machine>
+taken_at: <when it was taken>
+unread: no

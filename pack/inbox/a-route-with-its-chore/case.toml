@@ -1,0 +1,9 @@
+# A route carries the chore or the ask it offers.
+satisfies = [30, 31]
+
+[operation.move]
+signal = "release/acme/1.0#2"
+word = "route"
+target = "chore: drop the shim's wrapper"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"

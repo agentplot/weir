@@ -17,11 +17,36 @@ _: {
     ".gitignore"
     ".vale.ini"
     "styles/config/vocabularies/**"
+    # The pack's cases compare these byte for byte, so no formatter may
+    # rewrite them: their lines and import lines, the records a case starts
+    # from and the records it expects, the raw material a case hands a
+    # host, and the input a case hands a built-in adapter. A case's
+    # case.toml stays taplo's, and its adapter script shellcheck's and
+    # shfmt's.
+    "pack/**/*.jsonl"
+    "pack/**/*.rec"
+    "pack/**/start/**"
+    "pack/**/tip/**"
+    "pack/**/raw/**"
+    "pack/**/input/**"
     # Build outputs and caches.
     "target/**"
     ".devenv/**"
     ".moon/cache/**"
   ];
+
+  # The crates' Rust, with the pinned toolchain's rustfmt (devenv.nix).
+  programs.rustfmt.enable = true;
+  programs.rustfmt.edition = "2021";
+
+  # Shell scripts, linted by shellcheck before shfmt lays them out.
+  programs.shellcheck.enable = true;
+  programs.shfmt.enable = true;
+  programs.shfmt.indent_size = 2;
+  settings.formatter.shellcheck.pipeline = "shell";
+  settings.formatter.shellcheck.priority = 1;
+  settings.formatter.shfmt.pipeline = "shell";
+  settings.formatter.shfmt.priority = 2;
 
   programs.deadnix.enable = true;
   programs.nixfmt.enable = true;

@@ -1,0 +1,24 @@
+# Sections the format does not name, on a kind and beside the kinds: the
+# reader returns them unread and fails on none (56).
+satisfies = [56]
+declaration = """
+[notify]
+channel = "releases"
+
+[kinds.tidy]
+owner = "docs"
+
+[[kinds.tidy.stages]]
+name = "code"
+prompt = "prompts/tidy.md"
+deliverables = ["commits"]
+colour = 3
+"""
+
+[expect]
+unread = ["notify"]
+
+[expect.kinds.tidy]
+version = 1
+stages = [{ name = "code", end = "commits" }]
+unread = ["owner"]

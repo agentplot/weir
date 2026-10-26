@@ -1,0 +1,23 @@
+[package]
+name = "weir-capture"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "The capture contract: an adapter's lines and declaration, and the seven steps a host takes them in (statement 1 to 24, 72 to 77)."
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+time.workspace = true
+sha2.workspace = true
+jsonschema.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true

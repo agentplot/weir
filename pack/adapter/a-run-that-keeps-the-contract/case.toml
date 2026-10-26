@@ -1,0 +1,13 @@
+# A release adapter's run that keeps the contract: lines and nothing else,
+# each one of the three (1); every offer with its key, source and event
+# time (2), its key one event's alone (3) and kept by the rule (4), its
+# time the source's with its offset (5); raw material whole in the raw
+# place it was handed, named from there (6); an own excerpt with every
+# field (7), never cut (12); the window offered again, which is safe (8),
+# a cursor as the adapter wrote it (8), and one completion naming the
+# event that failed, which stopped no other (9, 10). The lines are those
+# of a run its declaration started, the raw place its one place to write
+# (11).
+satisfies = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+exited_ok = true
+passes = true

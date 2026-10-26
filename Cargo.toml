@@ -1,21 +1,58 @@
-# The family's shared crates, one workspace. None is built yet; each joins
-# `members` as it lands (agentplot/blueprints, design/capture/plan.md):
+# The family's shared crates, one workspace. Each joins `members` as it
+# lands (agentplot/blueprints, design/capture/plan.md):
 #   crates/weir-capture    the capture contract: its types and key rules,
 #                          JSON in flight, recutils at rest, the sha256
-#                          content hash and the excerpt cut
+#                          content hash and the excerpt cut: landed
 #   crates/weir-signals    the signal, move and item records, and the
-#                          inbox's layout
+#                          inbox's layout: landed
 #   crates/weir-adapters   the folder drop, the meeting file and the
-#                          signals-folder import
-#   crates/weir-branch     the shared-branch write protocol
+#                          signals-folder import: landed
+#   crates/weir-branch     the shared-branch write protocol, its lock and
+#                          the pack's protocol cases: landed
 #   crates/weir-kinds      the kind format, with an elaboration kind's
-#                          section
-#   crates/weir-cadence    five-field cron, caught up once
-#   the conformance pack   contract lines in, the records a host must
-#                          write from them out
+#                          section: landed
+#   crates/weir-cadence    five-field cron, caught up once: landed
+#   crates/weir-pack       the conformance pack: its cases built in, its
+#                          check, the adapter and meeting checks and the
+#                          host cases' comparisons: landed
+#   crates/weir            the `weir` command line, a caller of the
+#                          crates: landed, with `check`, `capture` and `import`
 [workspace]
 resolver = "2"
-members = []
+members = [
+  "crates/weir-capture",
+  "crates/weir-kinds",
+  "crates/weir",
+  "crates/weir-cadence",
+  "crates/weir-branch",
+  "crates/weir-adapters",
+  "crates/weir-signals",
+  "crates/weir-pack",
+]
 
 [workspace.package]
+version = "0.0.0"
+edition = "2021"
 license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "1"
+time = { version = "0.3", features = ["parsing", "formatting"] }
+sha2 = "0.11"
+# No feature that resolves a `$ref` by fetching it: a configuration is
+# checked with nothing but its schema (core.1).
+jsonschema = { version = "0.60", default-features = false }
+tempfile = "3"
+clap = { version = "4", features = ["derive"] }
+# croner finds the times a cron pattern names, over jiff's zoned times.
+croner = { version = "4", default-features = false, features = ["jiff"] }
+jiff = "0.2"
+
+# The lints every crate takes with `[lints] workspace = true`: clippy's own,
+# which each crate's lint task holds at -D warnings.
+[workspace.lints.clippy]
+too_many_arguments = "allow"
+type_complexity = "allow"
+large_enum_variant = "allow"

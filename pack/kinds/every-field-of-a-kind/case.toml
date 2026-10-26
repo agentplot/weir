@@ -1,0 +1,35 @@
+# A kind with every field the format names: its version, how its places'
+# branches are named, whether it starts unready and lands, and stages with
+# their prompts, agents, quiet, waiting and where a failed submission
+# sends a place back (52, 53).
+satisfies = [52, 53]
+declaration = """
+[kinds.bump]
+version = 2
+branch = "bump"
+starts_unready = false
+lands = true
+
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits"]
+agents = [{ program = "claude", model = "opus" }]
+quiet = "45m"
+
+[[kinds.bump.stages]]
+name = "review"
+prompt = "prompts/bump-review.md"
+conversation = true
+wait = true
+agents = [{ beside = "operator" }]
+on_fail = "code"
+max_send_backs = 3
+"""
+
+[expect.kinds.bump]
+version = 2
+stages = [
+  { name = "code", end = "commits" },
+  { name = "review", end = "conversation" },
+]

@@ -1,0 +1,8 @@
+format: weir-capture/1
+key: release/acme/0.12
+source: release
+event_at: 2026-10-10T14:02:11Z
+came_in: run:fourteen-offers-one-under-moves
+machine: <this machine>
+taken_at: <when it was taken>
+unread: yes

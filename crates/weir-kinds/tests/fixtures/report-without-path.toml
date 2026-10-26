@@ -1,0 +1,5 @@
+# A report that names no path (54).
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["report:"]

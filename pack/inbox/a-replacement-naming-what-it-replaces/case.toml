@@ -1,0 +1,11 @@
+# A replacement changes a standing move, naming who replaced it and the
+# move it replaced, written beside it, the move replaced unchanged.
+satisfies = [29, 31, 41]
+
+[operation.replacement]
+signal = "release/acme/1.0#1"
+word = "route"
+target = "chore: bump acme"
+replaces = 1
+by = "the operator"
+at = "2026-10-21T09:00:00Z"

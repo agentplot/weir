@@ -1,0 +1,5 @@
+{"capture": {"key": "deploy/acme/prod-41", "source": "deploy", "event_at": "2026-10-21T09:00:00-04:00", "title": "prod 41"}}
+deployed prod 42
+{"capture": {"key": "deploy/acme/prod-42", "source": "deploy", "event_at": "2026-10-22T09:00:00-04:00", "title": "prod 42"}}
+{"cursor": "c1", "done": {"listed": 3, "failed": []}}
+{"capture": {"key": "deploy/acme/prod-43", "source": "deploy", "event_at": "2026-10-23T09:00:00-04:00", "title": "prod 43"}}

@@ -1,0 +1,10 @@
+# Lines 2 and 5 offer release/acme/v1 at two event times: two events share
+# a key, breaking 3 at the second, and every other line is checked.
+satisfies = [3]
+exited_ok = true
+passes = false
+
+[[breach]]
+line = 5
+clause = 3
+reason_holds = "two events share a key"

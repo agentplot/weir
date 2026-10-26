@@ -1,0 +1,9 @@
+format: weir-capture/1
+key: 2026-09-19-standup
+source: meeting
+event_at: 2026-09-19T15:00:00Z
+title: standup
+came_in: import:partition-x
+machine: <this machine>
+taken_at: <when it was taken>
+unread: yes

@@ -1,0 +1,9 @@
+# Import lines written as read: each capture with its pointer as the body
+# gave it or none, its signals as its reading with no excerpt looked for,
+# its moves with their notes, a join making its item, nothing banked.
+satisfies = [22, 37, 38, 39, 63]
+
+[operation.import]
+lines = "import.jsonl"
+machine = "deneb"
+imported_at = "2026-10-25T11:30:00+02:00"

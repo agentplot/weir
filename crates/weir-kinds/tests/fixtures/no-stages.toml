@@ -1,0 +1,7 @@
+# Two kinds with no stage: one declares none, the other an empty list
+# (S12).
+[kinds.bare]
+version = 1
+
+[kinds.empty]
+stages = []

@@ -1,0 +1,13 @@
+# A signal with a standing move takes no second move but a replacement.
+satisfies = [29]
+
+[operation.move]
+signal = "release/acme/1.0#1"
+word = "route"
+target = "chore: bump acme"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"
+
+[[refused]]
+what = "release/acme/1.0#1"
+reason_holds = "standing move"

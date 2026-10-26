@@ -1,0 +1,25 @@
+# A completion ends a run: a line after it, a second completion and a
+# failure with no `why` each break 9.
+satisfies = [9]
+exited_ok = true
+passes = false
+
+[[breach]]
+line = 2
+clause = 9
+reason_holds = "`done.failed[0].why` is empty"
+
+[[breach]]
+line = 3
+clause = 9
+reason_holds = "after line 2's completion"
+
+[[breach]]
+line = 4
+clause = 9
+reason_holds = "a second completion"
+
+[[breach]]
+line = 5
+clause = 9
+reason_holds = "`done.failed[0].why` is missing"

@@ -1,0 +1,6 @@
+{"capture": {"key": "release/acme/2.1", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/acme/2.2", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/acme/2.3", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/acme/2.4", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/acme/2.5", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"cursor": "c-before-the-end"}

@@ -1,0 +1,8 @@
+# An elaboration section whose ending is none of the three (55).
+[[kinds.writeback.stages]]
+name = "write"
+prompt = "prompts/writeback.md"
+deliverables = ["committed:books/conclusion.md"]
+
+[kinds.writeback.elaboration]
+ending = "sometimes"

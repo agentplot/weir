@@ -1,0 +1,30 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# weir-signals: the inbox's records and layout. One task per check, each run
+# from the workspace root (core.39); the capture crate it builds on is among
+# each task's inputs.
+language: 'rust'
+
+tasks:
+  format:
+    command: 'cargo fmt -p weir-signals --check'
+    inputs: ['/crates/weir-signals/**/*', '/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  lint:
+    command: 'cargo clippy -p weir-signals --all-targets -- -D warnings'
+    inputs: ['/crates/weir-signals/**/*', '/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  typecheck:
+    command: 'cargo check -p weir-signals --all-targets'
+    inputs: ['/crates/weir-signals/**/*', '/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  # The tests run recfix, from devenv.nix's recutils, over every file the
+  # crate's operations form, and run every inbox case of the pack.
+  test:
+    command: 'cargo test -p weir-signals'
+    inputs: ['/crates/weir-signals/**/*', '/crates/weir-capture/**/*', '/pack/inbox/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
