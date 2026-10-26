@@ -6,7 +6,7 @@
 #   crates/weir-signals    the signal, move and item records, and the
 #                          inbox's layout: landed
 #   crates/weir-adapters   the folder drop, the meeting file and the
-#                          signals-folder import
+#                          signals-folder import: landed
 #   crates/weir-branch     the shared-branch write protocol
 #   crates/weir-kinds      the kind format, with an elaboration kind's
 #                          section: landed
@@ -14,7 +14,7 @@
 #   the conformance pack   contract lines in, the records a host must
 #                          write from them out
 #   crates/weir            the `weir` command line, a caller of the
-#                          crates: landed, with `check`
+#                          crates: landed, with `check`, `capture` and `import`
 [workspace]
 resolver = "2"
 members = [
@@ -22,6 +22,7 @@ members = [
   "crates/weir-kinds",
   "crates/weir",
   "crates/weir-cadence",
+  "crates/weir-adapters",
   "crates/weir-signals",
 ]
 
