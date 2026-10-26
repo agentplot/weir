@@ -34,4 +34,4 @@
 
 ## 7. The checks of the touched projects
 
-- [ ] 7.1 The checks of the projects this change touches pass: `devenv shell -- moon run branch:format branch:lint branch:typecheck branch:test root:format`.
+- [x] 7.1 The checks of the projects this change touches pass: `devenv shell -- moon run branch:format branch:lint branch:typecheck branch:test root:format`.
