@@ -13,7 +13,7 @@ ratified, or from a record the user accepted; none waits on a yes.
 
 ### The crates and what they know
 
-- **[core.1]** No crate keeps state, starts a process, or names a host, tool, machine or inbox: every function answers from its inputs alone, and every write is one a caller asked for.
+- **[core.1]** No crate keeps state, starts a process that outlives its call, or names a host, tool, machine or inbox: every function answers from its inputs alone, every write is one a caller asked for, and a child a crate runs for a write, git in the branch keeper, ends with the call.
 - **[core.2]** Code outside the signals-folder import and the pack's cases names no tool of the family and no source.
 - **[core.3]** No record weir defines holds a secret, and no code path writes one into a record, a line or a log.
 - **[core.4]** No code path judges what a capture says, chooses a move, cuts an excerpt except as the limit forces, lists a source, starts an agent, submits or lands.
@@ -86,7 +86,7 @@ ratified, or from a record the user accepted; none waits on a yes.
 
 ## Details
 
-- **core.1** Rules out: a static or a file a crate writes for itself; a thread, timer or server a crate starts; a crate reading a host's settings, an environment variable or the machine's name except where a clause hands it one (the taken-at machine, 22; the clock, 83). Not ruled out: the `weir` command line, which is a caller of the crates (section 9). Source: clauses 69, 70, I1; record 0001.
+- **core.1** Rules out: a static or a file a crate writes for itself; a thread, timer or server a crate starts; a daemon, a watcher or a child left running; a crate reading a host's settings, an environment variable or the machine's name except where a clause hands it one (the taken-at machine, 22; the clock, 83). Not ruled out: the `weir` command line, which is a caller of the crates (section 9); `git` run and waited on by the branch keeper for one write (C.3), which ends with the call. Source: clauses 69, 70, I1; record 0001.
 - **core.2** Rules out: the strings `millpond`, `flume`, `sounding`, `crew`, `headwater`, `eddy`, `Flywheel`, `swancloud` in any module but the signals-folder import's reading of crew's folders (C.6) and the pack's case files. Not ruled out: `git`, `recfix`, `cron`, which section 9 fixes. Source: purpose; clauses 12, 64, 69; section 9.
 - **core.3** Rules out: a secret's value in a record, an offer line, a declaration, a commit message or a log; a secret passed on a command line. Not ruled out: a secret's name in a declaration (11). Source: clauses 11, 71, I3.
 - **core.4** Rules out: a reader of captures in a crate; a default move; a cut by anything but the limit; a listing of a source outside the three built-in adapters; `flume launch`, `sluice submit` or any landing called from a crate. Source: clauses 12, 20, 70.
