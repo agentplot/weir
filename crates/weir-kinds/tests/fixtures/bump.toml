@@ -18,6 +18,6 @@ prompt = "prompts/bump-review.md"
 conversation = true
 wait = true
 agents = [{ beside = "operator" }]
-quiet = "1h30m"
+quiet = "90s"
 on_fail = "code"
 max_send_backs = 3

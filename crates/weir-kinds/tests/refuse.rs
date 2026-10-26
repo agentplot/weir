@@ -78,10 +78,25 @@ fn a_field_of_the_wrong_shape_is_refused() {
         fields("wrong-shapes.toml"),
         [
             "kinds.lands-yes.lands",
+            "kinds.quiet-fraction.stages[0].quiet",
             "kinds.quiet-number.stages[0].quiet",
             "kinds.version-two.version",
             "kinds.version-zero.version",
         ]
+    );
+}
+
+#[test]
+fn a_quiet_time_of_more_than_one_part_is_refused() {
+    assert_eq!(
+        read("quiet-parts.toml"),
+        Err(Refusal {
+            problems: vec![Problem {
+                field: "kinds.bump.stages[0].quiet".to_owned(),
+                reason: "`1h30m` is not one whole number followed by s, m or h, such as 45m"
+                    .to_owned(),
+            }],
+        })
     );
 }
 

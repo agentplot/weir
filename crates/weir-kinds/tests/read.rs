@@ -43,9 +43,6 @@ fn fields_left_out_read_as_the_format_says() {
     let code = &tidy.stages[0];
     assert!(code.agents.is_empty());
     assert!(!code.wait);
-    assert_eq!(code.quiet, None);
-    assert_eq!(code.on_fail, None);
-    assert_eq!(code.max_send_backs, None);
 }
 
 #[test]
@@ -80,10 +77,27 @@ fn a_stage_reads_with_its_settings() {
 }
 
 #[test]
+fn settings_left_out_are_returned_left_out() {
+    let code = &read("stages-only.toml").unwrap().kinds["tidy"].stages[0];
+    assert_eq!(code.quiet, None);
+    assert_eq!(code.on_fail, None);
+    assert_eq!(code.max_send_backs, None);
+}
+
+// A stage's quiet time is one whole number of s, m or h.
+
+#[test]
 fn a_stages_quiet_time_reads_as_a_duration() {
-    let bump = &read("bump.toml").unwrap().kinds["bump"];
-    assert_eq!(bump.stages[0].quiet, Some(Duration::from_secs(45 * 60)));
-    assert_eq!(bump.stages[1].quiet, Some(Duration::from_secs(90 * 60)));
+    let wait = &read("quiet-times.toml").unwrap().kinds["wait"];
+    let quiet: Vec<_> = wait.stages.iter().map(|s| s.quiet).collect();
+    assert_eq!(
+        quiet,
+        [
+            Some(Duration::from_secs(45 * 60)),
+            Some(Duration::from_secs(90)),
+            Some(Duration::from_secs(2 * 60 * 60)),
+        ]
+    );
 }
 
 // A deliverable is one of six spellings.

@@ -19,8 +19,8 @@ pub struct Elaboration {
     pub inputs: Vec<String>,
     /// The sections a conclusion adds; none when left out (55).
     pub conclusion: Vec<String>,
-    /// How a round ends; `None` when left out, since the default is its
-    /// reader's (55).
+    /// How a round ends; `None` when left out, since the format gives no
+    /// default and what it means left out is its reader's (55, 58).
     pub ending: Option<Ending>,
     /// Whether earlier rounds' transcripts are handed; false when left out
     /// (55).

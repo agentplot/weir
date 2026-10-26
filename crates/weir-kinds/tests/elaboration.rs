@@ -60,6 +60,22 @@ fn a_malformed_elaboration_section() {
 }
 
 #[test]
+fn an_elaboration_section_with_no_ending() {
+    let declaration = read("no-ending.toml").unwrap();
+    assert_eq!(
+        read_elaboration(&declaration.kinds["notes"]),
+        Ok(Some(Elaboration {
+            inputs: strings(&["books/outline.md"]),
+            conclusion: Vec::new(),
+            ending: None,
+            transcripts: false,
+            lands: Vec::new(),
+            sections: Table::new(),
+        }))
+    );
+}
+
+#[test]
 fn a_kind_with_no_elaboration_section() {
     let declaration = read("stages-only.toml").unwrap();
     assert_eq!(read_elaboration(&declaration.kinds["tidy"]), Ok(None));

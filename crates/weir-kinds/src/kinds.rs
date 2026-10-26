@@ -75,14 +75,16 @@ pub struct Stage {
     pub agents: Vec<Table>,
     /// Whether it waits on its caller's word; false when left out (53).
     pub wait: bool,
-    /// How long its agent may be quiet before the stage is stuck; `None`
-    /// when left out, since each reader keeps its own default (53).
+    /// How long its agent may be quiet before the stage is stuck, one
+    /// whole number of seconds, minutes or hours (53, 57, C.4); `None` when
+    /// left out, since the format gives no default and what it means left
+    /// out is its reader's (58).
     pub quiet: Option<Duration>,
     /// The stage of its kind a failed submission sends a place back to;
-    /// `None` when left out (52).
+    /// `None` when left out, its meaning then its reader's (52, 58).
     pub on_fail: Option<String>,
     /// How many times a place may go back before it waits on its caller;
-    /// `None` when left out (52).
+    /// `None` when left out, its meaning then its reader's (52, 58).
     pub max_send_backs: Option<u64>,
     /// Every key of the stage the format does not name, unread and as
     /// written (56).
@@ -228,7 +230,7 @@ fn read_stage(stage: &Table, at: &str, problems: &mut Problems) -> Stage {
             if quiet.is_none() {
                 problems.refuse(
                     &field(at, "quiet"),
-                    format!("`{text}` is not a duration such as 45m, 1h30m or 90s"),
+                    format!("`{text}` is not one whole number followed by s, m or h, such as 45m"),
                 );
             }
             quiet

@@ -28,3 +28,9 @@ name = "code"
 prompt = "prompts/code.md"
 deliverables = ["commits"]
 quiet = 45
+
+[[kinds.quiet-fraction.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+quiet = "1.5h"
