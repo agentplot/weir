@@ -1,0 +1,19 @@
+# Offers without a key, a source or an event time, each breaking 2.
+satisfies = [2]
+exited_ok = true
+passes = false
+
+[[breach]]
+line = 1
+clause = 2
+reason_holds = "`key` is missing"
+
+[[breach]]
+line = 2
+clause = 2
+reason_holds = "`source` is missing"
+
+[[breach]]
+line = 3
+clause = 2
+reason_holds = "`event_at` is missing"

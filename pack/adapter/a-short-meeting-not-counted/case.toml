@@ -1,0 +1,17 @@
+# The fixture held one meeting too short to hold anything; the adapter
+# offers two and its completion lists two, leaving it uncounted (66).
+satisfies = [66]
+exited_ok = true
+passes = false
+
+[meeting]
+short = 1
+
+[meeting.starts]
+"meeting/wispr/m-1" = "2026-10-20T15:00:00-04:00"
+"meeting/wispr/m-2" = "2026-10-21T09:30:00-04:00"
+
+[[breach]]
+line = 3
+clause = 66
+reason_holds = "3 together"

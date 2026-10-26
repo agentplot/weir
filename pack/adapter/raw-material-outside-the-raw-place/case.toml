@@ -1,0 +1,20 @@
+# Raw material named outside the raw place, or not in it after the run,
+# breaking 6.
+satisfies = [6]
+exited_ok = true
+passes = false
+
+[[breach]]
+line = 2
+clause = 6
+reason_holds = "`..` segment"
+
+[[breach]]
+line = 3
+clause = 6
+reason_holds = "not relative to the raw place"
+
+[[breach]]
+line = 4
+clause = 6
+reason_holds = "does not hold it after the run"

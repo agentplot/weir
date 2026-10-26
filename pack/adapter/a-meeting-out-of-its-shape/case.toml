@@ -1,0 +1,33 @@
+# Offers a meeting adapter never makes (66): one keyed with no service,
+# and one from another source, with the plain copy alone and an own
+# excerpt.
+satisfies = [66]
+exited_ok = true
+passes = false
+
+[meeting]
+short = 1
+
+[meeting.starts]
+"meeting/wispr/m-1" = "2026-10-20T15:00:00-04:00"
+"meeting/wispr/m-2" = "2026-10-21T09:30:00-04:00"
+
+[[breach]]
+line = 1
+clause = 66
+reason_holds = "not `meeting/<service>/<the meeting's own identity>`"
+
+[[breach]]
+line = 2
+clause = 66
+reason_holds = "not `meeting`"
+
+[[breach]]
+line = 2
+clause = 66
+reason_holds = "names 1 raw files"
+
+[[breach]]
+line = 2
+clause = 66
+reason_holds = "carries an own excerpt"

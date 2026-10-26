@@ -1,0 +1,6 @@
+# A run that offers five captures and exits reporting failure, with no
+# completion: incomplete, its offers standing and its cursor kept by no
+# host, and breaking nothing for it (9; S4).
+satisfies = [8, 9]
+exited_ok = false
+passes = true

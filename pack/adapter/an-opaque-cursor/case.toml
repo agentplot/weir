@@ -1,0 +1,5 @@
+# Cursors of whatever shape the adapter makes, each kept as written and
+# never read by anything but the adapter (8).
+satisfies = [8]
+exited_ok = true
+passes = true

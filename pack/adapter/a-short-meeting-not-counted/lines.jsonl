@@ -1,0 +1,3 @@
+{"capture": {"key": "meeting/wispr/m-1", "source": "meeting", "event_at": "2026-10-20T15:00:00-04:00", "title": "Standup", "raw": ["m-1/transcript.json", "m-1/transcript.txt"]}}
+{"capture": {"key": "meeting/wispr/m-2", "source": "meeting", "event_at": "2026-10-21T13:30:00Z", "title": "Planning", "raw": ["m-2/transcript.json", "m-2/transcript.txt"]}}
+{"done": {"listed": 2, "failed": []}}

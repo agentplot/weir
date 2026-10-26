@@ -1,0 +1,17 @@
+# An offer whose event time is when its transcript was saved, not its
+# meeting's start (5, 66).
+satisfies = [5, 66]
+exited_ok = true
+passes = false
+
+[meeting]
+short = 1
+
+[meeting.starts]
+"meeting/wispr/m-1" = "2026-10-20T15:00:00-04:00"
+"meeting/wispr/m-2" = "2026-10-21T09:30:00-04:00"
+
+[[breach]]
+line = 1
+clause = 66
+reason_holds = "its meeting started at `2026-10-20T15:00:00-04:00`"

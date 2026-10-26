@@ -1,0 +1,6 @@
+{"cursor": "c1"}
+{"capture": {"key": "release/acme/v1", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/acme/v2", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/acme/v3", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/acme/v1", "source": "release", "event_at": "2026-10-11T09:00:00Z"}}
+{"done": {"listed": 4, "failed": []}}
