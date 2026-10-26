@@ -1,0 +1,79 @@
+# The statement's clause numbers, each under the section of Parts A and B
+# it stands in, as the pack's check reads them (67; C.7). Numbers only,
+# never a clause's words (core.37): the statement is in agentplot/blueprints,
+# and a clause it adds, removes or renumbers is changed here in the change
+# that follows it.
+statement = "agentplot/blueprints:design/weir/requirements.md"
+commit = "ae9d782"
+
+[[section]]
+name = "A.1"
+clauses = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+[[section]]
+name = "A.2"
+clauses = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+
+[[section]]
+name = "A.3"
+clauses = [25, 26, 27, 28]
+
+[[section]]
+name = "A.4"
+clauses = [29, 30, 31, 32, 33]
+
+[[section]]
+name = "A.5"
+clauses = [34, 35, 36]
+
+[[section]]
+name = "A.6"
+clauses = [37, 38, 39, 40, 41, 42, 43]
+
+[[section]]
+name = "A.7"
+clauses = [44, 45, 46, 47, 48, 49, 50]
+
+[[section]]
+name = "A.8"
+clauses = [51, 52, 53, 54, 55, 56, 57, 58]
+
+[[section]]
+name = "A.9"
+clauses = [59, 60]
+
+[[section]]
+name = "A.10"
+clauses = [61, 62, 63, 64]
+
+[[section]]
+name = "A.11"
+clauses = [65, 66, 67, 68]
+
+[[section]]
+name = "A.12"
+clauses = [69, 70, 71]
+
+[[section]]
+name = "B.1"
+clauses = [72, 73, 74]
+
+[[section]]
+name = "B.2"
+clauses = [75, "75a", 76, 77]
+
+[[section]]
+name = "B.3"
+clauses = [78, 79, 80]
+
+[[section]]
+name = "B.4"
+clauses = [81, 82]
+
+[[section]]
+name = "B.5"
+clauses = [83, 84, 85]
+
+[[section]]
+name = "B.6"
+clauses = [86, 87]

@@ -17,6 +17,8 @@
 //! hands what it found here to compare. Every function answers from its
 //! arguments alone (core.1).
 
+pub mod clauses;
 pub mod pack;
 
+pub use clauses::{read_index, Clause, Index, Section};
 pub use pack::{Case, Pack, Shape};
