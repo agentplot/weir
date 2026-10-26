@@ -172,16 +172,43 @@ impl InboxAt {
 
     /// The inbox `write` would leave, laid over this tip's files and read
     /// whole by every rule of [`InboxAt::read`], or the write refused
-    /// naming the path. Every operation ends here, and a caller may hand in
-    /// a write formed elsewhere (46; core.24).
+    /// naming the path. A write only adds: it refuses to replace a
+    /// `capture.rec`, `signals.rec` or `item.rec` the tip holds, or to give
+    /// `moves.rec`, a batch's file or `sends.rec` a text that does not begin
+    /// with the tip's and keep each record of it, so it appends after a
+    /// record's end; `brief.md` alone is rewritten (41; core.21). Every
+    /// operation ends here, and a caller may hand in a write formed
+    /// elsewhere (46; core.24, core.26).
     pub fn check(&self, write: &Write) -> Result<InboxAt, Refused> {
-        for path in write.files.keys() {
-            if Place::of(path).is_none() {
+        for (path, text) in &write.files {
+            let Some(place) = Place::of(path) else {
                 return Err(NotTaken::new(
                     path,
                     "lies outside `inbox/`, and a write changes the inbox alone",
                 )
                 .into());
+            };
+            // A path the layout does not place is refused by the read.
+            let (Ok(place), Some(tip)) = (place, self.files.get(path)) else {
+                continue;
+            };
+            match place {
+                Place::Capture(_) | Place::Signals(_) | Place::Item(_) => {
+                    return Err(NotTaken::new(
+                        path,
+                        "is replaced, and a record the tip holds there never changes once written",
+                    )
+                    .into())
+                }
+                Place::Moves | Place::Batch(_) | Place::Sends(_) if !appends(tip, text) => {
+                    return Err(NotTaken::new(
+                        path,
+                        "does not begin with the tip's text at a record's end: the records in it \
+                         never change, and a write appends after them",
+                    )
+                    .into())
+                }
+                _ => {}
             }
         }
         let mut files = self.files().clone();
@@ -700,4 +727,16 @@ fn send_named<'a>(
     let names_it = |record: &&SendRecord| record.target == target && record.sent_at == sent_at;
     sends.iter().filter(|r| r.is_send()).find(names_it)?;
     Some(sends.iter().filter(|r| !r.is_send()).find(names_it))
+}
+
+/// Whether `text` is `tip` with records appended: it begins with the tip's
+/// text, and every record the tip holds reads in it as it was, so the
+/// appended text starts after a record's end. A text recutils cannot read
+/// is the read's to refuse.
+fn appends(tip: &str, text: &str) -> bool {
+    text.starts_with(tip)
+        && match (rec::read(tip), rec::read(text)) {
+            (Ok(before), Ok(after)) => after.starts_with(&before),
+            _ => true,
+        }
 }

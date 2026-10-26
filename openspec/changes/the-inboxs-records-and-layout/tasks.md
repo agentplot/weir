@@ -30,7 +30,7 @@
 
 ## 6. The check every write passes
 
-- [ ] 6.1 `InboxAt::check(&Write)` lays the write over the tip's files, reads the inbox that results, and refuses a write that replaces a `capture.rec`, `signals.rec` or `item.rec` the tip holds or whose `moves.rec`, batch file or `sends.rec` does not begin with the tip's text at a record's end, naming the path; it gives the inbox after the write, and every operation ends with it (41, 46, core.21, core.24, core.26); the spec's scenarios of "A write only adds" and "Every write is checked against the tip it is formed on" pass; proved by `devenv shell -- moon run signals:test`.
+- [x] 6.1 `InboxAt::check(&Write)` lays the write over the tip's files, reads the inbox that results, and refuses a write that replaces a `capture.rec`, `signals.rec` or `item.rec` the tip holds or whose `moves.rec`, batch file or `sends.rec` does not begin with the tip's text at a record's end, naming the path; it gives the inbox after the write, and every operation ends with it (41, 46, core.21, core.24, core.26); the spec's scenarios of "A write only adds" and "Every write is checked against the tip it is formed on" pass; proved by `devenv shell -- moon run signals:test`.
 - [ ] 6.2 Every record of each kind, written by its operation and read back, is as written, every record names its format first, and every `.rec` file every operation's test forms is accepted by `recfix` (40, core.22, core.24); the spec's "Written and read back", "Every record written names its format first" and "Each operation's files" scenarios pass; proved by `devenv shell -- moon run signals:test`.
 
 ## 7. The import operation
