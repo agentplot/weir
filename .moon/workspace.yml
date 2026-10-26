@@ -1,14 +1,17 @@
 # moon runs weir's checks. Each check is tagged with its layer, which a
 # branch's policy will require by tag:
-#   check-fast    format, the README's prose and a new place's first
-#                 commit through the hooks: seconds
-# Each crate becomes a project of its own as it lands; the root holds what
-# spans the tree. A task whose inputs are identical to a run that passed on
-# this host, in any worktree, replays from .moon/cache/outputs (a link into
-# the git common dir, made by devenv.nix) instead of running again.
+#   check-fast    format, the README's prose, a new place's first commit
+#                 through the hooks, the Rust toolchain's pin, and each
+#                 crate's format, lint, typecheck and tests: seconds
+# Each crate is a project of its own, holding its own checks (core.39); the
+# root holds what spans the tree. A task whose inputs are identical to a run
+# that passed on this host, in any worktree, replays from .moon/cache/outputs
+# (a link into the git common dir, made by devenv.nix) instead of running
+# again.
 $schema: 'https://moonrepo.dev/schemas/workspace.json'
 
 projects:
+  capture: 'crates/weir-capture'
   root: '.'
 
 # --affected compares against the merge-base with main.
