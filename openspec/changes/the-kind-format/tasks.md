@@ -28,4 +28,4 @@ this group, the line holds as it is; add only what is missing.
 
 ## 4. The projects this change touches
 
-- [ ] 4.1 Run the checks of the projects this change touches. True when `devenv shell -- moon run root:format root:prose root:toolchain kinds:format kinds:lint kinds:typecheck kinds:test weir:format weir:lint weir:typecheck weir:test` passes.
+- [x] 4.1 Run the checks of the projects this change touches. True when `devenv shell -- moon run root:format root:prose root:toolchain kinds:format kinds:lint kinds:typecheck kinds:test weir:format weir:lint weir:typecheck weir:test` passes.
