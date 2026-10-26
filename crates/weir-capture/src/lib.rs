@@ -20,6 +20,7 @@ pub mod capture;
 pub mod cut;
 pub mod declaration;
 pub mod hash;
+pub mod import;
 pub mod key;
 pub mod line;
 pub mod rec;
