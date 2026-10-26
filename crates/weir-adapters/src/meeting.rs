@@ -2,8 +2,9 @@
 //! `meeting/file/<sha256>` so the same bytes under any name key the same,
 //! the transcript copied whole into the raw place as its raw material, and
 //! no excerpt (62; C.6; core.34). Its event time is the meeting's start
-//! where the file states it, else the folder drop's (62; section 10,
-//! question 4). It prints no cursor and ends with its completion (8, 9).
+//! where the file states it, in its front matter or on its first line,
+//! else the folder drop's (5, 62; C.6). It prints no cursor and ends with
+//! its completion (8, 9).
 
 use std::collections::HashSet;
 use std::fs::File;
@@ -58,8 +59,8 @@ pub fn run(file: &Path, raw_dir: &Path) -> Result<Vec<Line>, String> {
     Ok(lines)
 }
 
-/// The meeting's start where the file states it, kept as written; else
-/// the folder drop's event time.
+/// The meeting's start where the file states it, else the folder drop's
+/// event time (5, 62; C.6).
 fn event_at(file: &Path) -> Result<String, String> {
     let start = stated_start(file).map_err(|error| format!("cannot be read: {error}"))?;
     match start {
@@ -68,33 +69,93 @@ fn event_at(file: &Path) -> Result<String, String> {
     }
 }
 
-/// The `start` of the block the file opens with, a line `---`, lines
-/// `<name>: <value>` and a closing `---`, when it is an RFC 3339 time with
-/// its offset.
+/// The first the file says of: a `start` field, then a `date` field, of
+/// the front matter it opens with, each value the time whole; then a time
+/// that opens its first line not blank after any front matter. Only the
+/// head of the file is read.
 fn stated_start(file: &Path) -> io::Result<Option<String>> {
     let mut reader = BufReader::new(File::open(file)?);
-    let mut line = Vec::new();
-    let mut next = |line: &mut Vec<u8>| -> io::Result<Option<String>> {
-        line.clear();
-        if reader.read_until(b'\n', line)? == 0 {
+    let mut bytes = Vec::new();
+    let mut next = || -> io::Result<Option<String>> {
+        bytes.clear();
+        if reader.read_until(b'\n', &mut bytes)? == 0 {
             return Ok(None);
         }
-        let text = String::from_utf8_lossy(line);
+        let text = String::from_utf8_lossy(&bytes);
         Ok(Some(text.trim_end_matches(['\n', '\r']).to_string()))
     };
-    if next(&mut line)?.as_deref() != Some("---") {
-        return Ok(None);
-    }
-    let mut start: Option<String> = None;
-    while let Some(text) = next(&mut line)? {
-        if text == "---" {
-            return Ok(start.filter(|value| OffsetDateTime::parse(value, &Rfc3339).is_ok()));
+    let mut line = next()?;
+    // The front matter: a first line `---`, lines `<name>: <value>`, and a
+    // closing `---`. A block never closed is none, and its first line,
+    // `---`, states no time.
+    if line.as_deref() == Some("---") {
+        let mut fields: Vec<(String, String)> = Vec::new();
+        loop {
+            match next()? {
+                None => return Ok(None),
+                Some(text) if text == "---" => break,
+                Some(text) => {
+                    if let Some((name, value)) = text.split_once(':') {
+                        fields.push((name.trim().to_string(), value.trim().to_string()));
+                    }
+                }
+            }
         }
-        if let Some(value) = text.strip_prefix("start: ") {
-            start = Some(value.trim().to_string());
+        for name in ["start", "date"] {
+            let stated = fields
+                .iter()
+                .rev()
+                .find(|(field, _)| field == name)
+                .and_then(|(_, value)| stated_time(unquoted(value)));
+            if stated.is_some() {
+                return Ok(stated);
+            }
+        }
+        line = next()?;
+    }
+    while line.as_deref().is_some_and(|text| text.trim().is_empty()) {
+        line = next()?;
+    }
+    Ok(line.as_deref().and_then(opening_time))
+}
+
+/// `value` with one pair of `"` or `'` around it set aside.
+fn unquoted(value: &str) -> &str {
+    for quote in ['"', '\''] {
+        if let Some(inner) = value
+            .strip_prefix(quote)
+            .and_then(|rest| rest.strip_suffix(quote))
+        {
+            return inner;
         }
     }
-    Ok(None)
+    value
+}
+
+/// The time `text` states whole: an RFC 3339 time with its offset, kept as
+/// written, or else a day `YYYY-MM-DD`, as that day's start in UTC as a
+/// name's day is read (5; C.6).
+fn stated_time(text: &str) -> Option<String> {
+    if OffsetDateTime::parse(text, &Rfc3339).is_ok() {
+        return Some(text.to_string());
+    }
+    event_time::day_start(text)
+}
+
+/// The time a line opens with: its first word a time [`stated_time`]
+/// reads, or else its first ten characters a day not followed by a digit.
+fn opening_time(line: &str) -> Option<String> {
+    let line = line.trim_start();
+    let word = line.split_whitespace().next()?;
+    stated_time(word).or_else(|| {
+        let followed_by_digit = line
+            .as_bytes()
+            .get(10)
+            .is_some_and(|byte| byte.is_ascii_digit());
+        line.get(..10)
+            .filter(|_| !followed_by_digit)
+            .and_then(event_time::day_start)
+    })
 }
 
 #[cfg(test)]
@@ -176,15 +237,122 @@ mod tests {
         assert_eq!(the_offer(&lines).event_at, "2026-10-02T14:00:00-04:00");
     }
 
-    #[test]
-    fn a_start_that_is_not_a_time() {
-        let (_dir, path) = file(
-            "2026-10-02-standup.md",
-            b"---\nstart: Tuesday\n---\n\nGood morning.\n",
-        );
+    /// The event time of a run over `bytes` named `name`, last written at
+    /// 2026-10-03T09:15:42Z.
+    fn event_time_of(name: &str, bytes: &[u8]) -> String {
+        let (_dir, path) = file(name, bytes);
+        written_at(&path, "2026-10-03T09:15:42Z");
         let raw = tempfile::tempdir().unwrap();
         let lines = run(&path, raw.path()).unwrap();
-        assert_eq!(the_offer(&lines).event_at, "2026-10-02T00:00:00Z");
+        the_offer(&lines).event_at.clone()
+    }
+
+    #[test]
+    fn a_date_field_and_no_start() {
+        assert_eq!(
+            event_time_of(
+                "call.md",
+                b"---\ntitle: standup\ndate: \"2026-10-02\"\n---\n\nWeekly sync\n"
+            ),
+            "2026-10-02T00:00:00Z"
+        );
+        assert_eq!(
+            event_time_of("call.md", b"---\ndate: '2026-10-02T09:00:00+01:00'\n---\n"),
+            "2026-10-02T09:00:00+01:00"
+        );
+    }
+
+    #[test]
+    fn a_start_before_a_date() {
+        assert_eq!(
+            event_time_of(
+                "call.md",
+                b"---\ndate: 2026-10-01\nstart: 2026-10-02T14:00:00Z\n---\n"
+            ),
+            "2026-10-02T14:00:00Z"
+        );
+    }
+
+    #[test]
+    fn a_start_that_is_not_a_time() {
+        assert_eq!(
+            event_time_of(
+                "2026-10-02-standup.md",
+                b"---\nstart: Tuesday\n---\nWeekly sync\n"
+            ),
+            "2026-10-02T00:00:00Z"
+        );
+        assert_eq!(
+            event_time_of(
+                "call.md",
+                b"---\nstart: Tuesday\ndate: 2026-10-01\n---\nWeekly sync\n"
+            ),
+            "2026-10-01T00:00:00Z"
+        );
+    }
+
+    #[test]
+    fn a_date_that_opens_the_first_line() {
+        assert_eq!(
+            event_time_of("call.txt", b"2026-10-02 Weekly sync\nGood morning.\n"),
+            "2026-10-02T00:00:00Z"
+        );
+        assert_eq!(
+            event_time_of("call.txt", b"\n  \n2026-10-02, Weekly sync\n"),
+            "2026-10-02T00:00:00Z"
+        );
+    }
+
+    #[test]
+    fn a_time_that_opens_the_first_line_after_the_front_matter() {
+        assert_eq!(
+            event_time_of(
+                "call.md",
+                b"---\ntitle: standup\n---\n\n2026-10-02T14:00:00-04:00 Weekly sync\n"
+            ),
+            "2026-10-02T14:00:00-04:00"
+        );
+    }
+
+    #[test]
+    fn a_transcripts_header() {
+        assert_eq!(
+            event_time_of(
+                "2026-10-02-standup.vtt",
+                b"WEBVTT\n\n00:00.000 --> 00:02.000\nGood morning.\n"
+            ),
+            "2026-10-02T00:00:00Z"
+        );
+    }
+
+    #[test]
+    fn a_field_that_only_begins_with_a_day() {
+        assert_eq!(
+            event_time_of(
+                "call.txt",
+                b"---\ndate: 2026-10-02 or so\n---\nWeekly sync\n"
+            ),
+            "2026-10-03T09:15:42Z"
+        );
+    }
+
+    #[test]
+    fn a_line_that_opens_with_no_time() {
+        for bytes in [
+            &b"20261002 Weekly sync\n"[..],
+            &b"2026-10-021 Weekly sync\n"[..],
+            &b"2026-13-02 Weekly sync\n"[..],
+            &b"Weekly sync 2026-10-02\n"[..],
+            &b"\n\n"[..],
+            &b""[..],
+        ] {
+            assert_eq!(
+                event_time_of("call.txt", bytes),
+                "2026-10-03T09:15:42Z",
+                "{}",
+                String::from_utf8_lossy(bytes)
+            );
+        }
     }
 
     #[test]
@@ -194,21 +362,16 @@ mod tests {
             &b"---\nstart: 2026-10-02T14:00:00Z\nno closing line\n"[..],
             &b"---\nstart: 2026-10-02T14:00:00\n---\n"[..],
         ] {
-            let (_dir, path) = file("call.txt", bytes);
-            written_at(&path, "2026-10-03T09:15:42Z");
-            let raw = tempfile::tempdir().unwrap();
-            let lines = run(&path, raw.path()).unwrap();
-            assert_eq!(the_offer(&lines).event_at, "2026-10-03T09:15:42Z");
+            assert_eq!(event_time_of("call.txt", bytes), "2026-10-03T09:15:42Z");
         }
     }
 
     #[test]
     fn a_file_that_says_nothing_of_when() {
-        let (_dir, path) = file("call.txt", b"Good morning.\n");
-        written_at(&path, "2026-10-03T09:15:42Z");
-        let raw = tempfile::tempdir().unwrap();
-        let lines = run(&path, raw.path()).unwrap();
-        assert_eq!(the_offer(&lines).event_at, "2026-10-03T09:15:42Z");
+        assert_eq!(
+            event_time_of("call.txt", b"Weekly sync\nGood morning.\n"),
+            "2026-10-03T09:15:42Z"
+        );
     }
 
     #[test]
