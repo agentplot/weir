@@ -14,3 +14,8 @@
 //! the lock's stale age and the clock are the caller's to hand in. It runs
 //! git and `recfix` for the write it was asked to make, each ended before
 //! the call returns (69; C.3).
+
+mod git;
+pub mod keeper;
+
+pub use keeper::{read, Branch, Failure, Files, Place, Step, Tip, TipError};
