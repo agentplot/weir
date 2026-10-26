@@ -1,0 +1,22 @@
+# A proposed batch is written whole to its own file, its moves naming it,
+# and none of them stands: moves.rec is not written.
+satisfies = [31, 32]
+
+[operation.propose-batch]
+batch = "triage-1"
+by = "curation"
+at = "2026-10-21T08:00:00Z"
+
+[[operation.propose-batch.move]]
+signal = "release/acme/1.0#1"
+word = "join"
+target = "acme-bump"
+by = "curation"
+at = "2026-10-21T08:00:00Z"
+
+[[operation.propose-batch.move]]
+signal = "release/acme/1.0#2"
+word = "drop"
+target = "the shim is not ours to keep"
+by = "curation"
+at = "2026-10-21T08:00:00Z"

@@ -1,0 +1,38 @@
+# A batch one of whose moves meets a standing move, and another of a word
+# not of the six, is refused whole, naming each, and nothing is written.
+satisfies = [32]
+
+[operation.propose-batch]
+batch = "triage-2"
+by = "curation"
+at = "2026-10-21T08:00:00Z"
+
+[[operation.propose-batch.move]]
+signal = "release/acme/1.0#1"
+word = "drop"
+target = "superseded"
+by = "curation"
+at = "2026-10-21T08:00:00Z"
+
+[[operation.propose-batch.move]]
+signal = "release/acme/1.0#2"
+word = "route"
+target = "chore: drop the wrapper"
+by = "curation"
+at = "2026-10-21T08:00:00Z"
+
+[[operation.propose-batch.move]]
+signal = "release/acme/1.0#3"
+word = "defer"
+target = "later"
+by = "curation"
+at = "2026-10-21T08:00:00Z"
+
+[[refused]]
+what = "release/acme/1.0#2"
+reason_holds = "standing move"
+
+[[refused]]
+what = "release/acme/1.0#3"
+field = "move"
+reason_holds = "is `defer`, not one of"

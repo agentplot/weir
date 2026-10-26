@@ -11,6 +11,7 @@ use std::fs;
 use std::path::Path;
 
 use serde::Serialize;
+use serde_json::{Map, Value};
 use time::format_description::well_known::Rfc3339;
 use time::{OffsetDateTime, UtcOffset};
 
@@ -191,7 +192,8 @@ pub struct Refused {
 }
 
 /// What taking reports of a run or an intake (23, 76), which the host
-/// keeps or prints as JSON (C.2: JSON only in flight).
+/// keeps or prints as JSON (C.2: JSON only in flight), as `weir-report/1`
+/// when it prints it last (C.7).
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct Report {
     /// The keys taken, in the order of their lines.
@@ -226,6 +228,212 @@ impl Report {
             None
         };
         self
+    }
+
+    /// The report as a host prints it, last of everything it prints (C.7):
+    /// one line of compact JSON naming [`REPORT_FORMAT`], then the keys
+    /// taken, the count held, each refusal, the listing's count where a
+    /// completion was read, each failure, the cursor kept where one was,
+    /// and whether the run was complete (23, 76; core.22).
+    pub fn to_json(&self) -> String {
+        let written = Written {
+            format: REPORT_FORMAT,
+            taken: &self.taken,
+            held: self.held,
+            refused: &self.refused,
+            listed: self.listed,
+            failed: &self.failed,
+            cursor: self.cursor.as_deref(),
+            complete: self.complete,
+        };
+        serde_json::to_string(&written).expect("a report is always JSON")
+    }
+}
+
+/// The format and major a printed report names (C.7; core.22).
+pub const REPORT_FORMAT: &str = "weir-report/1";
+
+/// A report as [`Report::to_json`] writes it, its fields in this order.
+#[derive(Serialize)]
+struct Written<'a> {
+    format: &'static str,
+    taken: &'a [Key],
+    held: u64,
+    refused: &'a [Refused],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    listed: Option<u64>,
+    failed: &'a [Failure],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cursor: Option<&'a str>,
+    complete: bool,
+}
+
+/// A printed report refused, naming the field where there is one
+/// (`refused[1].line`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ReportError {
+    pub field: Option<String>,
+    pub reason: String,
+}
+
+impl ReportError {
+    fn whole(reason: impl Into<String>) -> ReportError {
+        ReportError {
+            field: None,
+            reason: reason.into(),
+        }
+    }
+
+    fn field(field: impl Into<String>, reason: impl Into<String>) -> ReportError {
+        ReportError {
+            field: Some(field.into()),
+            reason: reason.into(),
+        }
+    }
+}
+
+impl fmt::Display for ReportError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.field {
+            Some(field) => write!(f, "`{field}` {}", self.reason),
+            None => f.write_str(&self.reason),
+        }
+    }
+}
+
+impl std::error::Error for ReportError {}
+
+/// The report `text` holds, a `weir-report/1` object as [`Report::to_json`]
+/// writes it, read back into the report it was written from: the cursor
+/// kept is read as the run's last cursor too, all a report holds of it.
+/// An object naming another format, lacking a field, or holding one out
+/// of its shape, is refused naming the field (core.22); a field the format
+/// does not name is ignored.
+pub fn read_report(text: &str) -> Result<Report, ReportError> {
+    let value: Value = serde_json::from_str(text)
+        .map_err(|error| ReportError::whole(format!("the report is not JSON: {error}")))?;
+    let Value::Object(object) = value else {
+        return Err(ReportError::whole("the report is not a JSON object"));
+    };
+    match required(&object, "format", "format")? {
+        Value::String(format) if format == REPORT_FORMAT => {}
+        Value::String(format) => {
+            return Err(ReportError::field(
+                "format",
+                format!("is `{format}`, not `{REPORT_FORMAT}`"),
+            ))
+        }
+        _ => return Err(ReportError::field("format", "is not a string")),
+    }
+    let taken = list(&object, "taken")?
+        .iter()
+        .enumerate()
+        .map(|(n, value)| {
+            let path = format!("taken[{n}]");
+            let text = value
+                .as_str()
+                .ok_or_else(|| ReportError::field(&path, "is not a key"))?;
+            Key::parse(text)
+                .map_err(|error| ReportError::field(&path, format!("is `{text}`: {error}")))
+        })
+        .collect::<Result<Vec<Key>, ReportError>>()?;
+    let held = count(required(&object, "held", "held")?, "held")?;
+    let refused = list(&object, "refused")?
+        .iter()
+        .enumerate()
+        .map(|(n, value)| {
+            let path = format!("refused[{n}]");
+            let refusal = entry(value, &path)?;
+            let line_path = format!("{path}.line");
+            let line = count(required(refusal, "line", &line_path)?, &line_path)?;
+            let line = usize::try_from(line)
+                .ok()
+                .filter(|line| *line > 0)
+                .ok_or_else(|| ReportError::field(&line_path, "is not a line's number, from 1"))?;
+            Ok(Refused {
+                line,
+                key: optional_string(refusal, "key", &format!("{path}.key"))?,
+                reason: string(refusal, "reason", &format!("{path}.reason"))?,
+            })
+        })
+        .collect::<Result<Vec<Refused>, ReportError>>()?;
+    let listed = match object.get("listed") {
+        None | Some(Value::Null) => None,
+        Some(value) => Some(count(value, "listed")?),
+    };
+    let failed = list(&object, "failed")?
+        .iter()
+        .enumerate()
+        .map(|(n, value)| {
+            let path = format!("failed[{n}]");
+            let failure = entry(value, &path)?;
+            Ok(Failure {
+                what: string(failure, "what", &format!("{path}.what"))?,
+                why: string(failure, "why", &format!("{path}.why"))?,
+            })
+        })
+        .collect::<Result<Vec<Failure>, ReportError>>()?;
+    let cursor = optional_string(&object, "cursor", "cursor")?;
+    let complete = match required(&object, "complete", "complete")? {
+        Value::Bool(complete) => *complete,
+        _ => return Err(ReportError::field("complete", "is not true or false")),
+    };
+    Ok(Report {
+        taken,
+        held,
+        refused,
+        listed,
+        failed,
+        last_cursor: cursor.clone(),
+        complete,
+        cursor,
+    })
+}
+
+fn required<'a>(
+    object: &'a Map<String, Value>,
+    name: &str,
+    path: &str,
+) -> Result<&'a Value, ReportError> {
+    match object.get(name) {
+        None | Some(Value::Null) => Err(ReportError::field(path, "is missing")),
+        Some(value) => Ok(value),
+    }
+}
+
+fn list<'a>(object: &'a Map<String, Value>, name: &str) -> Result<&'a [Value], ReportError> {
+    match required(object, name, name)? {
+        Value::Array(items) => Ok(items),
+        _ => Err(ReportError::field(name, "is not a list")),
+    }
+}
+
+fn entry<'a>(value: &'a Value, path: &str) -> Result<&'a Map<String, Value>, ReportError> {
+    match value {
+        Value::Object(object) => Ok(object),
+        _ => Err(ReportError::field(path, "is not an object")),
+    }
+}
+
+fn count(value: &Value, path: &str) -> Result<u64, ReportError> {
+    value
+        .as_u64()
+        .ok_or_else(|| ReportError::field(path, "is not a count"))
+}
+
+fn string(object: &Map<String, Value>, name: &str, path: &str) -> Result<String, ReportError> {
+    optional_string(object, name, path)?.ok_or_else(|| ReportError::field(path, "is missing"))
+}
+
+fn optional_string(
+    object: &Map<String, Value>,
+    name: &str,
+    path: &str,
+) -> Result<Option<String>, ReportError> {
+    match object.get(name) {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(text)) => Ok(Some(text.clone())),
+        Some(_) => Err(ReportError::field(path, "is not a string")),
     }
 }
 

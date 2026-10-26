@@ -1,0 +1,13 @@
+format: weir-signal/1
+signal: release/acme/1.0#1
+kind: ask
+asserted_by: acme
+assertion: acme 1.0 is released, and the repository pins 0.9.
+subjects: release
+subjects: acme
+argues_with: packages/acme/default.nix
+excerpt: ## acme 1.0
++
++ - the shim fixed
++
+position: release notes

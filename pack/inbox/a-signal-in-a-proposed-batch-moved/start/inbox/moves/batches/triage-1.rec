@@ -1,0 +1,21 @@
+format: weir-batch/1
+batch: triage-1
+proposed_by: curation
+proposed_at: 2026-10-21T08:00:00Z
+
+format: weir-move/1
+signal: release/acme/1.0#1
+move: join
+target: acme-bump
+by: curation
+at: 2026-10-21T08:00:00Z
+batch: triage-1
+
+format: weir-move/1
+signal: release/acme/1.0#2
+move: drop
+target: the shim is not ours to keep
+note: the shim is not ours to keep
+by: curation
+at: 2026-10-21T08:00:00Z
+batch: triage-1

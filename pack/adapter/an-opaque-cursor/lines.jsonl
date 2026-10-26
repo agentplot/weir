@@ -1,0 +1,5 @@
+{"cursor": "2026-10-17T04:30:05Z"}
+{"capture": {"key": "release/acme/1.0", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"cursor": "page=3&since=2026-10-17"}
+{"cursor": "{\"after\": 41, \"etag\": \"W/\\\"x\\\"\"}"}
+{"done": {"listed": 1, "failed": []}}

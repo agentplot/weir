@@ -1,0 +1,7 @@
+{"capture": {"key": "release/acme/1.0", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "captures/x", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "/release/acme", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/../acme", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "items/acme", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"capture": {"key": "release/acme/capture.rec", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"done": {"listed": 6, "failed": []}}

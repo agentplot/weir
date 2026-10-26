@@ -1,0 +1,10 @@
+# An item's brief is rewritten in place, the one record that is.
+satisfies = [36, 41]
+
+[operation.write-brief]
+item = "acme-bump"
+text = """
+# Bump acme to 1.1
+
+The shim is back behind a flag; 1.1 replaces the pin.
+"""

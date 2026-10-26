@@ -1,0 +1,26 @@
+# Lines that are none of an offer, a cursor and a completion, or more than
+# one, each breaking 1, and the good lines around them checked all the
+# same (10).
+satisfies = [1, 10]
+exited_ok = true
+passes = false
+
+[[breach]]
+line = 2
+clause = 1
+reason_holds = "more than one of `capture`, `cursor` and `done`"
+
+[[breach]]
+line = 3
+clause = 1
+reason_holds = "none of `capture`, `cursor` and `done`"
+
+[[breach]]
+line = 4
+clause = 1
+reason_holds = "not JSON"
+
+[[breach]]
+line = 5
+clause = 1
+reason_holds = "an import line is read by a host's import operation"

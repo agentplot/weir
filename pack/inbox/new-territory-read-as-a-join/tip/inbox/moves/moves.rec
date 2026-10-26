@@ -1,0 +1,7 @@
+format: weir-move/1
+signal: release/acme/0.8#1
+move: join
+target: acme-pins
+note: a territory of its own
+by: curation
+at: 2026-08-02T08:00:00Z

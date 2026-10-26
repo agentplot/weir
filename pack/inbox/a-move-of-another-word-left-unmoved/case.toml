@@ -1,0 +1,8 @@
+# An imported move of a word not of the six is not taken, and its signal
+# arrives unmoved.
+satisfies = [39]
+
+[operation.import]
+lines = "import.jsonl"
+machine = "deneb"
+imported_at = "2026-10-25T11:30:00+02:00"

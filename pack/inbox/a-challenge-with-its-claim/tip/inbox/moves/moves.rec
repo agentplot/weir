@@ -1,0 +1,6 @@
+format: weir-move/1
+signal: release/acme/1.0#2
+move: challenge
+target: the shim is still needed by the old deploys
+by: the operator
+at: 2026-10-21T09:00:00Z

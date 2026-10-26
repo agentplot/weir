@@ -1,0 +1,9 @@
+format: weir-capture/1
+key: deploy/acme/prod-61
+source: deploy
+event_at: 2026-10-26T09:00:00Z
+title: prod 61
+came_in: intake
+machine: <this machine>
+taken_at: <when it was taken>
+unread: yes

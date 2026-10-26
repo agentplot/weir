@@ -1,0 +1,10 @@
+# While a batch is proposed its signals stay unmoved: a move of one of them
+# is taken.
+satisfies = [32]
+
+[operation.move]
+signal = "release/acme/1.0#1"
+word = "route"
+target = "chore: bump acme"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"

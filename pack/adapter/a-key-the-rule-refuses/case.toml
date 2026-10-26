@@ -1,0 +1,31 @@
+# Keys that name something in an inbox other than their own capture, each
+# breaking 4: under `captures`, from `/`, through `..`, under `items`, and
+# a segment where a file of the layout lies.
+satisfies = [4]
+exited_ok = true
+passes = false
+
+[[breach]]
+line = 2
+clause = 4
+reason_holds = "captures"
+
+[[breach]]
+line = 3
+clause = 4
+reason_holds = "never starts with `/`"
+
+[[breach]]
+line = 4
+clause = 4
+reason_holds = "`..` segment"
+
+[[breach]]
+line = 5
+clause = 4
+reason_holds = "`items`"
+
+[[breach]]
+line = 6
+clause = 4
+reason_holds = "`capture.rec`"

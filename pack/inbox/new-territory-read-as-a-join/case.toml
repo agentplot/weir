@@ -1,0 +1,8 @@
+# An imported move of the one word read as a join, new-territory, is written
+# as a join into a proposed item named for its target, its note kept.
+satisfies = [39]
+
+[operation.import]
+lines = "import.jsonl"
+machine = "deneb"
+imported_at = "2026-10-25T11:30:00+02:00"

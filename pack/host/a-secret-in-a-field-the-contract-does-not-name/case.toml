@@ -1,0 +1,10 @@
+# An offer carrying a field the contract does not name, holding a
+# secret's value: the host reads no field the contract does not name, so
+# the value reaches no record (2, 13, 71; core.3, core.6).
+satisfies = [2, 13, 71]
+limit = 8192
+
+[[step]]
+intake = "lines.jsonl"
+taken = ["deploy/acme/prod-61"]
+held = 0

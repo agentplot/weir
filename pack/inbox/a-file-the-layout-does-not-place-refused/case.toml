@@ -1,0 +1,14 @@
+# A tip holding a file the layout does not place, raw notes beside a
+# capture, is refused whole.
+satisfies = [42, 43]
+
+[operation.move]
+signal = "release/acme/1.0#1"
+word = "drop"
+target = "superseded"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"
+
+[[refused]]
+what = "inbox/captures/release/acme/1.0/notes.md"
+reason_holds = "a capture's folder holds `capture.rec` and `signals.rec` alone"

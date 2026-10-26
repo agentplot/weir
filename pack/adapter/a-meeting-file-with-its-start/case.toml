@@ -1,0 +1,9 @@
+# A meeting file whose front matter states its start: one capture keyed by
+# the file's content, at that start, the transcript its raw material and
+# no own excerpt, and its lines keep the contract (5, 62, 64).
+satisfies = [5, 62, 64]
+adapter = "meeting"
+input = "input/standup.md"
+
+[modified]
+"standup.md" = "2026-10-20T16:12:40Z"

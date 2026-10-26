@@ -1,0 +1,29 @@
+# Import lines written as read (37 to 39, 63, 75a; S8, S9): each capture
+# with the pointer the body gave it, or none, and its signals as its
+# reading, no excerpt looked for and nothing banked; a new-territory move
+# read as a join into a proposed item named for its target, its note kept;
+# a move of another word not taken, its signal arriving unmoved; and a
+# line whose key names a root refused by its line. The same lines
+# imported again write nothing: every capture is held by key.
+satisfies = [22, 37, 38, 39, 63, "75a"]
+limit = 8192
+
+[[step]]
+import = "import.jsonl"
+taken = ["release/acme/0.9", "2026-09-19-standup"]
+held = 0
+
+[[step.refused]]
+line = 3
+key = "moves/x"
+reason_holds = "a key's first segment is never `moves`"
+
+[[step]]
+import = "import.jsonl"
+taken = []
+held = 2
+
+[[step.refused]]
+line = 3
+key = "moves/x"
+reason_holds = "a key's first segment is never `moves`"

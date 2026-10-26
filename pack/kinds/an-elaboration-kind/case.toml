@@ -1,0 +1,26 @@
+# sounding hands flume an elaboration kind (S11): its stages read for
+# whoever runs places, and its elaboration section returned unread beside
+# them, for whoever runs elaborations to read; neither fails on the other's
+# section.
+satisfies = [55, 56]
+declaration = """
+[kinds.writeback]
+lands = true
+
+[[kinds.writeback.stages]]
+name = "write"
+prompt = "prompts/writeback.md"
+deliverables = ["committed:books/conclusion.md"]
+
+[kinds.writeback.elaboration]
+inputs = ["books/outline.md"]
+conclusion = ["what changes"]
+ending = "self-closing"
+transcripts = false
+lands = ["books/", "design/"]
+"""
+
+[expect.kinds.writeback]
+version = 1
+stages = [{ name = "write", end = "committed:books/conclusion.md" }]
+unread = ["elaboration"]

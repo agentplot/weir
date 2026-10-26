@@ -1,0 +1,8 @@
+format: weir-signal/1
+signal: release/acme/0.7#1
+kind: question
+asserted_by: the operator
+assertion: Whether 0.7 keeps the shim.
+subjects: acme
+excerpt: does 0.7 keep the shim
+position: signal 1 of the folder

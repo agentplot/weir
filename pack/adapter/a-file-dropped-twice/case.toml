@@ -1,0 +1,11 @@
+# One file dropped twice into a watched folder, the second time under
+# another name (S14): the folder drop offers it once, keyed by the folder
+# and the file's content, at the first name's last write, and its lines
+# keep the contract (61, 64).
+satisfies = [61, 64]
+adapter = "folder"
+input = "input/drop"
+
+[modified]
+"notes-again.txt" = "2026-10-20T10:00:00Z"
+"notes.txt" = "2026-10-21T08:30:00Z"

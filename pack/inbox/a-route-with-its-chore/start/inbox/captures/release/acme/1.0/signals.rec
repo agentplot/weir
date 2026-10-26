@@ -1,0 +1,27 @@
+format: weir-signal/1
+signal: release/acme/1.0#1
+kind: ask
+asserted_by: acme
+assertion: acme 1.0 is released, and the repository pins 0.9.
+subjects: release
+subjects: acme
+argues_with: packages/acme/default.nix
+excerpt: acme 1.0 is out.
+position: release notes, the first line
+
+format: weir-signal/1
+signal: release/acme/1.0#2
+kind: constraint
+asserted_by: acme
+assertion: acme 1.0 drops the old shim.
+subjects: acme
+excerpt: The old shim is gone.
+position: release notes, under Removed
+
+format: weir-signal/1
+signal: release/acme/1.0#3
+kind: question
+asserted_by: acme
+assertion: Whether the pin is kept for the shim.
+excerpt: Pin 0.9 if you need the shim.
+position: release notes, under Upgrading

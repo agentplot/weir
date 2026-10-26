@@ -1,0 +1,10 @@
+format: weir-capture/1
+key: meeting/file/5f0e2a
+source: meeting
+event_at: 2025-01-15T10:00:00Z
+title: planning.md
+pointer: deneb:/data/inbox/meeting/file/5f0e2a
+came_in: run:meeting
+machine: deneb
+taken_at: 2025-01-15T12:00:00Z
+unread: yes

@@ -1,0 +1,18 @@
+# A capture with a reading takes no second one.
+satisfies = [28]
+
+[operation.reading]
+key = "release/acme/1.0"
+
+[[operation.reading.signal]]
+kind = "ask"
+asserted_by = "acme"
+assertion = "acme 1.0 is out."
+subjects = []
+argues_with = []
+excerpt = "acme 1.0 is out."
+position = "the first line"
+
+[[refused]]
+what = "release/acme/1.0"
+reason_holds = "has a reading, and a capture has at most one"

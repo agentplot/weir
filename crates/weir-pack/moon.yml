@@ -1,0 +1,30 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# weir-pack: the conformance pack. One task per check, each run from the
+# workspace root (core.39). The pack's files are built into the crate, so
+# every file under pack/ is among each task's inputs, beside the capture
+# crate it builds on and the toolchain's (kit:testing.3).
+language: 'rust'
+dependsOn: [capture]
+
+tasks:
+  format:
+    command: 'cargo fmt -p weir-pack --check'
+    inputs: &inputs ['/crates/weir-pack/**/*', '/crates/weir-capture/**/*', '/pack/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  lint:
+    command: 'cargo clippy -p weir-pack --all-targets -- -D warnings'
+    inputs: *inputs
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  typecheck:
+    command: 'cargo check -p weir-pack --all-targets'
+    inputs: *inputs
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  test:
+    command: 'cargo test -p weir-pack'
+    inputs: *inputs
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}

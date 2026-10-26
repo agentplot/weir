@@ -1,0 +1,16 @@
+format: weir-signal/1
+signal: release/acme/1.1#1
+kind: ask
+asserted_by: acme
+assertion: acme 1.1 brings the shim back.
+subjects: acme
+excerpt: The shim is back, behind a flag.
+position: the notes, the first item
+
+format: weir-signal/1
+signal: release/acme/1.1#2
+kind: constraint
+asserted_by: acme
+assertion: Keeping the old behaviour means pinning 1.0.
+excerpt: Pin 1.0 to keep the old behaviour.
+position: the notes, the second item

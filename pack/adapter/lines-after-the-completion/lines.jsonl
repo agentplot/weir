@@ -1,0 +1,5 @@
+{"capture": {"key": "release/acme/1.0", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"done": {"listed": 2, "failed": [{"what": "github:acme/beta", "why": ""}]}}
+{"capture": {"key": "release/acme/0.9", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"done": {"listed": 2, "failed": []}}
+{"done": {"listed": 2, "failed": [{"what": "github:acme/beta"}]}}

@@ -1,0 +1,15 @@
+# A record that names no format is no record the inbox reads, and the
+# inbox that holds it is refused.
+satisfies = [40]
+
+[operation.move]
+signal = "release/acme/1.0#1"
+word = "drop"
+target = "superseded"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"
+
+[[refused]]
+what = "inbox/captures/release/acme/1.0/capture.rec"
+field = "format"
+reason_holds = "is missing"

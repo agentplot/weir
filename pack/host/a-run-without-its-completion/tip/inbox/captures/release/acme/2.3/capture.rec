@@ -1,0 +1,8 @@
+format: weir-capture/1
+key: release/acme/2.3
+source: release
+event_at: 2026-10-10T14:02:11Z
+came_in: run:a-run-without-its-completion
+machine: <this machine>
+taken_at: <when it was taken>
+unread: yes

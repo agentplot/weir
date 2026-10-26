@@ -1,0 +1,10 @@
+format: weir-capture/1
+key: release/acme/1.0
+source: release
+event_at: 2026-10-10T14:02:11Z
+title: acme 1.0
+pointer: deneb:/data/inbox/release/acme/1.0
+came_in: run:releases
+machine: deneb
+taken_at: 2026-10-17T04:30:05Z
+unread: yes

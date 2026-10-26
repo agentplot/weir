@@ -1,0 +1,15 @@
+format: weir-move/1
+signal: release/acme/0.9#1
+move: join
+target: acme-pins
+note: kept with the pins
+by: curation
+at: 2026-09-20T08:00:00Z
+
+format: weir-move/1
+signal: release/acme/0.9#2
+move: drop
+target: said before
+note: said before
+by: curation
+at: 2026-09-20T08:00:00Z

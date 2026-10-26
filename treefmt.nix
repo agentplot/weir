@@ -17,6 +17,18 @@ _: {
     ".gitignore"
     ".vale.ini"
     "styles/config/vocabularies/**"
+    # The pack's cases compare these byte for byte, so no formatter may
+    # rewrite them: their lines and import lines, the records a case starts
+    # from and the records it expects, the raw material a case hands a
+    # host, and the input a case hands a built-in adapter. A case's
+    # case.toml stays taplo's, and its adapter script shellcheck's and
+    # shfmt's.
+    "pack/**/*.jsonl"
+    "pack/**/*.rec"
+    "pack/**/start/**"
+    "pack/**/tip/**"
+    "pack/**/raw/**"
+    "pack/**/input/**"
     # Build outputs and caches.
     "target/**"
     ".devenv/**"

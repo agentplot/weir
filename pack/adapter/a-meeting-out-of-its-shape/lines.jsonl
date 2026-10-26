@@ -1,0 +1,3 @@
+{"capture": {"key": "meeting/m-1", "source": "meeting", "event_at": "2026-10-20T15:00:00-04:00", "title": "Standup", "raw": ["m-1/transcript.json", "m-1/transcript.txt"]}}
+{"capture": {"key": "meeting/wispr/m-2", "source": "wispr", "event_at": "2026-10-21T13:30:00Z", "title": "Planning", "raw": ["m-2/transcript.txt"], "excerpt": {"text": "the release is out", "kind": "ask", "asserted_by": "acme", "assertion": "acme 1.0 is released; the repository pins 0.9.", "subjects": ["release", "acme"], "argues_with": ["packages/acme/default.nix"], "position": "release notes"}}}
+{"done": {"listed": 3, "failed": []}}

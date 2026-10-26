@@ -1,0 +1,45 @@
+# Each of the six forms a deliverable takes, spelled the one way the
+# format spells it (54).
+satisfies = [54]
+declaration = """
+[[kinds.all.stages]]
+name = "one"
+prompt = "p.md"
+deliverables = ["commits"]
+
+[[kinds.all.stages]]
+name = "two"
+prompt = "p.md"
+deliverables = ["change"]
+
+[[kinds.all.stages]]
+name = "three"
+prompt = "p.md"
+deliverables = ["tasks"]
+
+[[kinds.all.stages]]
+name = "four"
+prompt = "p.md"
+deliverables = ["archived"]
+
+[[kinds.all.stages]]
+name = "five"
+prompt = "p.md"
+deliverables = ["report:reports/five.md"]
+
+[[kinds.all.stages]]
+name = "six"
+prompt = "p.md"
+deliverables = ["committed:reports/six.md"]
+"""
+
+[expect.kinds.all]
+version = 1
+stages = [
+  { name = "one", end = "commits" },
+  { name = "two", end = "change" },
+  { name = "three", end = "tasks" },
+  { name = "four", end = "archived" },
+  { name = "five", end = "report:reports/five.md" },
+  { name = "six", end = "committed:reports/six.md" },
+]

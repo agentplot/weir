@@ -1,0 +1,14 @@
+# A move of a word not of the six is refused, naming it.
+satisfies = [30]
+
+[operation.move]
+signal = "release/acme/1.0#1"
+word = "defer"
+target = "next quarter"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"
+
+[[refused]]
+what = "release/acme/1.0#1"
+field = "move"
+reason_holds = "is `defer`, not one of"

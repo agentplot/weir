@@ -1,0 +1,8 @@
+# What became of a send is added beside it, the send unchanged.
+satisfies = [36, 41]
+
+[operation.settle-send]
+item = "acme-bump"
+target = "agentplot/weir change"
+sent_at = "2026-10-22T10:00:00Z"
+outcome = "landing agentplot/weir#14"

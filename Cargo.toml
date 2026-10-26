@@ -12,8 +12,9 @@
 #   crates/weir-kinds      the kind format, with an elaboration kind's
 #                          section: landed
 #   crates/weir-cadence    five-field cron, caught up once: landed
-#   the conformance pack   contract lines in, the records a host must
-#                          write from them out
+#   crates/weir-pack       the conformance pack: its cases built in, its
+#                          check, the adapter and meeting checks and the
+#                          host cases' comparisons: landed
 #   crates/weir            the `weir` command line, a caller of the
 #                          crates: landed, with `check`, `capture` and `import`
 [workspace]
@@ -26,6 +27,7 @@ members = [
   "crates/weir-branch",
   "crates/weir-adapters",
   "crates/weir-signals",
+  "crates/weir-pack",
 ]
 
 [workspace.package]

@@ -1,0 +1,10 @@
+format: weir-capture/1
+key: release/acme/0.8
+source: release
+event_at: 2026-08-01T12:00:00Z
+title: acme 0.8
+pointer: mac-studio:~/.local/state/body/release/acme/0.8
+came_in: import:partition-x
+machine: deneb
+taken_at: 2026-10-25T09:30:00Z
+unread: no

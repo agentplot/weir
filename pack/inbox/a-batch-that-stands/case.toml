@@ -1,0 +1,10 @@
+# A batch that stands has its decision added to its file and its moves
+# appended to moves.rec in one write, each naming the batch, its join
+# making its item.
+satisfies = [31, 32, 34]
+
+[operation.decide-batch]
+batch = "triage-1"
+stands = true
+by = "the operator"
+at = "2026-10-21T12:00:00Z"

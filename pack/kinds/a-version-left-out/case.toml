@@ -1,0 +1,12 @@
+# A kind whose version is left out reads as the first (57).
+satisfies = [57]
+declaration = """
+[[kinds.fix.stages]]
+name = "code"
+prompt = "prompts/fix-code.md"
+deliverables = ["commits"]
+"""
+
+[expect.kinds.fix]
+version = 1
+stages = [{ name = "code", end = "commits" }]

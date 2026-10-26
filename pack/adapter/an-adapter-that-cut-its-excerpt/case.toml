@@ -1,0 +1,10 @@
+# An own excerpt ending with the line a host adds when it cuts one: an
+# adapter never cuts an excerpt (12, 20).
+satisfies = [12]
+exited_ok = true
+passes = false
+
+[[breach]]
+line = 1
+clause = 12
+reason_holds = "an adapter never cuts an excerpt"

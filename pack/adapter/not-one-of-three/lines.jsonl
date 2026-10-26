@@ -1,0 +1,6 @@
+{"capture": {"key": "release/acme/1.0", "source": "release", "event_at": "2026-10-10T14:02:11Z"}}
+{"cursor": "c1", "done": {"listed": 1, "failed": []}}
+{"note": "listing page 3"}
+listing page 3
+{"import": {"capture": {"key": "release/acme/0.9", "source": "release", "event_at": "2026-09-18T09:00:00Z"}, "came_in": "import:a-body", "signals": [], "moves": []}}
+{"done": {"listed": 1, "failed": []}}

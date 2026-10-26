@@ -1,0 +1,12 @@
+# An item's name is one no item of its inbox has had.
+satisfies = [35]
+
+[operation.propose-item]
+item = "acme-bump"
+conclusion = "design/acme.md: bump it"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"
+
+[[refused]]
+what = "acme-bump"
+reason_holds = "is a name an item of the inbox has had"

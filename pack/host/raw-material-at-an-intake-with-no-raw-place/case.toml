@@ -1,0 +1,15 @@
+# An offer at the intake naming raw material, with no raw place handed: it
+# is refused, nothing of it banked or written, and the offer beside it is
+# taken (6, 15, 18).
+satisfies = [6, 15, 18]
+limit = 8192
+
+[[step]]
+intake = "lines.jsonl"
+taken = ["deploy/acme/prod-52"]
+held = 0
+
+[[step.refused]]
+line = 1
+key = "deploy/acme/prod-51"
+reason_holds = "no raw place was given"
