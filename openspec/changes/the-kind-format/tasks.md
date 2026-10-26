@@ -23,4 +23,4 @@
 
 ## 4. The projects this change touches
 
-- [ ] 4.1 Run the checks of the projects this change touches. True when `devenv shell -- moon run root:format root:prose root:toolchain weir-kinds:format weir-kinds:lint weir-kinds:typecheck weir-kinds:test weir:format weir:lint weir:typecheck weir:test` passes.
+- [x] 4.1 Run the checks of the projects this change touches. True when `devenv shell -- moon run root:format root:prose root:toolchain weir-kinds:format weir-kinds:lint weir-kinds:typecheck weir-kinds:test weir:format weir:lint weir:typecheck weir:test` passes.
