@@ -331,3 +331,176 @@ fn the_machine_is_one_a_pointer_can_name() {
             .is_err());
     }
 }
+
+/// The moves `report` did not take, each as its signal, word and field.
+fn not_moved(report: &weir_signals::ImportReport) -> Vec<(String, String, Option<String>)> {
+    report
+        .not_moved
+        .iter()
+        .map(|m| (m.signal.to_string(), m.word.clone(), m.field.clone()))
+        .collect()
+}
+
+#[test]
+fn a_word_not_of_the_six() {
+    // S9, with a word a body of another tool's might carry.
+    let mut capture = line("release/x", 2);
+    capture.moves = vec![
+        a_move(1, "promote", "the roadmap"),
+        a_move(2, "new-territory", "pin-mise"),
+    ];
+    let Imported { write, report } = import(&empty(), &[capture]);
+    assert_eq!(
+        not_moved(&report),
+        [
+            ("release/x#1".into(), "promote".into(), Some("move".into())),
+            (
+                "release/x#2".into(),
+                "new-territory".into(),
+                Some("move".into())
+            ),
+        ]
+    );
+    assert!(
+        report.not_moved[0].why.contains("not one of drop"),
+        "{report:?}"
+    );
+    let write = write.unwrap();
+    assert!(!write.files.contains_key("inbox/moves/moves.rec"));
+    let inbox = after(&empty(), &write);
+    assert_eq!(inbox.standing(&signal("release/x#1")), None);
+    assert_eq!(inbox.standing(&signal("release/x#2")), None);
+    assert_eq!(inbox.unmoved().len(), 2);
+}
+
+#[test]
+fn a_join_with_no_item() {
+    let mut capture = line("release/x", 2);
+    capture.moves = vec![a_move(1, "join", ""), a_move(2, "drop", "")];
+    let report = import(&empty(), &[capture]).report;
+    assert_eq!(
+        not_moved(&report),
+        [
+            ("release/x#1".into(), "join".into(), Some("target".into())),
+            ("release/x#2".into(), "drop".into(), Some("target".into())),
+        ]
+    );
+    assert!(report.not_moved[0]
+        .why
+        .contains("the item it makes or grows"));
+}
+
+#[test]
+fn an_imported_move_is_checked_as_any_move() {
+    // An inbox holding a sent item and a proposed one.
+    let inbox = imported(
+        &empty(),
+        &[{
+            let mut c = line("release/held", 2);
+            c.moves = vec![
+                a_move(1, "join", "sent-item"),
+                a_move(2, "join", "proposed-item"),
+            ];
+            c
+        }],
+    );
+    let inbox = after(
+        &inbox,
+        &inbox.write_brief("sent-item", "the brief\n").unwrap(),
+    );
+    let inbox = after(
+        &inbox,
+        &inbox
+            .send(&["sent-item"], "agentplot/weir fix", AT)
+            .unwrap(),
+    );
+    let mut capture = line("release/x", 6);
+    capture.moves = vec![
+        // A signal its capture lacks.
+        a_move(7, "drop", "noise"),
+        // A second move for one signal.
+        a_move(1, "drop", "noise"),
+        a_move(1, "route", "an ask"),
+        // A join naming a sent item, an attach naming one not sent.
+        a_move(2, "join", "sent-item"),
+        a_move(3, "attach", "proposed-item"),
+        // An attach to the sent item and a join growing the proposed one.
+        a_move(4, "attach", "sent-item"),
+        a_move(5, "join", "proposed-item"),
+        // A move naming no time.
+        ImportedMove {
+            at: "yesterday".into(),
+            ..a_move(6, "drop", "noise")
+        },
+    ];
+    let Imported { write, report } = import(&inbox, &[capture]);
+    assert_eq!(
+        not_moved(&report),
+        [
+            ("release/x#7".into(), "drop".into(), Some("signal".into())),
+            ("release/x#1".into(), "route".into(), None),
+            ("release/x#2".into(), "join".into(), Some("target".into())),
+            ("release/x#3".into(), "attach".into(), Some("target".into())),
+            ("release/x#6".into(), "drop".into(), Some("at".into())),
+        ]
+    );
+    assert!(
+        report.not_moved[1].why.contains("standing move"),
+        "{report:?}"
+    );
+    assert!(
+        report.not_moved[2].why.contains("which is sent"),
+        "{report:?}"
+    );
+    assert!(report.not_moved[3].why.contains("not sent"), "{report:?}");
+    let inbox = after(&inbox, &write.unwrap());
+    assert_eq!(
+        inbox.standing(&signal("release/x#1")).unwrap().1.word,
+        Word::Drop
+    );
+    for n in [2, 3, 6] {
+        assert_eq!(inbox.standing(&signal(&format!("release/x#{n}"))), None);
+    }
+    let ids = |name: &str| -> Vec<String> {
+        inbox
+            .item_signals(name)
+            .iter()
+            .map(|id| id.to_string())
+            .collect()
+    };
+    assert_eq!(ids("sent-item"), ["release/held#1", "release/x#4"]);
+    assert_eq!(ids("proposed-item"), ["release/held#2", "release/x#5"]);
+}
+
+#[test]
+fn two_joins_into_one_item() {
+    let mut first = line("release/a", 1);
+    first.moves = vec![a_move(1, "join", "pin-mise")];
+    let mut second = line("meeting/file/ab12", 1);
+    second.moves = vec![ImportedMove {
+        by: "curation".into(),
+        ..a_move(1, "join", "pin-mise")
+    }];
+    let Imported { write, report } = import(&empty(), &[first, second]);
+    assert!(report.not_moved.is_empty(), "{report:?}");
+    let write = write.unwrap();
+    let items: Vec<&String> = write
+        .files
+        .keys()
+        .filter(|path| path.starts_with("inbox/items/"))
+        .collect();
+    assert_eq!(items, ["inbox/items/pin-mise/item.rec"]);
+    let inbox = after(&empty(), &write);
+    let item = inbox.item("pin-mise").unwrap();
+    assert_eq!(item.item.made_by, weir_signals::MadeBy::Join);
+    assert_eq!(item.item.named_by, "the operator");
+    assert_eq!(item.item.named_at, AT);
+    assert_eq!(item.brief, None);
+    assert!(!item.is_sent());
+    let ids: Vec<String> = inbox
+        .item_signals("pin-mise")
+        .iter()
+        .map(|id| id.to_string())
+        .collect();
+    assert_eq!(ids, ["meeting/file/ab12#1", "release/a#1"]);
+}
