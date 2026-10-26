@@ -1,0 +1,23 @@
+# A kind with every field the format names (C.4).
+[kinds.bump]
+version = 2
+branch = "bump"
+starts_unready = false
+lands = true
+
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits"]
+agents = [{ program = "claude", model = "opus" }]
+quiet = "45m"
+
+[[kinds.bump.stages]]
+name = "review"
+prompt = "prompts/bump-review.md"
+conversation = true
+wait = true
+agents = [{ beside = "operator" }]
+quiet = "1h30m"
+on_fail = "code"
+max_send_backs = 3
