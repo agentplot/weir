@@ -1288,6 +1288,9 @@ name = "weir"
 version = "0.0.0"
 dependencies = [
  "clap",
+ "tempfile",
+ "weir-adapters",
+ "weir-capture",
  "weir-kinds",
 ]
 

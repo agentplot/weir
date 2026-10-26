@@ -3,7 +3,7 @@ name = "weir"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "The family's weir command line: weir check reads a declaration of kinds."
+description = "The family's weir command line: weir check reads a declaration of kinds, and weir capture and weir import signals run the built-in adapters and the signals-folder import (statement section 9; C.6)."
 
 [[bin]]
 name = "weir"
@@ -12,3 +12,11 @@ path = "src/main.rs"
 [dependencies]
 weir-kinds = { path = "../weir-kinds" }
 clap.workspace = true
+weir-capture = { path = "../weir-capture" }
+weir-adapters = { path = "../weir-adapters" }
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true
