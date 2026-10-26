@@ -17,6 +17,7 @@
 //! and every write is one the caller's inbox or bank makes (core.1).
 
 pub mod capture;
+pub mod cut;
 pub mod declaration;
 pub mod hash;
 pub mod key;
@@ -27,6 +28,7 @@ pub mod rec;
 mod testing;
 
 pub use capture::{CameIn, Capture};
+pub use cut::{closing_line, cut, Cut, LeftOut, SMALLEST_LIMIT};
 pub use declaration::{
     check_config, read_declarations, ConfigError, ConfigFailure, Declaration, DeclarationError,
     Invocation,
