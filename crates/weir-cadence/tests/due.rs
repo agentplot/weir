@@ -1,11 +1,13 @@
-//! Whether a thing is due (59), caught up once (60), and on daylight-saving
-//! days (C.5).
+//! Whether a thing is due (59), caught up once (60), on daylight-saving
+//! days (C.5), and through the clock (83 to 85).
 
 mod common;
 
+use std::cell::RefCell;
+
 use common::{instant, local, schedule, zone};
 use jiff::{Timestamp, Zoned};
-use weir_cadence::is_due;
+use weir_cadence::{due, is_due, Clock};
 
 const NEW_YORK: &str = "America/New_York";
 
@@ -148,4 +150,58 @@ fn a_time_the_clock_repeats() {
     // And not again on the second pass's 01:30.
     let second_half_hour = instant("2026-11-01T01:30-05:00").to_zoned(new_york);
     assert!(!is_due(&daily, Some(first_pass), &second_half_hour));
+}
+
+/// What a clock was asked.
+#[derive(Debug, PartialEq, Eq)]
+enum Asked {
+    Now,
+    LastRun(String),
+}
+
+/// A clock that answers from fixed values and records what it is asked.
+struct Recording {
+    now: Zoned,
+    last_run: Option<Timestamp>,
+    asked: RefCell<Vec<Asked>>,
+}
+
+impl Clock for Recording {
+    type Thing = str;
+
+    fn now(&self) -> Zoned {
+        self.asked.borrow_mut().push(Asked::Now);
+        self.now.clone()
+    }
+
+    fn last_run(&self, thing: &str) -> Option<Timestamp> {
+        self.asked
+            .borrow_mut()
+            .push(Asked::LastRun(thing.to_string()));
+        self.last_run
+    }
+}
+
+#[test]
+fn the_clock_is_asked_for_two_things() {
+    let hourly = schedule("0 * * * *");
+    for (last_run, now) in [
+        (None, "2026-11-03T09:20"),
+        (ran("2026-11-03T06:00"), "2026-11-03T09:20"),
+        (ran("2026-11-03T09:20"), "2026-11-03T09:21"),
+    ] {
+        let clock = Recording {
+            now: new_york(now),
+            last_run,
+            asked: RefCell::new(Vec::new()),
+        };
+        let answer = due(&hourly, "the backup", &clock);
+        assert_eq!(answer, is_due(&hourly, last_run, &clock.now));
+        let mut asked = clock.asked.into_inner();
+        asked.sort_by_key(|asked| matches!(asked, Asked::LastRun(_)));
+        assert_eq!(
+            asked,
+            vec![Asked::Now, Asked::LastRun("the backup".to_string())]
+        );
+    }
 }

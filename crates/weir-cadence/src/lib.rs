@@ -25,3 +25,30 @@ pub fn is_due(schedule: &Schedule, last_run: Option<Timestamp>, now: &Zoned) -> 
         .first_after(last_run, now.time_zone())
         .is_some_and(|named| named.timestamp() <= now.timestamp())
 }
+
+/// The clock (B.5): now (83) and a thing's last run (84), the two things
+/// cadence asks of it (85).
+pub trait Clock {
+    /// What the caller schedules, as the caller names it.
+    type Thing: ?Sized;
+
+    /// Now (83), in the time zone a schedule is read in.
+    fn now(&self) -> Zoned;
+
+    /// When `thing` last ran, or none when it never has (84).
+    fn last_run(&self, thing: &Self::Thing) -> Option<Timestamp>;
+}
+
+/// Whether `thing` is due by `schedule`, asking `clock` for now and the
+/// thing's last run once each (85), and answering as [`is_due`].
+pub fn due<C: Clock>(schedule: &Schedule, thing: &C::Thing, clock: &C) -> bool {
+    let now = clock.now();
+    let last_run = clock.last_run(thing);
+    is_due(schedule, last_run, &now)
+}
+
+/// The machine's now (83): the system clock, in the machine's local time
+/// zone (C.5).
+pub fn machine_now() -> Zoned {
+    Zoned::now()
+}
