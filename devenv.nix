@@ -196,4 +196,44 @@ in
       fi
     done
   '';
+
+  # A new place's first commit, made before anyone enters its shell: in an
+  # empty repository holding the files the hooks read, the script `devenv
+  # print-dev-env` prints for this checkout is sourced, as a place is made
+  # ready, and commits are made through prek's hooks installed as above. The
+  # hooks find their config: a message convco refuses is refused, and a
+  # conventional one lands.
+  scripts.hooks = {
+    description = "A new place commits through the shared hooks before its shell is entered";
+    exec = ''
+      set -euo pipefail
+      cd "$(git rev-parse --show-toplevel)"
+      tmp="$(mktemp -d)"
+      trap 'rm -rf "$tmp"' EXIT
+      if ! env -i HOME="$HOME" PATH="$PATH" TMPDIR="''${TMPDIR:-/tmp}" \
+        devenv print-dev-env >"$tmp/toolchain" 2>"$tmp/toolchain.log"; then
+        cat "$tmp/toolchain.log" >&2
+        exit 1
+      fi
+      mkdir "$tmp/place"
+      cp devenv.nix treefmt.nix .versionrc "$tmp/place/"
+      cd "$tmp/place"
+      env -i HOME="$HOME" PATH="$PATH" TMPDIR="''${TMPDIR:-/tmp}" \
+        GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 \
+        bash -c '
+          git init -q
+          source "$1" >/dev/null 2>&1
+          set -euo pipefail
+          export PREK_HOME="$2"
+          "$3" install -q -t pre-commit -t commit-msg
+          git add devenv.nix treefmt.nix .versionrc
+          commit() { git -c user.name=weir -c user.email=weir@localhost commit -q -m "$1"; }
+          if commit "update" 2>/dev/null; then
+            echo "hooks: a message convco refuses was committed" >&2
+            exit 1
+          fi
+          commit "chore: a new place commits"
+        ' hooks "$tmp/toolchain" "$tmp/prek" ${lib.getExe config.git-hooks.package}
+    '';
+  };
 }

@@ -17,3 +17,10 @@ tasks:
     inputs: ['/README.md', '/.vale.ini', '/styles/**/*']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
+  # A new place's first commit through the shared hooks, made before anyone
+  # enters its shell (devenv.nix, `hooks`).
+  hooks:
+    command: 'hooks'
+    inputs: ['/devenv.nix', '/devenv.yaml', '/devenv.lock', '/treefmt.nix', '/.versionrc']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
