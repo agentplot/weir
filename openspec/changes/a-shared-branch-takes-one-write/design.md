@@ -29,7 +29,8 @@ design keeps those steps and that count, so one set of cases holds both.
 
 The rules it relies on, all in `docs/architecture/core.md`, the only page
 of `docs/architecture/` (no area page exists, so none is touched): core.1
-(no state; every write one a caller asked for), core.2 (no tool of the
+(no state; every write one a caller asked for; a child run for a write
+ends with the call), core.2 (no tool of the
 family named outside the pack's cases), core.3 (no secret on a command
 line), core.24 (`recfix` before a write lands), core.26 (formed on the tip
 read, checked on the tip it lands on, replayed up to the writer's bound),
@@ -42,13 +43,14 @@ pinned ones). Of the kit standard: kit:testing.1 and kit:testing.3
 (layered tasks declaring their inputs) and kit:testing.5 (proved by the
 checks alone).
 
-**A departure from core.1, named.** core.1 says no crate starts a process.
-This crate runs `git` and `recfix` as child processes, each ended before
-the call that asked for it returns, because C.3 spells the protocol in
-git's commands and `recfix` has no library form, and because 69 admits
-"a write it was asked to make". core.1's details rule out a thread, timer
-or server a crate starts, which this is not, and nothing here outlives
-the call. The rule's wording is named for madswan-design to settle.
+**git and `recfix` as children of the call.** This crate runs `git` and
+`recfix` as child processes for the write its caller asked for, waits on
+each, and returns only once each has ended, so nothing of it outlives the
+call: no daemon, no watcher, no child left running. That is what 69 and
+core.1 admit, a child a crate runs and waits on for a write, git in the
+branch keeper, which is no process of weir's own. C.3 spells the protocol
+in git's commands, and its step 2 names `recfix`, which has no library
+form; `recfix` is run for the same write in the same way.
 
 ## Goals / Non-Goals
 

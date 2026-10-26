@@ -73,7 +73,8 @@ None.
 
 - New crate `crates/weir-branch`, a library depending on `time` and
   `tempfile`, with `toml` and `serde` for its tests; it runs `git` and `recfix`
-  for the write its caller asks for, both from `devenv.nix`. It joins the
+  for the write its caller asks for and waits on each, so neither
+  outlives the call (69; core.1), both from `devenv.nix`. It joins the
   workspace's `members`, with moon project `branch` in
   `.moon/workspace.yml`; `Cargo.toml`'s comment names the branch crate
   landed, and `Cargo.lock` gains it.
