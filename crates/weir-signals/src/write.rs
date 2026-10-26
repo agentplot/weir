@@ -5,7 +5,7 @@
 //! calling the same operation on the inbox read there, so every check is
 //! made again (44; core.26).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 use weir_capture::rec::{self, Record};
@@ -13,8 +13,8 @@ use weir_capture::{CameIn, Key, RawFile, Taken};
 
 use crate::inbox::{Checked, Effect, InboxAt, InboxError, NotMoved};
 use crate::item::{Item, MadeBy};
-use crate::layout::Place;
-use crate::moves::{Move, NewMove};
+use crate::layout::{check_name, Place};
+use crate::moves::{check_time, Decision, Move, NewMove, Proposal};
 use crate::signal::{signals_rec, ReadSignal, Signal, SignalId};
 
 /// The full new text of each file a write adds or replaces, by path from
@@ -332,6 +332,147 @@ impl InboxAt {
                 Place::Item(taken.target.clone()).path(),
                 rec::write(&[joined_item(&taken).to_record()]),
             );
+        }
+        self.check(&write)?;
+        Ok(write)
+    }
+
+    /// The write of a proposed batch: its file alone, holding its proposal
+    /// and its moves, each naming the batch, none of which stands while it
+    /// is proposed (31, 32; core.19). Refused naming the batch when its
+    /// name is not a name or one a batch of the inbox has had, when it
+    /// names no proposer or no time, or holds no move; refused whole,
+    /// naming each move not taken and why, when any is invalid on this tip
+    /// as [`InboxAt::make_move`] says or two name one signal.
+    pub fn propose_batch(
+        &self,
+        batch: &str,
+        by: &str,
+        at: &str,
+        moves: &[NewMove],
+    ) -> Result<Write, Refused> {
+        check_name(batch).map_err(|why| NotTaken::field(batch, "batch", why))?;
+        if self.batches.contains_key(batch) {
+            return Err(NotTaken::new(batch, "is a name a batch of the inbox has had").into());
+        }
+        if by.is_empty() {
+            return Err(NotTaken::field(
+                batch,
+                "proposed_by",
+                "is missing, and a batch names who proposed it",
+            )
+            .into());
+        }
+        check_time(at).map_err(|why| NotTaken::field(batch, "proposed_at", why))?;
+        if moves.is_empty() {
+            return Err(NotTaken::new(
+                batch,
+                "holds no move, and a batch is the moves proposed together",
+            )
+            .into());
+        }
+        let mut taken = Vec::with_capacity(moves.len());
+        let mut not_taken = Vec::new();
+        let mut moved = BTreeSet::new();
+        for new in moves {
+            let proposed = match new.to_move(Some(batch)) {
+                Ok(proposed) => proposed,
+                Err((field, why)) => {
+                    not_taken.push(NotTaken::field(&new.signal, field, why));
+                    continue;
+                }
+            };
+            if !moved.insert(proposed.signal.clone()) {
+                not_taken.push(NotTaken::new(
+                    &proposed.signal,
+                    "is moved twice in the batch, and a signal has at most one standing move",
+                ));
+                continue;
+            }
+            match self.check_move(&proposed, Checked::Formed) {
+                Ok(_) => taken.push(proposed),
+                Err(not) => not_taken.push(not.of(&proposed.signal)),
+            }
+        }
+        if !not_taken.is_empty() {
+            return Err(Refused(not_taken));
+        }
+        let proposal = Proposal {
+            batch: batch.to_string(),
+            proposed_by: by.to_string(),
+            proposed_at: at.to_string(),
+        };
+        let mut records = vec![proposal.to_record()];
+        records.extend(taken.iter().map(Move::to_record));
+        let mut write = Write::new();
+        write.put(Place::Batch(batch.to_string()).path(), rec::write(&records));
+        self.check(&write)?;
+        Ok(write)
+    }
+
+    /// The write of a batch's decision: the decision appended to its file
+    /// and, when it stands, its moves appended to `moves.rec` with the item
+    /// each join naming a new name makes, in one write (32; core.19).
+    /// Refused when the batch is not held or is decided already; refused
+    /// whole, naming each move and why, when standing and any of its moves
+    /// can no longer be taken on this tip.
+    pub fn decide_batch(
+        &self,
+        batch: &str,
+        stands: bool,
+        by: &str,
+        at: &str,
+    ) -> Result<Write, Refused> {
+        let Some(held) = self.batches.get(batch) else {
+            return Err(NotTaken::new(batch, "is no batch the inbox holds").into());
+        };
+        if let Some(decision) = &held.decision {
+            return Err(NotTaken::field(
+                batch,
+                "stands",
+                format!("is decided already: {}", decision.describe()),
+            )
+            .into());
+        }
+        if by.is_empty() {
+            return Err(NotTaken::field(
+                batch,
+                "decided_by",
+                "is missing, and a decision names who decided",
+            )
+            .into());
+        }
+        check_time(at).map_err(|why| NotTaken::field(batch, "decided_at", why))?;
+        let decision = Decision {
+            batch: batch.to_string(),
+            stands,
+            decided_by: by.to_string(),
+            decided_at: at.to_string(),
+        };
+        let mut write = Write::new();
+        let path = Place::Batch(batch.to_string()).path();
+        write.put(&path, self.appended(&path, &[decision.to_record()]));
+        if stands {
+            // The batch's signals are distinct, so no move of it changes
+            // what another's check reads but the items its joins make.
+            let mut made = BTreeSet::new();
+            let mut not_taken = Vec::new();
+            for taken in &held.moves {
+                match self.check_move(taken, Checked::Formed) {
+                    Err(not) => not_taken.push(not.of(&taken.signal)),
+                    Ok(Effect::MakesItem) if made.insert(taken.target.clone()) => write.put(
+                        Place::Item(taken.target.clone()).path(),
+                        rec::write(&[joined_item(taken).to_record()]),
+                    ),
+                    Ok(_) => {}
+                }
+            }
+            if !not_taken.is_empty() {
+                return Err(Refused(not_taken));
+            }
+            let records: Vec<Record> = held.moves.iter().map(Move::to_record).collect();
+            let moves = Place::Moves.path();
+            write.put(&moves, self.appended(&moves, &records));
         }
         self.check(&write)?;
         Ok(write)

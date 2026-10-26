@@ -21,6 +21,6 @@ pub use format::{Format, FormatError};
 pub use inbox::{Held, InboxAt, InboxError, ItemAt};
 pub use item::{Item, MadeBy, Outcome, SendRecord};
 pub use layout::Place;
-pub use moves::{Move, NewMove, Word};
+pub use moves::{Batch, Decision, Move, NewMove, Proposal, Word};
 pub use signal::{ReadSignal, Signal, SignalId};
 pub use write::{NotTaken, Refused, Write};

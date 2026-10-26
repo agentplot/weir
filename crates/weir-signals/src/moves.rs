@@ -188,6 +188,122 @@ impl NewMove {
     }
 }
 
+/// A batch, as its file holds it: its proposal, its moves, each naming
+/// the batch, and at most one decision, last (32; C.2). While it is
+/// proposed its moves do not stand; when it stands, the same move records
+/// are appended to `moves.rec`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Batch {
+    pub proposal: Proposal,
+    pub moves: Vec<Move>,
+    pub decision: Option<Decision>,
+}
+
+impl Batch {
+    /// Whether it stands: none while it is proposed.
+    pub fn stands(&self) -> Option<bool> {
+        self.decision.as_ref().map(|decision| decision.stands)
+    }
+}
+
+/// A batch's first record: who proposed it and when.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Proposal {
+    pub batch: String,
+    pub proposed_by: String,
+    pub proposed_at: String,
+}
+
+/// A batch's last record, added when it is decided: whether it stands, who
+/// decided and when.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Decision {
+    pub batch: String,
+    pub stands: bool,
+    pub decided_by: String,
+    pub decided_at: String,
+}
+
+impl Proposal {
+    pub fn to_record(&self) -> Record {
+        let mut record = Record::new();
+        record.push("format", Format::Batch.as_str());
+        record.push("batch", self.batch.as_str());
+        record.push("proposed_by", self.proposed_by.as_str());
+        record.push("proposed_at", self.proposed_at.as_str());
+        record
+    }
+
+    pub fn from_record(record: &Record) -> Result<Proposal, RecError> {
+        Format::of_record(record, &[Format::Batch])?;
+        let proposed_at = record.required("proposed_at")?;
+        check_time(proposed_at).map_err(|reason| RecError::field("proposed_at", reason))?;
+        Ok(Proposal {
+            batch: batch_name(record)?,
+            proposed_by: required_text(record, "proposed_by")?,
+            proposed_at: proposed_at.to_string(),
+        })
+    }
+}
+
+impl Decision {
+    pub fn to_record(&self) -> Record {
+        let mut record = Record::new();
+        record.push("format", Format::Batch.as_str());
+        record.push("batch", self.batch.as_str());
+        record.push("stands", if self.stands { "yes" } else { "no" });
+        record.push("decided_by", self.decided_by.as_str());
+        record.push("decided_at", self.decided_at.as_str());
+        record
+    }
+
+    pub fn from_record(record: &Record) -> Result<Decision, RecError> {
+        Format::of_record(record, &[Format::Batch])?;
+        let stands = match record.required("stands")? {
+            "yes" => true,
+            "no" => false,
+            other => {
+                return Err(RecError::field(
+                    "stands",
+                    format!("is `{other}`, not yes or no"),
+                ))
+            }
+        };
+        let decided_at = record.required("decided_at")?;
+        check_time(decided_at).map_err(|reason| RecError::field("decided_at", reason))?;
+        Ok(Decision {
+            batch: batch_name(record)?,
+            stands,
+            decided_by: required_text(record, "decided_by")?,
+            decided_at: decided_at.to_string(),
+        })
+    }
+
+    /// Itself, as a refusal names it.
+    pub(crate) fn describe(&self) -> String {
+        format!(
+            "stands: {}, decided by {} at {}",
+            if self.stands { "yes" } else { "no" },
+            self.decided_by,
+            self.decided_at
+        )
+    }
+}
+
+fn batch_name(record: &Record) -> Result<String, RecError> {
+    let batch = record.required("batch")?;
+    check_name(batch).map_err(|reason| RecError::field("batch", format!("`{batch}` {reason}")))?;
+    Ok(batch.to_string())
+}
+
+pub(crate) fn required_text(record: &Record, name: &str) -> Result<String, RecError> {
+    let value = record.required(name)?;
+    if value.is_empty() {
+        return Err(RecError::field(name, "is empty"));
+    }
+    Ok(value.to_string())
+}
+
 /// The word of a move, refused naming the field when it is not one of the
 /// six, its consequence is missing or not an item's name where it is one,
 /// or it names no maker or no time (30, 31).

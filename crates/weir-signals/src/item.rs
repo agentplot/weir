@@ -10,7 +10,7 @@ use weir_capture::rec::{RecError, Record};
 
 use crate::format::Format;
 use crate::layout::check_name;
-use crate::moves::check_time;
+use crate::moves::{check_time, required_text};
 
 /// What made an item (34).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -86,7 +86,7 @@ impl Item {
         Ok(Item {
             item: item.to_string(),
             made_by,
-            named_by: record.required("named_by")?.to_string(),
+            named_by: required_text(record, "named_by")?,
             named_at: named_at.to_string(),
         })
     }
@@ -206,7 +206,7 @@ impl SendRecord {
         }
         Ok(SendRecord {
             item: record.required("item")?.to_string(),
-            target: record.required("target")?.to_string(),
+            target: required_text(record, "target")?,
             brief: brief.map(str::to_string),
             sent_at: sent_at.to_string(),
             outcome,

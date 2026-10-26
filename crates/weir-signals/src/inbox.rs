@@ -12,7 +12,7 @@ use weir_capture::{CameIn, Capture, Key};
 use crate::format::Format;
 use crate::item::{Item, SendRecord};
 use crate::layout::Place;
-use crate::moves::{Move, Word};
+use crate::moves::{Batch, Decision, Move, Proposal, Word};
 use crate::signal::{Signal, SignalId, EMPTY_READING};
 
 /// An inbox as one tip holds it. The name keeps it apart from
@@ -28,6 +28,7 @@ pub struct InboxAt {
     /// is its standing move (29).
     pub(crate) by_signal: BTreeMap<SignalId, Vec<usize>>,
     pub(crate) items: BTreeMap<String, ItemAt>,
+    pub(crate) batches: BTreeMap<String, Batch>,
 }
 
 /// One capture the inbox holds.
@@ -185,6 +186,7 @@ impl InboxAt {
             moves: Vec::new(),
             by_signal: BTreeMap::new(),
             items: BTreeMap::new(),
+            batches: BTreeMap::new(),
         };
         inbox.read_places(&places)?;
         Ok(inbox)
@@ -218,8 +220,9 @@ impl InboxAt {
                     held.signals = Some(read_signals(path, text, key)?);
                 }
                 Place::Moves => moves = Some(path),
-                Place::Batch(_) => {
-                    records(path, text, &[Format::Batch, Format::Move])?;
+                Place::Batch(name) => {
+                    let batch = self.read_batch(path, text, name)?;
+                    self.batches.insert(name.clone(), batch);
                 }
                 Place::Item(name) => {
                     let item = read_item(path, text, name)?;
@@ -247,7 +250,109 @@ impl InboxAt {
         if let Some(path) = moves {
             self.read_moves(path)?;
         }
+        // A batch that stands has every move of it in `moves.rec` (32).
+        for (name, batch) in &self.batches {
+            if batch.stands() != Some(true) {
+                continue;
+            }
+            if let Some((n, missing)) = (2..)
+                .zip(&batch.moves)
+                .find(|(_, taken)| !self.moves.contains(taken))
+            {
+                return Err(InboxError::at(
+                    Place::Batch(name.clone()).path(),
+                    format!(
+                        "stands, and its record {n}, a {} of `{}`, is not in `moves.rec`",
+                        missing.word, missing.signal
+                    ),
+                ));
+            }
+        }
         Ok(())
+    }
+
+    /// The batch file at `path`, of the batch `name`: its proposal, then
+    /// its moves, each naming the batch and a signal the inbox holds, no
+    /// two for one signal, then at most one decision (32).
+    fn read_batch(&self, path: &str, text: &str, name: &str) -> Result<Batch, InboxError> {
+        let records = records(path, text, &[Format::Batch, Format::Move])?;
+        let field = |n: usize, error| InboxError::field(path, Some(n), error);
+        let names_it = |n: usize, batch: &str| {
+            if batch == name {
+                Ok(())
+            } else {
+                Err(field(
+                    n,
+                    RecError::field(
+                        "batch",
+                        format!("is `{batch}`, and the file is the batch `{name}`'s"),
+                    ),
+                ))
+            }
+        };
+        let is_batch = |record: &Record| record.get("format") == Some(Format::Batch.as_str());
+        let Some((first, rest)) = records.split_first().filter(|(first, _)| is_batch(first)) else {
+            return Err(InboxError::at(
+                path,
+                "opens with no proposal: a batch's file opens with its `weir-batch/1` proposal",
+            ));
+        };
+        let proposal = Proposal::from_record(first).map_err(|error| field(1, error))?;
+        names_it(1, &proposal.batch)?;
+        let mut moves: Vec<Move> = Vec::new();
+        let mut decision = None;
+        for (n, record) in (2..).zip(rest) {
+            if decision.is_some() {
+                return Err(InboxError::at(
+                    path,
+                    format!("holds record {n} after its decision, which is its last"),
+                ));
+            }
+            if is_batch(record) {
+                if record.get("stands").is_none() {
+                    return Err(InboxError::at(
+                        path,
+                        format!("holds a second proposal, record {n}"),
+                    ));
+                }
+                let decided = Decision::from_record(record).map_err(|error| field(n, error))?;
+                names_it(n, &decided.batch)?;
+                decision = Some(decided);
+                continue;
+            }
+            let taken = Move::from_record(record).map_err(|error| field(n, error))?;
+            names_it(n, taken.batch.as_deref().unwrap_or_default())?;
+            if self.signal(&taken.signal).is_none() {
+                return Err(field(
+                    n,
+                    RecError::field(
+                        "signal",
+                        format!("names `{}`, a signal the inbox does not hold", taken.signal),
+                    ),
+                ));
+            }
+            if moves.iter().any(|earlier| earlier.signal == taken.signal) {
+                return Err(field(
+                    n,
+                    RecError::field(
+                        "signal",
+                        format!("names `{}`, which the batch moves already", taken.signal),
+                    ),
+                ));
+            }
+            moves.push(taken);
+        }
+        if moves.is_empty() {
+            return Err(InboxError::at(
+                path,
+                "holds no move, and a batch is the moves proposed together",
+            ));
+        }
+        Ok(Batch {
+            proposal,
+            moves,
+            decision,
+        })
     }
 
     /// Reads `moves.rec`, each move checked against those before it.
@@ -262,6 +367,18 @@ impl InboxAt {
             };
             let taken = Move::from_record(record)
                 .map_err(|error| InboxError::field(path, Some(n), error))?;
+            if let Some(name) = &taken.batch {
+                let stood_in = self
+                    .batches
+                    .get(name)
+                    .filter(|batch| batch.stands() == Some(true) && batch.moves.contains(&taken));
+                if stood_in.is_none() {
+                    return Err(at(
+                        Some("batch"),
+                        format!("is `{name}`, and no batch of that name stands holding this move"),
+                    ));
+                }
+            }
             self.check_move(&taken, Checked::Read)
                 .map_err(|not| at(not.field, not.why))?;
             self.push_move(taken);
@@ -391,6 +508,11 @@ impl InboxAt {
     /// Every move of `moves.rec`, in order.
     pub fn moves(&self) -> &[Move] {
         &self.moves
+    }
+
+    /// The batch named `name`, as its file holds it.
+    pub fn batch(&self, name: &str) -> Option<&Batch> {
+        self.batches.get(name)
     }
 
     /// The item named `name`, with its brief and sends.
