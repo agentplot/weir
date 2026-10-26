@@ -180,17 +180,28 @@ fn captured(path: &str) -> Option<&str> {
 
 /// The first line at which `found` differs from `wanted`.
 fn differs(path: &str, found: &str, wanted: &str) -> String {
+    differs_where(path, found, wanted, |found, wanted| found == wanted)
+}
+
+/// The first line at which `found` differs from `wanted`, two lines the
+/// same where `same` says so.
+fn differs_where(
+    path: &str,
+    found: &str,
+    wanted: &str,
+    same: impl Fn(&str, &str) -> bool,
+) -> String {
     let found_lines: Vec<&str> = found.split('\n').collect();
     let wanted_lines: Vec<&str> = wanted.split('\n').collect();
     let at = found_lines
         .iter()
         .zip(&wanted_lines)
-        .position(|(found, wanted)| found != wanted)
+        .position(|(found, wanted)| !same(found, wanted))
         .unwrap_or(found_lines.len().min(wanted_lines.len()));
-    let line = |lines: &[&str]| {
-        lines
-            .get(at)
-            .map_or("nothing".to_string(), |line| format!("`{line}`"))
+    // The empty piece after a last newline is the file's end.
+    let line = |lines: &[&str]| match lines.get(at) {
+        Some(line) if !(line.is_empty() && at + 1 == lines.len()) => shown(line),
+        _ => "nothing".to_string(),
     };
     format!(
         "{path} differs from tip/'s at line {}: it holds {}, and tip/ holds {}",
@@ -198,6 +209,16 @@ fn differs(path: &str, found: &str, wanted: &str) -> String {
         line(&found_lines),
         line(&wanted_lines)
     )
+}
+
+/// A line as a difference shows it: whole, or its start when it is long.
+fn shown(line: &str) -> String {
+    const SHOWN: usize = 72;
+    if line.chars().count() <= SHOWN {
+        format!("`{line}`")
+    } else {
+        format!("`{}…`", line.chars().take(SHOWN).collect::<String>())
+    }
 }
 
 /// How a capture the host wrote differs from tip/'s, line by line, its
@@ -211,12 +232,25 @@ fn compare_capture(
 ) -> Vec<String> {
     let found_lines: Vec<&str> = found.split('\n').collect();
     let wanted_lines: Vec<&str> = wanted.split('\n').collect();
-    if found_lines.len() != wanted_lines.len() {
-        return vec![differs(path, found, wanted)];
-    }
     let imported = wanted_lines
         .iter()
         .any(|line| line.starts_with("came_in: import:"));
+    if found_lines.len() != wanted_lines.len() {
+        // The first line that differs but for the host's own fields.
+        let owned: &[&str] = if imported {
+            &["machine", "taken_at"]
+        } else {
+            &["machine", "taken_at", "pointer"]
+        };
+        let own = |found: &str, wanted: &str| {
+            found == wanted
+                || owned.iter().any(|name| {
+                    let name = format!("{name}: ");
+                    found.starts_with(&name) && wanted.starts_with(&name)
+                })
+        };
+        return vec![differs_where(path, found, wanted, own)];
+    }
     let field = |line: &str, name: &str| {
         line.strip_prefix(name)?
             .strip_prefix(": ")

@@ -257,11 +257,12 @@ fn a_host_keeps_raw_material_in_a_record() {
     let kept =
         written("2026-10-26T12:00:30Z").replace("unread: yes\n", "unread: yes\nraw: ## acme 1.0\n");
     let said = compare(&[(CAPTURE, &kept)], &[NOTES]);
-    assert_eq!(said.len(), 1, "{said:?}");
-    assert!(
-        said[0].starts_with(&format!("{CAPTURE} differs from tip/'s")),
-        "{}",
-        said[0]
+    assert_eq!(
+        said,
+        [format!(
+            "{CAPTURE} differs from tip/'s at line 10: it holds `raw: ## acme 1.0`, and tip/ \
+             holds nothing"
+        )]
     );
     let case = case();
     assert!(verdict(&case, &said).starts_with("made: failed, citing 17, 18, 22: "));
