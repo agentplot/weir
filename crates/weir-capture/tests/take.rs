@@ -38,13 +38,25 @@ fn a_take_is_made_from_what_the_host_hands_in() {
 }
 
 #[test]
-fn a_limit_below_the_widest_closing_line_is_refused() {
+fn a_limit_too_short_for_the_closing_line() {
     let at = at("2026-10-17T04:30:05Z");
+    let refused = Take::new("deneb", at, SMALLEST_LIMIT - 1, CameIn::Intake);
+    assert_eq!(refused, Err(TakeError::Limit(SMALLEST_LIMIT - 1)));
     assert_eq!(
-        Take::new("deneb", at, SMALLEST_LIMIT - 1, CameIn::Intake),
-        Err(TakeError::Limit(SMALLEST_LIMIT - 1))
+        refused.unwrap_err().to_string(),
+        format!(
+            "the limit {} is too short for the closing line: the smallest it may be is {} \
+             bytes, the closing line at its widest",
+            SMALLEST_LIMIT - 1,
+            SMALLEST_LIMIT
+        )
     );
     assert!(Take::new("deneb", at, SMALLEST_LIMIT, CameIn::Intake).is_ok());
+}
+
+#[test]
+fn a_machine_a_pointer_cannot_name_is_refused() {
+    let at = at("2026-10-17T04:30:05Z");
     for machine in ["", "deneb:1", "de neb"] {
         assert_eq!(
             Take::new(machine, at, LIMIT, CameIn::Intake),

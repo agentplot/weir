@@ -119,7 +119,8 @@ impl fmt::Display for TakeError {
         match self {
             TakeError::Limit(limit) => write!(
                 f,
-                "the limit {limit} is below {SMALLEST_LIMIT} bytes, the closing line at its widest"
+                "the limit {limit} is too short for the closing line: the smallest it may be is \
+                 {SMALLEST_LIMIT} bytes, the closing line at its widest"
             ),
             TakeError::Machine(machine) => write!(
                 f,
@@ -135,7 +136,7 @@ impl std::error::Error for TakeError {}
 impl Take {
     /// A take on `machine` at `taken_at`, recorded in UTC, cutting own
     /// excerpts at `limit` bytes; a limit below [`SMALLEST_LIMIT`] is
-    /// refused.
+    /// refused here, before [`take`] can read a line with it.
     pub fn new(
         machine: impl Into<String>,
         taken_at: OffsetDateTime,
