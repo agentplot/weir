@@ -20,7 +20,7 @@
 
 - [x] 4.1 A remote is moved by `git push --porcelain` with `--force-with-lease=refs/heads/<branch>:<tip>`, the expected value empty for no tip, and the cache's ref set to the commit on success; a branch with no remote by `git update-ref -m <what>` from the tip, forty zeros for no tip (44, 48, 79, core.27); the spec's "The branch stands where it was read" and "The first write makes the branch" scenarios pass on both kinds of branch; proved by `devenv shell -- moon run branch:test`.
 - [x] 4.2 A refused move is followed by a fresh read: a moved tip has the write formed again from `form`, checks and all, at most `bound + 1` tries in all, five replays when the bound is left out, then `KeptMoving` naming the tries and the bound; an unmoved tip is `Failed` with git's words and no replay (44, 45, 46, 80, core.26, record 0002 ruling 4); the spec's scenarios of "A moved branch has the write formed again on the new tip" (S5, S6 among them), "A write is replayed at most the writer's bound" and "A push refused while the branch stands still", the last with a remote whose `pre-receive` hook refuses every push, pass; proved by `devenv shell -- moon run branch:test`.
-- [ ] 4.3 A branch with no remote takes the same write: a move from a tip the branch has left is refused by `update-ref` and the write formed again on the new tip (48, S7); the spec's "A write formed against the old tip" scenario passes; proved by `devenv shell -- moon run branch:test`.
+- [x] 4.3 A branch with no remote takes the same write: a move from a tip the branch has left is refused by `update-ref` and the write formed again on the new tip (48, S7); the spec's "A write formed against the old tip" scenario passes; proved by `devenv shell -- moon run branch:test`.
 
 ## 5. The lock
 

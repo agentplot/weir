@@ -376,3 +376,58 @@ fn a_remote_that_refuses_every_push() {
     assert_eq!(stage.tip(), Some(a.clone()));
     assert_eq!(all_commits(&stage.remote), vec![a]);
 }
+
+// A branch with no remote
+
+#[test]
+fn a_write_formed_against_the_old_tip() {
+    let folder = tempfile::tempdir().unwrap();
+    // A repository on this machine alone, with a working tree, whose
+    // reflog keeps update-ref's message.
+    let repo = common::working(folder.path(), "repo", &[("README", "an inbox\n")]);
+    let a = seed(
+        &repo,
+        "inbox",
+        &[("inbox/a", "a\n")],
+        "start",
+        "operator@one",
+    );
+    let b = Cell::new(None);
+    let tried = Cell::new(0);
+    let landed = landed(
+        write(
+            &Branch::local("inbox", &repo),
+            &ask("add c", "operator@one", &now),
+            |tip| {
+                tried.set(tried.get() + 1);
+                if tried.get() == 1 {
+                    assert_eq!(tip.unwrap().commit(), a);
+                    b.set(Some(seed(
+                        &repo,
+                        "inbox",
+                        &[("inbox/b", "b\n")],
+                        "add b",
+                        "curation@two",
+                    )));
+                }
+                Ok(write_of(&[("inbox/c", "c\n")]))
+            },
+        )
+        .unwrap(),
+    );
+    let b = b.take().unwrap();
+    assert_eq!(landed.tries, 2);
+    assert_eq!(landed.on.as_deref(), Some(b.as_str()));
+    assert_eq!(parents(&repo, &landed.commit), vec![b.clone()]);
+    assert_eq!(
+        commits_since(&repo, Some(&a), &landed.commit),
+        vec![b, landed.commit.clone()]
+    );
+    let at = files(&repo, &landed.commit);
+    assert!(at.contains_key("inbox/b") && at.contains_key("inbox/c"));
+    let reflog = common::git(
+        &repo,
+        &["reflog", "show", "--format=%gs", "refs/heads/inbox"],
+    );
+    assert_eq!(reflog.lines().next(), Some("add c"), "update-ref's message");
+}
