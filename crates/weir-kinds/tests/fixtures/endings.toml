@@ -1,0 +1,33 @@
+# The three endings, an elaboration section that declares none, and a
+# field the format does not name (55, 56).
+[[kinds.closing.stages]]
+name = "write"
+prompt = "prompts/write.md"
+deliverables = ["commits"]
+
+[kinds.closing.elaboration]
+ending = "self-closing"
+
+[[kinds.standing.stages]]
+name = "write"
+prompt = "prompts/write.md"
+deliverables = ["commits"]
+
+[kinds.standing.elaboration]
+ending = "standing"
+
+[[kinds.operator.stages]]
+name = "write"
+prompt = "prompts/write.md"
+deliverables = ["commits"]
+
+[kinds.operator.elaboration]
+ending = "with-operator"
+
+[[kinds.open.stages]]
+name = "write"
+prompt = "prompts/write.md"
+deliverables = ["commits"]
+
+[kinds.open.elaboration]
+rounds = 4

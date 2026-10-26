@@ -1,5 +1,5 @@
 //! The readings every table of the format shares: a field's path, a flag,
-//! and the keys the format does not name.
+//! a list of strings, and the keys the format does not name.
 
 use toml::{Table, Value};
 
@@ -32,6 +32,26 @@ pub(crate) fn boolean(table: &Table, name: &str, at: &str, problems: &mut Proble
         Some(_) => {
             problems.refuse(&field(at, name), "must be true or false");
             false
+        }
+    }
+}
+
+/// A list of strings: empty when left out, refused when not an array of
+/// strings.
+pub(crate) fn strings(table: &Table, name: &str, at: &str, problems: &mut Problems) -> Vec<String> {
+    let Some(value) = table.get(name) else {
+        return Vec::new();
+    };
+    match value.as_array().and_then(|items| {
+        items
+            .iter()
+            .map(|item| item.as_str().map(str::to_owned))
+            .collect::<Option<Vec<_>>>()
+    }) {
+        Some(items) => items,
+        None => {
+            problems.refuse(&field(at, name), "must be an array of strings");
+            Vec::new()
         }
     }
 }

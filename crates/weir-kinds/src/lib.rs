@@ -19,12 +19,14 @@
 #![warn(missing_docs)]
 
 mod deliverable;
+mod elaboration;
 mod fields;
 mod kinds;
 mod quiet;
 mod refusal;
 
 pub use deliverable::{Deliverable, End};
+pub use elaboration::{read_elaboration, Elaboration, Ending};
 pub use kinds::{read_kinds, Declaration, Kind, Stage};
 pub use refusal::{Problem, Refusal};
 pub use toml;
