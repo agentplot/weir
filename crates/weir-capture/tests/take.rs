@@ -7,8 +7,8 @@ use std::fs;
 
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
-use weir_capture::take::{take, Bank, Inbox, RawFile, Refused, Take, TakeError, Taken};
-use weir_capture::{CameIn, Capture, Key, SMALLEST_LIMIT};
+use weir_capture::take::{take, Bank, Inbox, OwnSignal, RawFile, Refused, Take, TakeError, Taken};
+use weir_capture::{closing_line, cut, CameIn, Capture, Key, Nature, SMALLEST_LIMIT};
 
 use fakes::{host, Banked, Call};
 
@@ -392,10 +392,17 @@ fn notes_and_excerpt_both_banked() {
     assert_eq!(banked.files[0].bytes, NOTES);
     assert_eq!(banked.whole_excerpt.as_deref(), Some(text.as_str()));
     assert_eq!(inbox.written.len(), 1);
+    let written = &inbox.written[0];
     assert_eq!(
-        inbox.written[0].capture.pointer.as_deref(),
+        written.capture.pointer.as_deref(),
         Some("deneb:/data/inbox/release/mise/2026.10.10")
     );
+    assert!(!written.capture.unread);
+    let signal = written.own_signal.as_ref().expect("one own signal");
+    assert!(signal.excerpt.len() <= LIMIT);
+    let left_out = signal.cut.expect("a cut signal");
+    assert_eq!(signal.excerpt, cut(&text, LIMIT).text);
+    assert!(signal.excerpt.ends_with(&closing_line(left_out)));
     let order: Vec<Call> = calls.borrow().clone();
     assert_eq!(
         order[1..],
@@ -446,4 +453,57 @@ fn a_raw_place_path_is_relative_to_the_place() {
     );
     assert_eq!(keys(&report), ["release/a/1"]);
     assert_eq!(bank.banked["release/a/1"].files[0].path, "deep/er/notes.md");
+}
+
+#[test]
+fn a_releases_notes_as_its_own_excerpt() {
+    let (mut inbox, mut bank, calls) = host();
+    let lines = [offer(
+        "release/mise/2026.10.10",
+        &excerpt("mise 2026.10.10 is out.\nIt fixes the shim."),
+    )];
+    take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank);
+    assert_eq!(
+        *calls.borrow(),
+        [
+            Call::Holds("release/mise/2026.10.10".into()),
+            Call::Write("release/mise/2026.10.10".into())
+        ]
+    );
+    let written = &inbox.written[0];
+    assert!(!written.capture.unread);
+    assert_eq!(
+        written.own_signal,
+        Some(OwnSignal {
+            signal: "release/mise/2026.10.10#1".into(),
+            kind: Nature::Ask,
+            asserted_by: "jdx/mise".into(),
+            assertion: "mise is released".into(),
+            subjects: vec!["release".into(), "mise".into()],
+            argues_with: vec![],
+            position: "release notes".into(),
+            excerpt: "mise 2026.10.10 is out.\nIt fixes the shim.".into(),
+            cut: None,
+        })
+    );
+}
+
+#[test]
+fn a_meeting_with_no_excerpt() {
+    let place = raw_place(&[(
+        "transcript.vtt",
+        b"WEBVTT\n\n00:00.000 --> 00:01.000\nhello\n",
+    )]);
+    let (mut inbox, mut bank, _) = host();
+    let lines = [offer("meeting/file/abc", &raw(&["transcript.vtt"]))];
+    take(
+        &lines,
+        Some(place.path()),
+        &take_on("deneb"),
+        &mut inbox,
+        &mut bank,
+    );
+    let written = &inbox.written[0];
+    assert!(written.capture.unread);
+    assert_eq!(written.own_signal, None);
 }

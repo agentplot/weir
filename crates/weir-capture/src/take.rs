@@ -247,7 +247,9 @@ pub fn take<L: AsRef<str>>(
 }
 
 /// Banks and writes one offer whose key the inbox does not hold, or says
-/// why not: steps 3 and 4 of C.1.
+/// why not: steps 3 to 6 of C.1. An own excerpt, cut to the limit, becomes
+/// the capture's one signal, written with it in one write, and the capture
+/// is not unread; every other capture is written unread (19, 20).
 fn take_offer(
     offer: Offer,
     raw_place: Option<&Path>,
@@ -256,14 +258,14 @@ fn take_offer(
     bank: &mut impl Bank,
 ) -> Result<(), String> {
     let files = read_raw(&offer.raw, raw_place)?;
-    let cut = offer
-        .excerpt
+    let excerpt = offer.excerpt.map(|excerpt| {
+        let cut = cut(&excerpt.text, how.limit);
+        (excerpt, cut)
+    });
+    let whole_excerpt = excerpt
         .as_ref()
-        .map(|excerpt| cut(&excerpt.text, how.limit));
-    let whole_excerpt = match (&offer.excerpt, &cut) {
-        (Some(excerpt), Some(cut)) if cut.left_out.is_some() => Some(excerpt.text.as_str()),
-        _ => None,
-    };
+        .filter(|(_, cut)| cut.left_out.is_some())
+        .map(|(excerpt, _)| excerpt.text.as_str());
     let pointer = if files.is_empty() && whole_excerpt.is_none() {
         None
     } else {
@@ -276,6 +278,17 @@ fn take_offer(
             }
         }
     };
+    let own_signal = excerpt.map(|(excerpt, cut)| OwnSignal {
+        signal: format!("{}#1", offer.key),
+        kind: excerpt.kind,
+        asserted_by: excerpt.asserted_by,
+        assertion: excerpt.assertion,
+        subjects: excerpt.subjects,
+        argues_with: excerpt.argues_with,
+        position: excerpt.position,
+        excerpt: cut.text,
+        cut: cut.left_out,
+    });
     let capture = Capture {
         key: offer.key,
         source: offer.source,
@@ -286,11 +299,11 @@ fn take_offer(
         came_in: how.came_in.clone(),
         machine: how.machine.clone(),
         taken_at: how.taken_at.clone(),
-        unread: true,
+        unread: own_signal.is_none(),
     };
     let taken = Taken {
         capture,
-        own_signal: None,
+        own_signal,
     };
     inbox
         .write(&taken)
