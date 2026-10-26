@@ -1,0 +1,68 @@
+# S7: an inbox on a branch of a repository with no remote. Another write
+# moves the branch after the writer reads it, so the move from the tip read
+# is refused by update-ref, and the write is formed again on the new tip
+# and lands there. Both writes stand.
+satisfies = [44, 48]
+remote = false
+stale_after_seconds = 60
+
+[start]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+
+[[write]]
+who = "operator@one"
+what = "take release/acme/v1"
+
+[write.add]
+path = "inbox/captures/release/acme/v1/capture.rec"
+text = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""
+
+[[write.meanwhile]]
+try = 1
+who = "curation@one"
+what = "propose acme-releases"
+
+[write.meanwhile.add]
+path = "inbox/items/acme-releases/item.rec"
+text = """
+format: weir-item/1
+name: acme-releases
+by: curation@one
+"""
+
+[[expect.write]]
+outcome = "landed"
+tries = 2
+
+[[expect.commit]]
+what = "propose acme-releases"
+asked_by = "curation@one"
+
+[[expect.commit]]
+what = "take release/acme/v1"
+asked_by = "operator@one"
+
+[expect.tip]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+"inbox/captures/release/acme/v1/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""
+"inbox/items/acme-releases/item.rec" = """
+format: weir-item/1
+name: acme-releases
+by: curation@one
+"""
