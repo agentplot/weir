@@ -197,7 +197,14 @@ fn two_machines_take_one_release_at_once() {
     )
     .unwrap();
     let at = stage.tip();
-    assert_eq!(written, Written::Nothing(Nothing { at, tries: 2 }));
+    assert_eq!(
+        written,
+        Written::Nothing(Nothing {
+            at,
+            tries: 2,
+            broke: None,
+        })
+    );
     let at = stage.tip().unwrap();
     assert_eq!(
         message(&stage.remote, &at),
@@ -245,6 +252,7 @@ fn two_moves_of_one_signal_in_one_second() {
             at: at.clone(),
             reason: signal.to_string(),
             tries: 2,
+            broke: None,
         }
     );
     let moves = &files(&stage.remote, &at.unwrap())[path];
@@ -322,7 +330,14 @@ fn kept_moving(bound: Option<u32>) -> (WriteError, u32) {
 #[test]
 fn a_branch_that_keeps_moving() {
     let (refused, tried) = kept_moving(Some(2));
-    assert_eq!(refused, WriteError::KeptMoving { tries: 3, bound: 2 });
+    assert_eq!(
+        refused,
+        WriteError::KeptMoving {
+            tries: 3,
+            bound: 2,
+            broke: None,
+        }
+    );
     assert_eq!(tried, 3);
     assert!(refused.to_string().contains("tried 3 times"), "{refused}");
 }
@@ -330,7 +345,14 @@ fn a_branch_that_keeps_moving() {
 #[test]
 fn the_bound_left_out() {
     let (refused, tried) = kept_moving(None);
-    assert_eq!(refused, WriteError::KeptMoving { tries: 6, bound: 5 });
+    assert_eq!(
+        refused,
+        WriteError::KeptMoving {
+            tries: 6,
+            bound: 5,
+            broke: None,
+        }
+    );
     assert_eq!(tried, 6);
 }
 
@@ -366,7 +388,7 @@ fn a_remote_that_refuses_every_push() {
     )
     .unwrap_err();
     match &refused {
-        WriteError::Failed { step, said } => {
+        WriteError::Failed { step, said, .. } => {
             assert_eq!(*step, weir_branch::Step::Move);
             assert!(said.contains("this remote takes no push"), "{said}");
         }

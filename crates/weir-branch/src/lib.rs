@@ -18,8 +18,10 @@
 mod commit;
 mod git;
 pub mod keeper;
+pub mod lock;
 mod recfix;
 pub mod write;
 
 pub use keeper::{read, Branch, Failure, Files, Place, Step, Tip, TipError};
+pub use lock::{Broken, LOCK};
 pub use write::{write, Ask, Landed, Nothing, WriteError, Written, BOUND};

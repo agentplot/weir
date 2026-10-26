@@ -11,6 +11,7 @@ use time::OffsetDateTime;
 
 use crate::commit::{self, NotMade};
 use crate::keeper::{self, check_path, Branch, Failure, Files, Moved, Step, Tip};
+use crate::lock::{self, Broken};
 use crate::recfix;
 
 /// How many times a write is formed again on a moved branch when its writer
@@ -37,13 +38,24 @@ pub enum Written {
     Nothing(Nothing),
 }
 
+impl Written {
+    /// The stale lock the write broke before it read the branch, if any.
+    pub fn broke(&self) -> Option<&Broken> {
+        match self {
+            Written::Landed(landed) => landed.broke.as_ref(),
+            Written::Nothing(nothing) => nothing.broke.as_ref(),
+        }
+    }
+}
+
 /// A write landed: its commit, the tip it landed on (none for the branch's
-/// first), and how many times it was tried.
+/// first), how many times it was tried, and the stale lock it broke.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Landed {
     pub commit: String,
     pub on: Option<String>,
     pub tries: u32,
+    pub broke: Option<Broken>,
 }
 
 /// A write whose caller found nothing to write at the tip `at`.
@@ -51,9 +63,11 @@ pub struct Landed {
 pub struct Nothing {
     pub at: Option<String>,
     pub tries: u32,
+    pub broke: Option<Broken>,
 }
 
-/// A write that did not land, the branch unmoved by it.
+/// A write that did not land, the branch unmoved by it. Each refusal after
+/// the lock was taken names the stale lock the write broke, if any (49).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WriteError {
     /// The ask names no one or nothing, or a branch or address git cannot
@@ -64,6 +78,7 @@ pub enum WriteError {
         at: Option<String>,
         reason: String,
         tries: u32,
+        broke: Option<Broken>,
     },
     /// A path of the write is not one a write may add or replace.
     Path {
@@ -71,6 +86,7 @@ pub enum WriteError {
         path: String,
         reason: String,
         tries: u32,
+        broke: Option<Broken>,
     },
     /// `recfix` refused a record file of the write (46; core.24).
     Recfix {
@@ -78,11 +94,20 @@ pub enum WriteError {
         path: String,
         said: String,
         tries: u32,
+        broke: Option<Broken>,
     },
     /// The branch moved on every try, past the bound (44).
-    KeptMoving { tries: u32, bound: u32 },
+    KeptMoving {
+        tries: u32,
+        bound: u32,
+        broke: Option<Broken>,
+    },
     /// A step failed: git, `recfix` or the lock, with its words.
-    Failed { step: Step, said: String },
+    Failed {
+        step: Step,
+        said: String,
+        broke: Option<Broken>,
+    },
 }
 
 impl WriteError {
@@ -96,6 +121,18 @@ impl WriteError {
             WriteError::Asked { .. } | WriteError::Failed { .. } => None,
         }
     }
+
+    /// The stale lock the write broke before it read the branch, if any.
+    pub fn broke(&self) -> Option<&Broken> {
+        match self {
+            WriteError::Asked { .. } => None,
+            WriteError::Refused { broke, .. }
+            | WriteError::Path { broke, .. }
+            | WriteError::Recfix { broke, .. }
+            | WriteError::KeptMoving { broke, .. }
+            | WriteError::Failed { broke, .. } => broke.as_ref(),
+        }
+    }
 }
 
 fn tip_name(at: &Option<String>) -> String {
@@ -107,6 +144,16 @@ fn tip_name(at: &Option<String>) -> String {
 
 impl fmt::Display for WriteError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.say(f)?;
+        match self.broke() {
+            Some(broke) => write!(f, "; it broke {broke}"),
+            None => Ok(()),
+        }
+    }
+}
+
+impl WriteError {
+    fn say(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             WriteError::Asked { field, reason } => {
                 write!(
@@ -114,7 +161,9 @@ impl fmt::Display for WriteError {
                     "the write was refused before anything ran: `{field}`: {reason}"
                 )
             }
-            WriteError::Refused { at, reason, tries } => write!(
+            WriteError::Refused {
+                at, reason, tries, ..
+            } => write!(
                 f,
                 "the write was refused at {} on try {tries}: {reason}",
                 tip_name(at)
@@ -124,6 +173,7 @@ impl fmt::Display for WriteError {
                 path,
                 reason,
                 tries,
+                ..
             } => write!(
                 f,
                 "the write was refused at {} on try {tries}: the path `{path}` {reason}",
@@ -134,17 +184,18 @@ impl fmt::Display for WriteError {
                 path,
                 said,
                 tries,
+                ..
             } => write!(
                 f,
                 "the write was refused at {} on try {tries}: recfix refused `{path}`: {said}",
                 tip_name(at)
             ),
-            WriteError::KeptMoving { tries, bound } => write!(
+            WriteError::KeptMoving { tries, bound, .. } => write!(
                 f,
                 "the write was refused: the branch kept moving, and it was tried {tries} times, \
                  its bound {bound}"
             ),
-            WriteError::Failed { step, said } => write!(f, "the {step} failed: {said}"),
+            WriteError::Failed { step, said, .. } => write!(f, "the {step} failed: {said}"),
         }
     }
 }
@@ -190,13 +241,27 @@ where
         std::fs::create_dir_all(cache).map_err(|error| WriteError::Failed {
             step: Step::Read,
             said: format!("the cache {} could not be made: {error}", cache.display()),
+            broke: None,
         })?;
     }
-    tries(branch, ask, form)
+    // Held from before the read to after the move, and let go when it is
+    // dropped, however the write ends.
+    let (_lock, broke) = lock::take(branch.git_dir(), ask.who, ask.stale_after, ask.clock)
+        .map_err(|failure| WriteError::Failed {
+            step: failure.step,
+            said: failure.said,
+            broke: None,
+        })?;
+    tries(branch, ask, form, broke)
 }
 
 /// Every try of the write, from the first read to its end.
-fn tries<F>(branch: &Branch, ask: &Ask<'_>, mut form: F) -> Result<Written, WriteError>
+fn tries<F>(
+    branch: &Branch,
+    ask: &Ask<'_>,
+    mut form: F,
+    broke: Option<Broken>,
+) -> Result<Written, WriteError>
 where
     F: FnMut(Option<&Tip>) -> Result<Files, String>,
 {
@@ -204,6 +269,7 @@ where
     let failed = |failure: Failure| WriteError::Failed {
         step: failure.step,
         said: failure.said,
+        broke: broke.clone(),
     };
     let mut tip = keeper::read_tip(branch).map_err(failed)?;
     let mut tries = 0;
@@ -214,9 +280,10 @@ where
             at: at.clone(),
             reason,
             tries,
+            broke: broke.clone(),
         })?;
         if files.is_empty() {
-            return Ok(Written::Nothing(Nothing { at, tries }));
+            return Ok(Written::Nothing(Nothing { at, tries, broke }));
         }
         for path in files.keys() {
             check_path(path).map_err(|reason| WriteError::Path {
@@ -224,6 +291,7 @@ where
                 path: path.clone(),
                 reason,
                 tries,
+                broke: broke.clone(),
             })?;
         }
         for (path, text) in files.iter().filter(|(path, _)| recfix::is_record(path)) {
@@ -233,6 +301,7 @@ where
                     path: path.clone(),
                     said,
                     tries,
+                    broke,
                 });
             }
         }
@@ -250,6 +319,7 @@ where
                 path,
                 reason,
                 tries,
+                broke: broke.clone(),
             },
             NotMade::Failed(failure) => failed(failure),
         })?;
@@ -259,6 +329,7 @@ where
                     commit,
                     on: at,
                     tries,
+                    broke,
                 }))
             }
             Moved::Refused(said) => {
@@ -267,10 +338,15 @@ where
                     return Err(WriteError::Failed {
                         step: Step::Move,
                         said,
+                        broke,
                     });
                 }
                 if tries > bound {
-                    return Err(WriteError::KeptMoving { tries, bound });
+                    return Err(WriteError::KeptMoving {
+                        tries,
+                        bound,
+                        broke,
+                    });
                 }
                 tip = fresh;
             }

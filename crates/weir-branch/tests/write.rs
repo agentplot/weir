@@ -143,6 +143,7 @@ fn a_check_refuses_the_write_at_the_tip() {
             at: Some(a.clone()),
             reason: "release/acme/v1#1 has a standing move".to_string(),
             tries: 1,
+            broke: None,
         }
     );
     assert!(refused.to_string().contains(&a), "{refused}");
@@ -181,6 +182,7 @@ fn nothing_to_write() {
         Written::Nothing(Nothing {
             at: Some(a.clone()),
             tries: 1,
+            broke: None,
         })
     );
     assert_eq!(stage.tip(), Some(a.clone()));
@@ -214,6 +216,7 @@ fn a_record_recfix_refuses() {
             path,
             said,
             tries,
+            ..
         } => {
             assert_eq!(at.as_deref(), Some(a.as_str()));
             assert_eq!(path, "inbox/moves/moves.rec");
