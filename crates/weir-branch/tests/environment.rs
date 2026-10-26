@@ -7,8 +7,8 @@ mod common;
 use std::fs;
 use std::path::Path;
 
-use common::{bare, refs, seed};
-use weir_branch::{read, Branch};
+use common::{ask, bare, now, refs, seed, tip, write_of};
+use weir_branch::{read, write, Branch, Written};
 
 /// Every file under `folder`, with its bytes.
 fn snapshot(folder: &Path) -> Vec<(String, Vec<u8>)> {
@@ -53,6 +53,22 @@ fn git_reads_and_writes_only_the_git_directory_named() {
     let at = read(&Branch::local("inbox", &local)).unwrap().unwrap();
     assert_eq!(at.commit(), b);
     assert_eq!(at.files("").unwrap().len(), 1);
+
+    for branch in [remote_branch, Branch::local("inbox", &local)] {
+        let written = write(&branch, &ask("add c", "operator@one", &now), |_| {
+            Ok(write_of(&[("c", "c\n")]))
+        })
+        .unwrap();
+        let Written::Landed(landed) = written else {
+            panic!("not landed: {written:?}");
+        };
+        let repo = if branch.git_dir() == cache {
+            &remote
+        } else {
+            &local
+        };
+        assert_eq!(tip(repo, "inbox"), Some(landed.commit));
+    }
 
     assert_eq!(snapshot(&decoy), decoy_before, "the decoy changed");
     assert!(!index.exists(), "an index was written at GIT_INDEX_FILE");
