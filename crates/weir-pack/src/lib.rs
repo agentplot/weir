@@ -21,6 +21,7 @@ pub mod adapter;
 pub mod adapter_case;
 pub mod check;
 pub mod clauses;
+pub mod host;
 pub mod pack;
 
 pub use adapter::{check_lines, check_meeting_lines, Breach, Meetings, RawPlace};
@@ -29,4 +30,7 @@ pub use adapter_case::{
 };
 pub use check::{check, satisfies, Checked, Fault};
 pub use clauses::{read_index, Clause, Index, Section};
+pub use host::{
+    read_host_case, Expected, ExpectedRefusal, ExpectedRun, HostCase, Invocation, Offered, Step,
+};
 pub use pack::{Case, Pack, Shape};
