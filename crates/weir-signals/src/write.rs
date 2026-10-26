@@ -477,6 +477,54 @@ impl InboxAt {
         self.check(&write)?;
         Ok(write)
     }
+
+    /// The write of an item made from the work an accepted conclusion
+    /// proposed: its `item.rec`, naming the conclusion, proposed and with no
+    /// signals (34; C.2). Refused naming the name when it is empty, `.`,
+    /// `..` or holds a `/`, or is one an item of the inbox has had (35;
+    /// core.20), and when it names no conclusion, no namer or no time.
+    pub fn propose_item(
+        &self,
+        name: &str,
+        conclusion: &str,
+        by: &str,
+        at: &str,
+    ) -> Result<Write, Refused> {
+        check_name(name).map_err(|why| NotTaken::field(name, "item", why))?;
+        if self.items.contains_key(name) {
+            return Err(NotTaken::new(name, "is a name an item of the inbox has had").into());
+        }
+        if conclusion.is_empty() {
+            return Err(NotTaken::field(
+                name,
+                "conclusion",
+                "is missing, and an item made from a conclusion names it",
+            )
+            .into());
+        }
+        if by.is_empty() {
+            return Err(NotTaken::field(
+                name,
+                "named_by",
+                "is missing, and an item names who named it",
+            )
+            .into());
+        }
+        check_time(at).map_err(|why| NotTaken::field(name, "named_at", why))?;
+        let item = Item {
+            item: name.to_string(),
+            made_by: MadeBy::Conclusion(conclusion.to_string()),
+            named_by: by.to_string(),
+            named_at: at.to_string(),
+        };
+        let mut write = Write::new();
+        write.put(
+            Place::Item(name.to_string()).path(),
+            rec::write(&[item.to_record()]),
+        );
+        self.check(&write)?;
+        Ok(write)
+    }
 }
 
 /// Whether `excerpt` stands, byte for byte, in one of `raw` (26). An empty

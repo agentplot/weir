@@ -6,6 +6,8 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
+use time::format_description::well_known::Rfc3339;
+use time::OffsetDateTime;
 use weir_capture::rec::{self, RecError, Record};
 use weir_capture::{CameIn, Capture, Key};
 
@@ -45,6 +47,19 @@ pub struct Held {
 pub struct Unmoved<'a> {
     pub signal: &'a Signal,
     pub event_at: &'a str,
+}
+
+/// An item's weight: how many signals it holds, from which sources, over
+/// what span of event times (34).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Weight {
+    pub signals: usize,
+    /// Its signals' captures' sources, each once, in order.
+    pub sources: Vec<String>,
+    /// The earliest and latest of its signals' captures' event times, as
+    /// written; none for an item with no signals.
+    pub earliest: Option<String>,
+    pub latest: Option<String>,
 }
 
 /// One item the inbox holds, with its brief and its sends.
@@ -531,6 +546,63 @@ impl InboxAt {
             })
             .filter(|unmoved| !self.by_signal.contains_key(&unmoved.signal.signal))
             .collect()
+    }
+
+    /// The signals of the item `name`: exactly those whose standing move is
+    /// a join or an attach naming it, read from the moves whenever asked
+    /// and recorded nowhere (34; core.20), in signal order.
+    pub fn item_signals(&self, name: &str) -> Vec<&SignalId> {
+        self.by_signal
+            .iter()
+            .filter(|(_, places)| {
+                places.last().is_some_and(|last| {
+                    let standing = &self.moves[*last];
+                    standing.word.names_an_item() && standing.target == name
+                })
+            })
+            .map(|(id, _)| id)
+            .collect()
+    }
+
+    /// The weight of the item `name`, computed from its signals and never
+    /// stored (34; core.20): how many, their captures' sources, and the
+    /// earliest and latest of their captures' event times, compared as
+    /// instants and given as written (core.8). None for an item not held.
+    pub fn weight(&self, name: &str) -> Option<Weight> {
+        self.items.get(name)?;
+        let signals = self.item_signals(name);
+        let mut weight = Weight {
+            signals: signals.len(),
+            sources: Vec::new(),
+            earliest: None,
+            latest: None,
+        };
+        let mut span: Option<((OffsetDateTime, &str), (OffsetDateTime, &str))> = None;
+        for id in signals {
+            let Some(capture) = self.capture(&id.key) else {
+                continue;
+            };
+            if !weight.sources.contains(&capture.source) {
+                weight.sources.push(capture.source.clone());
+            }
+            let Ok(instant) = OffsetDateTime::parse(&capture.event_at, &Rfc3339) else {
+                continue;
+            };
+            let at = (instant, capture.event_at.as_str());
+            span = Some(match span {
+                None => (at, at),
+                Some((earliest, latest)) => (
+                    if instant < earliest.0 { at } else { earliest },
+                    if instant > latest.0 { at } else { latest },
+                ),
+            });
+        }
+        weight.sources.sort();
+        if let Some(((_, earliest), (_, latest))) = span {
+            weight.earliest = Some(earliest.to_string());
+            weight.latest = Some(latest.to_string());
+        }
+        Some(weight)
     }
 
     /// The batch named `name`, as its file holds it.

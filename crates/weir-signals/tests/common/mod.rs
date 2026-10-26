@@ -102,11 +102,19 @@ pub fn empty() -> InboxAt {
 /// `inbox` with the capture `key` taken, unread, and read into `n`
 /// signals, the excerpt of each a line of its one raw file.
 pub fn with_signals(inbox: &InboxAt, key_text: &str, n: usize) -> InboxAt {
+    with_read(inbox, capture(key_text), n)
+}
+
+/// `inbox` with `taken` taken, unread, and read into `n` signals, the
+/// excerpt of each a line of its one raw file.
+pub fn with_read(inbox: &InboxAt, taken: Capture, n: usize) -> InboxAt {
+    let key_text = taken.key.to_string();
+    let key_text = key_text.as_str();
     let inbox = after(
         inbox,
         &inbox
             .take(&Taken {
-                capture: capture(key_text),
+                capture: taken,
                 own_signal: None,
             })
             .unwrap_or_else(|refused| panic!("{refused}")),

@@ -18,7 +18,7 @@ pub mod signal;
 pub mod write;
 
 pub use format::{Format, FormatError};
-pub use inbox::{Held, InboxAt, InboxError, ItemAt, Unmoved};
+pub use inbox::{Held, InboxAt, InboxError, ItemAt, Unmoved, Weight};
 pub use item::{Item, MadeBy, Outcome, SendRecord};
 pub use layout::Place;
 pub use moves::{Batch, Decision, Move, NewMove, Proposal, Word};

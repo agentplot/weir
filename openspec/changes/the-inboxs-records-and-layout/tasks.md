@@ -25,7 +25,7 @@
 
 ## 5. Items, briefs and sends
 
-- [ ] 5.1 `weir-item/1` is written and read with the design's fields; `propose_item` makes an item from a conclusion and refuses a name the inbox has had, an empty, `.`, `..` or `/`-holding name, and an item with no conclusion named (34, 35, core.20); an item's signals are read from the standing joins and attaches naming it, and its weight computed as the design says, with no record holding either; the spec's scenarios of the item, name and weight requirements pass; proved by `devenv shell -- moon run signals:test`.
+- [x] 5.1 `weir-item/1` is written and read with the design's fields; `propose_item` makes an item from a conclusion and refuses a name the inbox has had, an empty, `.`, `..` or `/`-holding name, and an item with no conclusion named (34, 35, core.20); an item's signals are read from the standing joins and attaches naming it, and its weight computed as the design says, with no record holding either; the spec's scenarios of the item, name and weight requirements pass; proved by `devenv shell -- moon run signals:test`.
 - [ ] 5.2 `write_brief` writes `brief.md` with the format line and the text handed, rewriting it alone, and refuses an item not held; `send` appends a send to each item's `sends.rec` with the brief as it stands and `outcome: open`, refusing an item with no brief; `settle_send` appends an outcome naming the send by target and time, refusing no such send or one settled; an item reads as sent once it has a send (36, 41, core.20, core.21); the spec's brief, send and outcome scenarios pass and every `sends.rec` passes `recfix`; proved by `devenv shell -- moon run signals:test`.
 
 ## 6. The check every write passes
