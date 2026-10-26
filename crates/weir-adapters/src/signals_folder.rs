@@ -213,6 +213,7 @@ fn carried(record: &Record, word: &str, signal: u64) -> ImportLineMove {
         signal,
         word,
         target,
+        note: None,
         by: field("By"),
         at: field("Date").map(|date| day_start(&date).unwrap_or(date)),
     }
@@ -1094,6 +1095,7 @@ Claude Code does not fetch the tools again.
                 signal: 1,
                 word: "route".into(),
                 target: Some("unit/fix-x".into()),
+                note: None,
                 by: Some("swancloud-planner".into()),
                 at: Some("2026-10-06T00:00:00Z".into()),
             }

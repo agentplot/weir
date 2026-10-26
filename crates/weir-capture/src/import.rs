@@ -72,6 +72,10 @@ pub struct ImportLineMove {
     pub word: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub target: Option<String>,
+    /// The reason or note the body gave with the move, as written, for the
+    /// import operation to keep with it (39; C.2).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub by: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -265,6 +269,7 @@ fn read_move(index: usize, value: &Value) -> Result<ImportLineMove, Malformed> {
         signal,
         word,
         target: string(entry, "target", &at("target"))?,
+        note: string(entry, "note", &at("note"))?,
         by: string(entry, "by", &at("by"))?,
         at: string(entry, "at", &at("at"))?,
     })
@@ -323,6 +328,7 @@ mod tests {
                     signal: 1,
                     word: "route".into(),
                     target: Some("unit/bump-mise".into()),
+                    note: None,
                     by: Some("planner".into()),
                     at: Some("2026-10-11T00:00:00Z".into()),
                 }],
@@ -614,6 +620,7 @@ mod tests {
                 signal: 1,
                 word: "promote".into(),
                 target: None,
+                note: None,
                 by: Some("curation".into()),
                 at: Some("2026-10-12T00:00:00Z".into()),
             }]
@@ -629,6 +636,25 @@ mod tests {
                 signal: 1,
                 word: "drop".into(),
                 target: None,
+                note: None,
+                by: None,
+                at: None,
+            }]
+        );
+    }
+
+    #[test]
+    fn a_move_with_its_note() {
+        let line = with_move(serde_json::json!(
+            {"signal": 1, "move": "attach", "target": "intent/x", "note": "the same ask as the standup's"}
+        ));
+        assert_eq!(
+            read_import_line(&line).unwrap().moves,
+            [ImportLineMove {
+                signal: 1,
+                word: "attach".into(),
+                target: Some("intent/x".into()),
+                note: Some("the same ask as the standup's".into()),
                 by: None,
                 at: None,
             }]
@@ -669,6 +695,10 @@ mod tests {
                 serde_json::json!({"signal": 1, "move": "drop", "by": 3}),
                 "import.moves[0].by",
             ),
+            (
+                serde_json::json!({"signal": 1, "move": "drop", "note": ["why"]}),
+                "import.moves[0].note",
+            ),
             (serde_json::json!("drop"), "import.moves[0]"),
         ] {
             let line = with_move(entry);
@@ -702,12 +732,17 @@ mod tests {
                 signal: 1,
                 word: "join".into(),
                 target: Some("upstream-x".into()),
+                note: Some("nothing covers it".into()),
                 by: Some("swancloud-design".into()),
                 at: None,
             }],
         };
         let written = line.to_json();
         assert!(!written.contains('\n'), "{written}");
+        assert!(
+            written.contains(r#""target":"upstream-x","note":"nothing covers it","by""#),
+            "{written}"
+        );
         assert!(!written.contains("pointer"), "{written}");
         assert!(!written.contains("title"), "{written}");
         assert!(!written.contains("\"at\""), "{written}");
