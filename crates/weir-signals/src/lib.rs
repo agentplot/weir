@@ -9,6 +9,10 @@
 //! check is made again (46). The crate reads no repository and runs no
 //! program: every function answers from its arguments alone (core.1).
 
+pub mod format;
+pub mod inbox;
 pub mod layout;
 
+pub use format::{Format, FormatError};
+pub use inbox::{Held, InboxAt, InboxError};
 pub use layout::Place;

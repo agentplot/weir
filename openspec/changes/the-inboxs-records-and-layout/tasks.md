@@ -8,7 +8,7 @@
 ## 2. The layout, formats and reading an inbox
 
 - [x] 2.1 The layout module places C.2's paths and reads a path into what lies there; its test gives every file name it places and each of its three roots to `weir_capture::Key::parse` and fails unless each file name is refused in any segment and each root as a first segment (4, 42); proved by `devenv shell -- moon run signals:test`.
-- [ ] 2.2 `format: weir-<record>/<major>` is read and written, a major above 1 refused as later than the reader reads, naming the path and the format (40, core.22); the spec's "A later major" and "A record of another format where it lies" scenarios pass; proved by `devenv shell -- moon run signals:test`.
+- [x] 2.2 `format: weir-<record>/<major>` is read and written, a major above 1 refused as later than the reader reads, naming the path and the format (40, core.22); the spec's "A later major" and "A record of another format where it lies" scenarios pass; proved by `devenv shell -- moon run signals:test`.
 - [ ] 2.3 `InboxAt::read` reads every `(path, text)` under `inbox/` of one tip, passes over paths outside it, and refuses a path the layout does not place, a capture out of its key's place, a `signals.rec` with no capture beside it and a record with no format, each naming the path (43, core.23); the spec's scenarios of "Each capture lies where its key fixes", "An inbox is read whole from one tip" and "Every record names its format and major" pass; proved by `devenv shell -- moon run signals:test`.
 
 ## 3. Signals and readings

@@ -42,3 +42,32 @@ pub fn recsel_value(text: &str, name: &str) -> String {
     let printed = String::from_utf8(output.stdout).expect("recsel prints UTF-8");
     printed.strip_suffix('\n').unwrap_or(&printed).to_string()
 }
+
+use weir_capture::{CameIn, Capture, Key};
+use weir_signals::InboxAt;
+
+/// The key `text`, which the test expects the rule to take.
+pub fn key(text: &str) -> Key {
+    Key::parse(text).unwrap_or_else(|error| panic!("{text}: {error}"))
+}
+
+/// A capture under `key` from a run of the release adapter, unread.
+pub fn capture(key_text: &str) -> Capture {
+    Capture {
+        key: key(key_text),
+        source: key_text.split('/').next().unwrap_or("release").into(),
+        event_at: "2026-10-10T14:02:11Z".into(),
+        title: Some(format!("{key_text}, the title")),
+        url: None,
+        pointer: Some(format!("deneb:/data/inbox/{key_text}")),
+        came_in: CameIn::Run("releases".into()),
+        machine: "deneb".into(),
+        taken_at: "2026-10-17T04:30:05Z".into(),
+        unread: true,
+    }
+}
+
+/// The inbox a tip of `files` holds, which the test expects to read.
+pub fn read(files: &[(&str, &str)]) -> InboxAt {
+    InboxAt::read(files.iter().copied()).unwrap_or_else(|error| panic!("{error}"))
+}
