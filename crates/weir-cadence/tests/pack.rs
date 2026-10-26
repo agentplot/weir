@@ -1,6 +1,6 @@
-//! Cadence's cases in the pack (C.7): every case under `pack/cadence/`
-//! cites the clauses it exercises (67, core.35) and is answered as it says
-//! (59, 60).
+//! Cadence's cases in the pack (C.7): every case, a folder under
+//! `pack/cadence/` holding its `case.toml`, cites the clauses it exercises
+//! (67, core.35) and is answered as it says (59, 60).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -24,7 +24,7 @@ struct Written {
     due: bool,
 }
 
-/// A case read whole.
+/// A case read whole, named by its folder.
 struct Case {
     file: String,
     satisfies: Vec<u32>,
@@ -69,39 +69,64 @@ fn folder() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../pack/cadence")
 }
 
-/// Every `*.toml` under `dir`.
-fn case_files(dir: &Path, found: &mut Vec<PathBuf>) {
-    for entry in fs::read_dir(dir).unwrap_or_else(|error| panic!("{}: {error}", dir.display())) {
-        let path = entry.expect("a directory entry").path();
-        if path.is_dir() {
-            case_files(&path, found);
-        } else if path
-            .extension()
-            .is_some_and(|extension| extension == "toml")
-        {
-            found.push(path);
-        }
-    }
+/// Every case's folder under the pack's folder of cadence's cases, and
+/// every file lying there beside them, which is no case.
+fn listed() -> (Vec<PathBuf>, Vec<PathBuf>) {
+    let folder = folder();
+    let mut entries: Vec<PathBuf> = fs::read_dir(&folder)
+        .unwrap_or_else(|error| panic!("{}: {error}", folder.display()))
+        .map(|entry| entry.expect("a directory entry").path())
+        .collect();
+    entries.sort();
+    entries.into_iter().partition(|path| path.is_dir())
 }
 
-/// Every case of the pack, each named by its path under the folder; fails
-/// naming every file that does not read.
+/// Every case of the pack, each named by its folder and read from its
+/// `case.toml`; fails naming every case that does not read.
 fn cases() -> Vec<Case> {
-    let folder = folder();
-    let mut files = Vec::new();
-    case_files(&folder, &mut files);
-    files.sort();
-    let (read, refused): (Vec<_>, Vec<_>) = files
+    let (folders, _) = listed();
+    let (read, refused): (Vec<_>, Vec<_>) = folders
         .iter()
         .map(|path| {
-            let file = path.strip_prefix(&folder).unwrap_or(path).display();
-            let text = fs::read_to_string(path).map_err(|error| format!("{file}: {error}"))?;
-            read_case(&file.to_string(), &text)
+            let name = path
+                .file_name()
+                .expect("a case's folder has a name")
+                .to_string_lossy();
+            let text = fs::read_to_string(path.join("case.toml"))
+                .map_err(|error| format!("{name}: case.toml: {error}"))?;
+            read_case(&name, &text)
         })
         .partition(Result::is_ok);
     let refused: Vec<String> = refused.into_iter().filter_map(Result::err).collect();
     assert_eq!(refused, Vec::<String>::new(), "cases that do not read");
     read.into_iter().filter_map(Result::ok).collect()
+}
+
+#[test]
+fn one_folder_per_case() {
+    let (folders, files) = listed();
+    assert!(!folders.is_empty(), "no cases under {}", folder().display());
+    let stray: Vec<String> = files
+        .iter()
+        .map(|path| {
+            path.strip_prefix(folder())
+                .unwrap_or(path)
+                .display()
+                .to_string()
+        })
+        .collect();
+    assert_eq!(
+        stray,
+        Vec::<String>::new(),
+        "files that are no case's folder"
+    );
+    for path in &folders {
+        assert!(
+            path.join("case.toml").is_file(),
+            "{} holds no case.toml",
+            path.display()
+        );
+    }
 }
 
 /// What a case says, or what cadence says of it.
@@ -185,9 +210,9 @@ fn with(field: &str, line: &str) -> String {
     .join("\n")
 }
 
-/// The refusal of `text`, read from `wrong.toml`.
+/// The refusal of `text`, read as the case `wrong`.
 fn refusal(text: &str) -> String {
-    match read_case("wrong.toml", text) {
+    match read_case("wrong", text) {
         Ok(_) => panic!("read:\n{text}"),
         Err(refusal) => refusal,
     }
@@ -195,35 +220,35 @@ fn refusal(text: &str) -> String {
 
 #[test]
 fn a_case_of_the_right_shape_reads() {
-    let case = read_case("right.toml", &with("", "")).expect("the case reads");
-    assert_eq!(case.file, "right.toml");
+    let case = read_case("right", &with("", "")).expect("the case reads");
+    assert_eq!(case.file, "right");
     assert_eq!(case.satisfies, vec![60]);
     assert_eq!(case.schedule, Schedule::parse("0 * * * *").unwrap());
     assert_eq!(case.last_run, Some("2026-11-03T11:00:00Z".parse().unwrap()));
     assert_eq!(case.now.time_zone().iana_name(), Some("America/New_York"));
     assert!(case.due);
-    let never_ran = read_case("never.toml", &with("last_run", "")).expect("the case reads");
+    let never_ran = read_case("never", &with("last_run", "")).expect("the case reads");
     assert_eq!(never_ran.last_run, None);
 }
 
 #[test]
 fn a_case_of_the_wrong_shape() {
     let misspelt = refusal(&with("last_run", "last-run = \"2026-11-03T11:00:00Z\""));
-    assert!(misspelt.starts_with("wrong.toml: "), "{misspelt}");
+    assert!(misspelt.starts_with("wrong: "), "{misspelt}");
     assert!(misspelt.contains("`last-run`"), "{misspelt}");
 
     let no_zone = refusal(&with("now", "now = \"2026-11-03T09:20:00-05:00\""));
-    assert!(no_zone.starts_with("wrong.toml: now: "), "{no_zone}");
+    assert!(no_zone.starts_with("wrong: now: "), "{no_zone}");
 
     let no_clause = refusal(&with("satisfies", "satisfies = []"));
-    assert_eq!(no_clause, "wrong.toml: satisfies: cites no clause");
+    assert_eq!(no_clause, "wrong: satisfies: cites no clause");
 }
 
 #[test]
 fn a_case_that_leaves_out_a_field() {
     for field in ["satisfies", "schedule", "now", "due"] {
         let left_out = refusal(&with(field, ""));
-        assert!(left_out.starts_with("wrong.toml: "), "{left_out}");
+        assert!(left_out.starts_with("wrong: "), "{left_out}");
         assert!(left_out.contains(&format!("`{field}`")), "{left_out}");
     }
 }
@@ -231,15 +256,15 @@ fn a_case_that_leaves_out_a_field() {
 #[test]
 fn a_case_whose_fields_do_not_read() {
     let schedule = refusal(&with("schedule", "schedule = \"@hourly\""));
-    assert!(schedule.starts_with("wrong.toml: schedule: "), "{schedule}");
+    assert!(schedule.starts_with("wrong: schedule: "), "{schedule}");
 
     let last_run = refusal(&with("last_run", "last_run = \"2026-11-03T11:00:00\""));
-    assert!(last_run.starts_with("wrong.toml: last_run: "), "{last_run}");
+    assert!(last_run.starts_with("wrong: last_run: "), "{last_run}");
 
     // New York was at -05:00 on that day, not -04:00.
     let offset = refusal(&with(
         "now",
         "now = \"2026-11-03T09:20:00-04:00[America/New_York]\"",
     ));
-    assert!(offset.starts_with("wrong.toml: now: "), "{offset}");
+    assert!(offset.starts_with("wrong: now: "), "{offset}");
 }
