@@ -89,10 +89,10 @@ An imported signal is `ImportLineSignal`, not the capture crate's
 while an imported signal's number is read and its excerpt never cut or
 checked (37). A move's word is a `String`, not an enum of the six, so a
 word of another body reaches the import operation, which leaves its
-signal unmoved (39; core.25). A move carries `note`, the reason or note
-the body gave with it, as read, beside its `target`, so the import
+signal unmoved (39; S9; core.25). A move carries `note`, the reason or
+note the body gave with it, as read, beside its `target`, so the import
 operation writes it into `weir-move/1`'s `note` and nothing a curator
-wrote is lost (39; C.2). Fields are read through `serde_json::Value`
+wrote is lost (39; C.1, C.2). Fields are read through `serde_json::Value`
 as `line` reads them, and written by `serde` in C.1's order with absent
 options left out.
 
@@ -221,10 +221,11 @@ why. It is the one module that names crew (core.2): its body name,
   map to the six by name. Every move's `Reason` is carried as its note,
   as read, and a drop's `Reason` is its consequence as well, or else
   its `Target` (30, 39). crew's `new-territory` becomes a join into a proposed
-  item named for its target (section 10, question 3; ADR 0002; core.25):
-  the name is the target lowercased with every run of characters other
-  than ASCII letters and digits made one `-`, so it holds no `/` and
-  lies as one folder (35). Any other word is carried as it stands (39).
+  item named for its target (section 10, question 3; S9; ADR 0002;
+  core.25): the name is the target lowercased with every run of
+  characters other than ASCII letters and digits made one `-`, so it
+  holds no `/` and lies as one folder (35). Any other word is carried as
+  it stands (39; S9).
   A record whose signal no capture of the body holds is reported, not
   carried.
 
@@ -275,10 +276,6 @@ kit:testing.3).
   second. When this one is built first, no test here needs
   `weir-signals`; when second, the conversion's test runs in that
   crate's project.
-- [S9 says crew's `new-territory` arrives unmoved, while section 10's
-  ruling on question 3, ADR 0002 and core.25 make it a join] → This
-  change follows the ruling and the rule, the later word; S9's case is
-  proved with a word of no body's, `promote`.
 - [The flywheel branch's `moves.rec` holds moves of the branch's own
   captures beside the corpus's] → Importing the corpus with that file
   names each move of a signal outside the corpus on standard error, as
@@ -286,13 +283,10 @@ kit:testing.3).
   same way; the two imports together carry every move once. The lines
   on standard error are many on a large branch, and change no exit
   status.
-- [C.1's import line shows no `note` on a move, while 39 and C.2 keep
-  one] → The line carries `note` beside `target`, left out when the
-  body gave none, so a reader of C.1's example reads it unchanged.
 - [Copying every file of a folder on every run costs time on a large
   folder] → The host banks only what it takes and discards the rest
   (18); a cursor that skipped files would lose some (8).
 
 ## Open Questions
 
-- Whether C.1's import line names a move's `note`, for madswan-design.
+None.
