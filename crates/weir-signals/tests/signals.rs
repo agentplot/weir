@@ -111,6 +111,55 @@ fn a_signal_lacking_a_field_is_refused_naming_it() {
 }
 
 #[test]
+fn a_signal_with_a_field_left_empty_is_refused_naming_it() {
+    let record = a_signal("release/x#1").to_record();
+    for field in ["asserted_by", "assertion", "excerpt", "position"] {
+        let mut empty = Record::new();
+        for (name, value) in record.fields() {
+            empty.push(name, if name == field { "" } else { value.as_str() });
+        }
+        let error = Signal::from_record(&empty).unwrap_err();
+        assert_eq!(error.field.as_deref(), Some(field), "{error}");
+        assert_eq!(error.to_string(), format!("`{field}` is empty"));
+    }
+    // A tip holding one is refused, as a reading of one is.
+    let read = weir_capture::Capture {
+        unread: false,
+        ..capture("release/a")
+    }
+    .to_rec();
+    let written = signals_rec(&[a_signal("release/a#1")]);
+    let files = |signals: &str| {
+        vec![
+            ("inbox/captures/release/a/capture.rec", read.clone()),
+            ("inbox/captures/release/a/signals.rec", signals.to_string()),
+        ]
+    };
+    InboxAt::read(files(&written)).unwrap();
+    let emptied = written.replace("asserted_by: jdx/mise\n", "asserted_by:\n");
+    recfix(&emptied);
+    let error = InboxAt::read(files(&emptied)).unwrap_err();
+    assert_eq!(error.path, "inbox/captures/release/a/signals.rec");
+    assert_eq!(error.record, Some(1));
+    assert_eq!(error.field.as_deref(), Some("asserted_by"));
+    // And so is a write formed elsewhere that holds one.
+    let inbox = after(
+        &empty(),
+        &empty()
+            .take(&Taken {
+                capture: capture("release/a"),
+                own_signal: None,
+            })
+            .unwrap(),
+    );
+    let mut write = weir_signals::Write::new();
+    write.put("inbox/captures/release/a/signals.rec", emptied);
+    let refused = inbox.check(&write).unwrap_err();
+    assert_eq!(refused.0[0].what, "inbox/captures/release/a/signals.rec");
+    assert_eq!(refused.0[0].field.as_deref(), Some("asserted_by"));
+}
+
+#[test]
 fn a_signal_of_an_unknown_nature() {
     let written = signals_rec(&[a_signal("release/a#1")]).replace("kind: ask", "kind: complaint");
     let error = Signal::from_record(&rec::read(&written).unwrap()[0]).unwrap_err();

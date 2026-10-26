@@ -8,6 +8,7 @@ use weir_capture::rec::{self, RecError, Record};
 use weir_capture::{Key, LeftOut, Nature, OwnSignal};
 
 use crate::format::Format;
+use crate::moves::required_text;
 
 /// What a `signals.rec` holds for a reading of no signals: no record, and
 /// this one line, which names the format and which `recfix` takes. Its
@@ -112,7 +113,8 @@ impl Signal {
     }
 
     /// The signal of a `weir-signal/1` record, refused naming the field
-    /// that is missing, given twice or not of its shape.
+    /// that is missing, given twice or not of its shape. A text field left
+    /// empty is lacking, as a reading's is (25); the lists may be empty.
     pub fn from_record(record: &Record) -> Result<Signal, RecError> {
         Format::of_record(record, &[Format::Signal])?;
         let signal = record.required("signal")?;
@@ -129,12 +131,12 @@ impl Signal {
         Ok(Signal {
             signal,
             kind,
-            asserted_by: record.required("asserted_by")?.to_string(),
-            assertion: record.required("assertion")?.to_string(),
+            asserted_by: required_text(record, "asserted_by")?,
+            assertion: required_text(record, "assertion")?,
             subjects: strings(record.get_all("subjects")),
             argues_with: strings(record.get_all("argues_with")),
-            excerpt: record.required("excerpt")?.to_string(),
-            position: record.required("position")?.to_string(),
+            excerpt: required_text(record, "excerpt")?,
+            position: required_text(record, "position")?,
             cut,
         })
     }
