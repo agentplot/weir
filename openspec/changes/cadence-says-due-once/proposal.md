@@ -80,6 +80,9 @@ None.
 Cargo.toml
 Cargo.lock
 crates/weir-cadence/**
+crates/weir-capture/moon.yml
+crates/weir-kinds/moon.yml
+crates/weir/moon.yml
 pack/cadence/**
 .moon/workspace.yml
 .moon/toolchains.yml
