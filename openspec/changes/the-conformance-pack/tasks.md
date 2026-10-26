@@ -2,7 +2,7 @@
 
 ## 1. What the change builds on
 
-- [ ] 1.1 The shared-branch unit is in this branch: `crates/weir-branch` is a workspace member and moon project `branch`, and `pack/branch/` holds its cases, each a folder with its `case.toml`. Nothing is written for this task; where it does not hold, the change cannot go on (design, Risks). Proved by `devenv shell -- moon run branch:test`.
+- [x] 1.1 The shared-branch unit is in this branch: `crates/weir-branch` is a workspace member and moon project `branch`, and `pack/branch/` holds its cases, each a folder with its `case.toml`. Nothing is written for this task; where it does not hold, the change cannot go on (design, Risks). Proved by `devenv shell -- moon run branch:test`.
 
 ## 2. weir-report/1 in weir-capture
 
