@@ -20,8 +20,10 @@ tasks:
     inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
+  # The tests answer cadence's cases in the pack, which are read from the
+  # tree beside the crate.
   test:
     command: 'cargo test -p weir-cadence'
-    inputs: ['/crates/weir-cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    inputs: ['/crates/weir-cadence/**/*', '/pack/cadence/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}

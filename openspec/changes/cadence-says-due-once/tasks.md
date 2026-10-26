@@ -13,7 +13,7 @@ this group, the line holds as it is; add only what is missing.
 
 ## 2. The crate and its project
 
-- [ ] 2.1 `crates/weir-cadence` exists as a library crate (`Cargo.toml` taking the workspace's version, edition, license and `[lints]`, a description citing 59, 60 and 83 to 85) and is project `cadence` in `.moon/workspace.yml`, its `moon.yml` `language: 'rust'` with tasks `format`, `lint`, `typecheck` and `test` as the design's table gives them, each tagged `check-fast`, run from the workspace root and declaring `/crates/weir-cadence/**/*`, `/Cargo.toml`, `/Cargo.lock`, `/devenv.nix`, `/devenv.lock` and `/.prototools` as inputs, `test` also `/pack/cadence/**/*`, and none naming `rust-toolchain.toml` (core.39, kit:testing.3); proved by `devenv shell -- moon run cadence:format cadence:lint cadence:typecheck cadence:test`.
+- [x] 2.1 `crates/weir-cadence` exists as a library crate (`Cargo.toml` taking the workspace's version, edition, license and `[lints]`, a description citing 59, 60 and 83 to 85) and is project `cadence` in `.moon/workspace.yml`, its `moon.yml` `language: 'rust'` with tasks `format`, `lint`, `typecheck` and `test` as the design's table gives them, each tagged `check-fast`, run from the workspace root and declaring `/crates/weir-cadence/**/*`, `/Cargo.toml`, `/Cargo.lock`, `/devenv.nix`, `/devenv.lock` and `/.prototools` as inputs, `test` also `/pack/cadence/**/*`, and none naming `rust-toolchain.toml` (core.39, kit:testing.3); proved by `devenv shell -- moon run cadence:format cadence:lint cadence:typecheck cadence:test`.
 
 ## 3. Reading a schedule
 
