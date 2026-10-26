@@ -1,5 +1,6 @@
 //! An adapter's lines, JSON Lines on standard output: each exactly one of
-//! an offer, a cursor or a completion (1; C.1; core.5). A line is read to a
+//! an offer, a cursor or a completion (1; C.1; core.5), and never an import
+//! line, which a host's import operation alone reads (63, 64). A line is read to a
 //! JSON value first and each field checked by name, so a refusal names the
 //! field, and a field the contract does not name is ignored (core.6). A
 //! line is written as one line of compact JSON, which reads back the same
@@ -171,6 +172,12 @@ pub fn read_line(text: &str) -> Result<Line, Malformed> {
     let Value::Object(object) = value else {
         return Err(Malformed::line("the line is not a JSON object"));
     };
+    if object.contains_key("import") {
+        return Err(Malformed::line(
+            "the line holds `import`: an import line is read by a host's import operation and \
+             never taken (63, 64)",
+        ));
+    }
     let held: Vec<&str> = LINE_KEYS
         .into_iter()
         .filter(|name| object.contains_key(*name))
@@ -457,6 +464,26 @@ mod tests {
 
         let not_object = refused(r#"["cursor"]"#);
         assert_eq!(not_object.reason, "the line is not a JSON object");
+    }
+
+    #[test]
+    fn an_import_line_is_not_an_adapters_line() {
+        let import = r#"{"import": {"capture": {"key": "release/x", "source": "release", "event_at": "2026-10-10T14:02:11Z"}, "came_in": "import:crew-folders", "signals": [], "moves": []}}"#;
+        let with_offer = offer_line(
+            r#""key": "release/x", "source": "release", "event_at": "2026-10-10T14:02:11Z""#,
+        )
+        .replacen('{', r#"{"import": {}, "#, 1);
+        for line in [import.to_string(), with_offer] {
+            let malformed = refused(&line);
+            assert_eq!(malformed.field, None, "{line}");
+            assert!(
+                malformed
+                    .reason
+                    .contains("an import line is read by a host's import operation"),
+                "{malformed}"
+            );
+            assert!(malformed.reason.contains("never taken"), "{malformed}");
+        }
     }
 
     #[test]
