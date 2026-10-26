@@ -197,12 +197,13 @@ impl Field {
         }
     }
 
-    /// Reads one field into the same field in numbers alone.
+    /// Reads one field into the same field in numbers alone. A list that
+    /// holds `*` names every value, as `*` does, and reads as `*`; croner
+    /// takes `*` only as a whole field, and counts only that as a day field
+    /// left unrestricted.
     fn read(self, text: &str) -> Result<String, ScheduleError> {
-        if text == "*" {
-            return Ok(text.to_string());
-        }
-        text.split(',')
+        let elements = text
+            .split(',')
             .map(|element| {
                 self.element(element)
                     .map_err(|reason| ScheduleError::Field {
@@ -211,12 +212,15 @@ impl Field {
                         reason,
                     })
             })
-            .collect::<Result<Vec<_>, _>>()
-            .map(|elements| elements.join(","))
+            .collect::<Result<Vec<_>, _>>()?;
+        if elements.iter().any(|element| element == "*") {
+            return Ok("*".to_string());
+        }
+        Ok(elements.join(","))
     }
 
-    /// One element of a field's list: `*/n`, a value, a range, or a range
-    /// with a step.
+    /// One element of a field's list: `*`, `*/n`, a value, a range, or a
+    /// range with a step.
     fn element(self, element: &str) -> Result<String, Reason> {
         self.extensions(element)?;
         let (base, step) = match element.split_once('/') {
@@ -224,7 +228,7 @@ impl Field {
             None => (element, None),
         };
         let base = match base.split_once('-') {
-            _ if base == "*" && step.is_some() => base.to_string(),
+            _ if base == "*" => base.to_string(),
             Some((start, end)) => {
                 let start = self.value(start, false)?;
                 let end = self.value(end, start > 0)?;

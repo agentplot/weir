@@ -40,6 +40,7 @@ fn every_form_of_five_field_cron_is_read() {
         "* * * * *",
         "0 9 * * *",
         "5,35 0-23 1-31 1-12 0-7",
+        "*,5 9,* *,1-5 */2,* MON,*",
         "*/15 */2 */10 */3 */1",
         "0-30/10 9-17/4 1-15/7 1-11/2 1-5/2",
         "0 9 1,15 jan,Jul,DEC mon-fri",
@@ -77,6 +78,33 @@ fn lists_ranges_steps_and_names() {
     let first = utc("2026-01-05T09:00");
     assert!(expected(&first) && expected(&utc("2026-01-05T17:45")));
     assert!(!expected(&utc("2026-01-05T18:00")));
+}
+
+#[test]
+fn a_list_holding_star_names_what_star_names() {
+    let read = schedule("*,5 * * * *");
+    assert_eq!(
+        disagreements(&read, &utc("2026-11-03T00:00"), 2 * 60, |_| true),
+        vec![]
+    );
+    // A day field whose list holds `*` leaves the other alone to decide,
+    // over two weeks holding the 15th, a Sunday.
+    let from = utc("2026-11-09T00:00");
+    let mondays = |at: &Zoned| nine(at) && at.weekday() == Weekday::Monday;
+    assert_eq!(
+        disagreements(&schedule("0 9 *,15 * MON"), &from, 2 * WEEK, mondays),
+        vec![]
+    );
+    let the_15th = |at: &Zoned| nine(at) && at.day() == 15;
+    assert_eq!(
+        disagreements(&schedule("0 9 15 * MON,*"), &from, 2 * WEEK, the_15th),
+        vec![]
+    );
+    // Every other element of the list is still read.
+    assert_eq!(
+        refused("*,60 * * * *"),
+        field(Field::Minute, "60", Reason::OutOfRange)
+    );
 }
 
 #[test]
@@ -311,7 +339,6 @@ fn what_is_not_a_value_a_range_or_a_step() {
             field(Field::Minute, "/10", Reason::Malformed),
         ),
         ("*/ * * * *", field(Field::Minute, "*/", Reason::Malformed)),
-        ("*,5 * * * *", field(Field::Minute, "*", Reason::Malformed)),
         ("1,,2 * * * *", field(Field::Minute, "", Reason::Malformed)),
         (
             "1-2-3 * * * *",
