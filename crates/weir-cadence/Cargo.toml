@@ -10,9 +10,12 @@ croner.workspace = true
 jiff.workspace = true
 
 # The tests take their zones from jiff's bundled copy of the time zone
-# database, so a host's own copy cannot change a result.
+# database, so a host's own copy cannot change a result, and read the
+# pack's cases through serde and toml.
 [dev-dependencies]
 jiff = { workspace = true, features = ["tzdb-bundle-always"] }
+serde.workspace = true
+toml.workspace = true
 
 [lints]
 workspace = true
