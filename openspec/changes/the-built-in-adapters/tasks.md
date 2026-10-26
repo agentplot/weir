@@ -36,4 +36,4 @@
 
 ## 6. The checks of the projects this change touches
 
-- [ ] 6.1 Run `devenv shell -- moon run capture:format capture:lint capture:typecheck capture:test adapters:format adapters:lint adapters:typecheck adapters:test weir:format weir:lint weir:typecheck weir:test root:format` and see every task pass; where 1.4 wrote the conversion, run `devenv shell -- moon run signals:format signals:lint signals:typecheck signals:test` too and see every task pass.
+- [x] 6.1 Run `devenv shell -- moon run capture:format capture:lint capture:typecheck capture:test adapters:format adapters:lint adapters:typecheck adapters:test weir:format weir:lint weir:typecheck weir:test root:format` and see every task pass; where 1.4 wrote the conversion, run `devenv shell -- moon run signals:format signals:lint signals:typecheck signals:test` too and see every task pass.
