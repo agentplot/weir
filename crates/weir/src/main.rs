@@ -194,7 +194,7 @@ fn capture(adapter: &str, args: &[&str]) -> Exit {
 /// when any capture was not read, once the rest is printed (15).
 fn import_signals(root: &Path) -> Exit {
     let command = "import signals";
-    let reading = match signals_folder::read(root) {
+    let reading = match signals_folder::read(root, None) {
         Ok(reading) => reading,
         Err(why) => return failed(command, &why),
     };
