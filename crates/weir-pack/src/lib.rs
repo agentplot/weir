@@ -16,3 +16,7 @@
 //! repository a host is run against, runs the host and reads the tip, and
 //! hands what it found here to compare. Every function answers from its
 //! arguments alone (core.1).
+
+pub mod pack;
+
+pub use pack::{Case, Pack, Shape};
