@@ -1,0 +1,34 @@
+# A declaration is checked whole: a stage with no prompt, a deliverable not
+# of the six, and a field of the wrong shape, each refused naming its
+# field in one refusal (53, 54, 57).
+satisfies = [53, 54, 57]
+declaration = """
+[kinds.bump]
+version = 0
+
+[[kinds.bump.stages]]
+name = "code"
+deliverables = ["commit"]
+
+[[kinds.bump.stages]]
+name = "review"
+prompt = "prompts/bump-review.md"
+conversation = true
+quiet = "an hour"
+"""
+
+[[expect.refused]]
+field = "kinds.bump.version"
+reason_holds = "must be an integer of at least 1"
+
+[[expect.refused]]
+field = "kinds.bump.stages[0].prompt"
+reason_holds = "is missing, and every stage has a prompt"
+
+[[expect.refused]]
+field = "kinds.bump.stages[0].deliverables"
+reason_holds = "`commit` is not one of commits, change, tasks, archived"
+
+[[expect.refused]]
+field = "kinds.bump.stages[1].quiet"
+reason_holds = "is not one whole number followed by s, m or h"

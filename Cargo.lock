@@ -1342,6 +1342,7 @@ dependencies = [
 name = "weir-kinds"
 version = "0.0.0"
 dependencies = [
+ "serde",
  "toml",
 ]
 

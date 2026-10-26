@@ -1,0 +1,13 @@
+# A stage names two deliverables (S12): the declaration is refused,
+# naming the field.
+satisfies = [51, 54, 57]
+declaration = """
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits", "tasks"]
+"""
+
+[[expect.refused]]
+field = "kinds.bump.stages[0].deliverables"
+reason_holds = "names 2 deliverables, and a stage has exactly one"

@@ -1,0 +1,46 @@
+# flume reads its own declaration (S10): fix@1 with one stage delivering
+# commits, and change@1 with construct, code and verify delivering a
+# change written, tasks ticked and a change archived. Each reads the same
+# twice, and reading changes nothing.
+satisfies = [51, 54, 58]
+declaration = """
+[kinds.fix]
+version = 1
+starts_unready = true
+lands = true
+
+[[kinds.fix.stages]]
+name = "code"
+prompt = "prompts/fix-code.md"
+deliverables = ["commits"]
+
+[kinds.change]
+version = 1
+
+[[kinds.change.stages]]
+name = "construct"
+prompt = "prompts/change-construct.md"
+deliverables = ["change"]
+
+[[kinds.change.stages]]
+name = "code"
+prompt = "prompts/change-code.md"
+deliverables = ["tasks"]
+
+[[kinds.change.stages]]
+name = "verify"
+prompt = "prompts/change-verify.md"
+deliverables = ["archived"]
+"""
+
+[expect.kinds.fix]
+version = 1
+stages = [{ name = "code", end = "commits" }]
+
+[expect.kinds.change]
+version = 1
+stages = [
+  { name = "construct", end = "change" },
+  { name = "code", end = "tasks" },
+  { name = "verify", end = "archived" },
+]

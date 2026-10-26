@@ -1,0 +1,12 @@
+# A declaration whose kind has no stage (S12): refused the same way,
+# naming the field.
+satisfies = [51, 57]
+declaration = """
+[kinds.bump]
+version = 2
+lands = true
+"""
+
+[[expect.refused]]
+field = "kinds.bump.stages"
+reason_holds = "a kind has at least one stage"
