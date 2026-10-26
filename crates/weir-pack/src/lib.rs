@@ -21,6 +21,7 @@ pub mod adapter;
 pub mod adapter_case;
 pub mod check;
 pub mod clauses;
+pub mod compare;
 pub mod host;
 pub mod pack;
 
@@ -30,6 +31,7 @@ pub use adapter_case::{
 };
 pub use check::{check, satisfies, Checked, Fault};
 pub use clauses::{read_index, Clause, Index, Section};
+pub use compare::{compare_report, compare_tip, verdict, Machine};
 pub use host::{
     read_host_case, Expected, ExpectedRefusal, ExpectedRun, HostCase, Invocation, Offered, Step,
 };
