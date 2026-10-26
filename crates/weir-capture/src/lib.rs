@@ -11,8 +11,10 @@
 //! run is started with (11, 12, 72 to 74); the sha256 content hash the
 //! built-in adapters key files by (C.6); the cut of an own excerpt (20);
 //! the capture's record, `weir-capture/1`, in recutils (16, 17, 22; C.2);
-//! and `take`, the seven steps a host takes lines in, through the inbox and
-//! the raw bank the host hands it (13 to 24, 75 to 77; C.1).
+//! `take`, the seven steps a host takes lines in, through the inbox and
+//! the raw bank the host hands it (13 to 24, 75 to 77; C.1); and the
+//! report of a run, an intake or an import, written and read as
+//! `weir-report/1`, the object a host prints last (23, 76; C.7).
 //!
 //! Every function answers from its arguments alone: the machine's name, the
 //! taken-at time, the limit and the raw place are the caller's to hand in,
@@ -45,5 +47,6 @@ pub use key::{Key, KeyError};
 pub use line::{read_line, Completion, Excerpt, Failure, Line, Malformed, Nature, Offer};
 pub use rec::{RecError, Record};
 pub use take::{
-    take, Bank, Inbox, OwnSignal, RawFile, Refusal, Refused, Report, Take, TakeError, Taken,
+    read_report, take, Bank, Inbox, OwnSignal, RawFile, Refusal, Refused, Report, ReportError,
+    Take, TakeError, Taken, REPORT_FORMAT,
 };

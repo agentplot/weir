@@ -6,7 +6,7 @@
 
 ## 2. weir-report/1 in weir-capture
 
-- [ ] 2.1 `take`: `Report::to_json` writes one line of compact JSON naming `"format": "weir-report/1"`, then `taken`, `held`, `refused` (each `line`, `key` where it had one, `reason`), `listed` where a completion was read, `failed` (each `what`, `why`), `cursor` where one was kept, and `complete`; `read_report(&str)` reads it back into the same `Report`, and refuses an object naming another format or lacking a field, naming why. `lib.rs` exports both and its documentation names the report among what the crate holds, citing 23, 76 and C.7. Tests cover every scenario of "The report is written and read as weir-report/1" (capture-take). Proved by `devenv shell -- moon run capture:test`.
+- [x] 2.1 `take`: `Report::to_json` writes one line of compact JSON naming `"format": "weir-report/1"`, then `taken`, `held`, `refused` (each `line`, `key` where it had one, `reason`), `listed` where a completion was read, `failed` (each `what`, `why`), `cursor` where one was kept, and `complete`; `read_report(&str)` reads it back into the same `Report`, and refuses an object naming another format or lacking a field, naming why. `lib.rs` exports both and its documentation names the report among what the crate holds, citing 23, 76 and C.7. Tests cover every scenario of "The report is written and read as weir-report/1" (capture-take). Proved by `devenv shell -- moon run capture:test`.
 
 ## 3. The pack's crate and its moon project
 
