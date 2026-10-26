@@ -18,7 +18,7 @@ use std::path::Path;
 
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
-use weir_capture::{CameIn, ImportLine, ImportLineCapture, Key};
+use weir_capture::{CameIn, ImportLine, ImportLineCapture, ImportLineSignal, Key, Nature};
 
 use crate::event_time::day_start;
 
@@ -124,6 +124,12 @@ fn read_capture(folder: &Path, name: &str) -> Result<ImportLine, (String, String
         .lines()
         .find_map(|line| line.strip_prefix("# "))
         .map(|title| title.trim_end().to_string());
+    let signals = signal_files(folder)
+        .map_err(|why| (".".to_string(), why))?
+        .iter()
+        .zip(1..)
+        .map(|(file, n)| read_signal(folder, name, file, n))
+        .collect::<Result<_, _>>()?;
     Ok(ImportLine {
         capture: ImportLineCapture {
             key,
@@ -134,8 +140,141 @@ fn read_capture(folder: &Path, name: &str) -> Result<ImportLine, (String, String
         },
         pointer: field("raw").map(str::to_string),
         came_in: CameIn::Import(BODY.to_string()),
-        signals: Vec::new(),
+        signals,
         moves: Vec::new(),
+    })
+}
+
+/// Whether `name` is a signal's file as crew names one, `NN-<slug>.md`, the
+/// slug lowercase letters, digits and dashes.
+fn is_signal_file(name: &str) -> bool {
+    let Some(stem) = name.strip_suffix(".md") else {
+        return false;
+    };
+    let bytes = stem.as_bytes();
+    bytes.len() > 3
+        && bytes[..2].iter().all(u8::is_ascii_digit)
+        && bytes[2] == b'-'
+        && bytes[3] != b'-'
+        && bytes[3..]
+            .iter()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-')
+}
+
+/// A capture's signal files, in the order of their `NN` and then of their
+/// names, which byte order of the names is, `NN` being two digits (27).
+fn signal_files(folder: &Path) -> Result<Vec<String>, String> {
+    let mut names: Vec<String> = fs::read_dir(folder)
+        .map_err(|error| format!("the capture's folder cannot be read: {error}"))?
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|name| is_signal_file(name))
+        .collect();
+    names.sort();
+    Ok(names)
+}
+
+/// A list as crew writes one, `[a, b]`, read as its entries; an absent one
+/// is empty.
+fn list(value: Option<&str>) -> Vec<String> {
+    let Some(value) = value.map(str::trim) else {
+        return Vec::new();
+    };
+    let inner = value
+        .strip_prefix('[')
+        .and_then(|inner| inner.strip_suffix(']'))
+        .unwrap_or(value);
+    inner
+        .split(", ")
+        .map(str::trim)
+        .filter(|entry| !entry.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+/// Whether `line` is a Markdown heading: one or more `#`, then a space or
+/// nothing.
+fn is_heading(line: &str) -> bool {
+    let rest = line.trim_start_matches('#');
+    rest.len() < line.len() && (rest.is_empty() || rest.starts_with(' '))
+}
+
+/// The signal numbered `n` of the capture `capture`, from its file `file`,
+/// or the file and why it could not be read whole (25, 28).
+fn read_signal(
+    folder: &Path,
+    capture: &str,
+    file: &str,
+    n: u64,
+) -> Result<ImportLineSignal, (String, String)> {
+    let not_read = |why: String| (file.to_string(), why);
+    let text = fs::read_to_string(folder.join(file))
+        .map_err(|error| not_read(format!("cannot be read: {error}")))?;
+    let (fields, body) = front_matter(&text);
+    let field = |name: &str| {
+        fields
+            .iter()
+            .find(|(field, _)| field == name)
+            .map(|(_, value)| value.as_str())
+            .filter(|value| !value.is_empty())
+    };
+    let kind_text = field("kind").ok_or_else(|| not_read("names no `kind`".to_string()))?;
+    let kind = Nature::parse(kind_text).ok_or_else(|| {
+        not_read(format!(
+            "`kind` is `{kind_text}`, not one of {}",
+            Nature::ALL.map(Nature::as_str).join(", ")
+        ))
+    })?;
+    let asserted_by = field("who")
+        .ok_or_else(|| not_read("names no `who`".to_string()))?
+        .to_string();
+
+    // The quote's lines, an attribution line after it, and what is left,
+    // headings aside, is the assertion.
+    let mut quote: Vec<&str> = Vec::new();
+    let mut attribution = None;
+    let mut assertion: Vec<&str> = Vec::new();
+    for line in body.lines() {
+        if let Some(quoted) = line.strip_prefix('>') {
+            quote.push(quoted.strip_prefix(' ').unwrap_or(quoted));
+        } else if let Some(at) = line.strip_prefix("— ") {
+            if !quote.is_empty() && attribution.is_none() {
+                attribution = Some(at.trim());
+            }
+        } else if !is_heading(line) && !line.trim().is_empty() {
+            assertion.push(line.trim());
+        }
+    }
+    let assertion = assertion.join("\n");
+    if assertion.is_empty() {
+        return Err(not_read("states nothing it asserts".to_string()));
+    }
+    let quoted = quote.join("\n");
+    // crew's own attribution closes its quote: `"<words>" — <where>`.
+    let (excerpt, position) = match quoted.rfind("\" — ") {
+        Some(at) if quoted.starts_with('"') && at > 0 && !quoted[at..].contains('\n') => (
+            quoted[1..at].to_string(),
+            quoted[at + "\" — ".len()..].trim().to_string(),
+        ),
+        _ => (
+            quoted,
+            attribution
+                .map(str::to_string)
+                .unwrap_or_else(|| format!("signals/{capture}/{file}")),
+        ),
+    };
+    if excerpt.is_empty() {
+        return Err(not_read("quotes no excerpt".to_string()));
+    }
+    Ok(ImportLineSignal {
+        n,
+        kind,
+        asserted_by,
+        assertion,
+        subjects: list(field("subject")),
+        argues_with: list(field("claims")),
+        excerpt,
+        position,
     })
 }
 
@@ -553,6 +692,182 @@ Claude Code does not fetch the tools again.
             &[],
         );
         assert_eq!(body.read().lines[0].pointer, None);
+    }
+
+    fn signal(kind: &str, extra: &str, text: &str) -> String {
+        format!("---\nsignal: x\nkind: {kind}\nwho: swancloud-design\n{extra}---\n\n{text}")
+    }
+
+    const SAID: &str = "It says so.\n\n> \"the words\" — 10:00:00Z\n";
+
+    #[test]
+    fn signals_numbered_with_a_gap() {
+        let body = Body::new();
+        body.capture(
+            SESSION,
+            SESSION_CAPTURE,
+            &[
+                ("03-b.md", &signal("ask", "", "B.\n\n> \"b\" — 2\n")),
+                ("01-a.md", &signal("ask", "", "A.\n\n> \"a\" — 1\n")),
+            ],
+        );
+        let signals = &body.read().lines[0].signals;
+        assert_eq!(
+            signals
+                .iter()
+                .map(|signal| (signal.n, signal.excerpt.as_str()))
+                .collect::<Vec<_>>(),
+            [(1, "a"), (2, "b")]
+        );
+    }
+
+    #[test]
+    fn signals_are_ordered_by_their_number_and_then_their_name() {
+        let body = Body::new();
+        let files: Vec<(&str, String)> = ["02-a.md", "01-z.md", "01-b.md"]
+            .into_iter()
+            .map(|file| (file, signal("ask", "", &format!("{file}.\n\n> {file}\n"))))
+            .collect();
+        let files: Vec<(&str, &str)> = files.iter().map(|(f, t)| (*f, t.as_str())).collect();
+        body.capture(SESSION, SESSION_CAPTURE, &files)
+            .file(&format!("signals/{SESSION}/notes.txt"), "not a signal")
+            .file(&format!("signals/{SESSION}/1-a.md"), "not a signal")
+            .file(&format!("signals/{SESSION}/01-A.md"), "not a signal");
+        let signals = &body.read().lines[0].signals;
+        assert_eq!(
+            signals
+                .iter()
+                .map(|signal| signal.excerpt.as_str())
+                .collect::<Vec<_>>(),
+            ["01-b.md", "01-z.md", "02-a.md"]
+        );
+    }
+
+    #[test]
+    fn a_signal_of_no_nature() {
+        let body = Body::flywheel();
+        body.file(
+            &format!("signals/{SESSION}/02-finding.md"),
+            &signal("finding", "", SAID),
+        );
+        let reading = body.read();
+        assert_eq!(keys(&reading), ["release/pendingyou/0.32.0"]);
+        assert_eq!(reading.not_read.len(), 1);
+        let not_read = &reading.not_read[0];
+        assert_eq!(not_read.capture, SESSION);
+        assert_eq!(not_read.file, "02-finding.md");
+        assert!(not_read.why.contains("`kind`"), "{not_read}");
+        assert!(not_read.why.contains("`finding`"), "{not_read}");
+    }
+
+    #[test]
+    fn a_signal_lacking_a_field_leaves_its_capture_unread() {
+        for (text, why) in [
+            (
+                "---\nkind: ask\n---\n\nIt says so.\n\n> words\n".to_string(),
+                "`who`",
+            ),
+            (
+                "---\nwho: x\n---\n\nIt says so.\n\n> words\n".to_string(),
+                "`kind`",
+            ),
+            (signal("ask", "", "> \"the words\" — 1\n"), "asserts"),
+            (
+                signal("ask", "", "It says so, and quotes nothing.\n"),
+                "excerpt",
+            ),
+            (signal("ask", "", "It says so.\n\n> \"\" — 1\n"), "excerpt"),
+        ] {
+            let body = Body::new();
+            body.capture(SESSION, SESSION_CAPTURE, &[("01-a.md", &text)]);
+            let reading = body.read();
+            assert!(reading.lines.is_empty(), "{text}");
+            assert_eq!(reading.not_read[0].file, "01-a.md");
+            assert!(
+                reading.not_read[0].why.contains(why),
+                "{:?}",
+                reading.not_read
+            );
+        }
+    }
+
+    #[test]
+    fn a_sessions_signal() {
+        let reading = Body::flywheel().read();
+        assert_eq!(
+            reading.lines[1].signals,
+            [ImportLineSignal {
+                n: 1,
+                kind: Nature::Constraint,
+                asserted_by: "swancloud-design".into(),
+                assertion: "Claude Code does not fetch the tools again.".into(),
+                subjects: vec![],
+                argues_with: vec![],
+                excerpt: "HTTP reconnection successful after 16216ms (attempt 1)".into(),
+                position: "22:21:18Z".into(),
+            }]
+        );
+    }
+
+    #[test]
+    fn a_releases_signal() {
+        let reading = Body::flywheel().read();
+        assert_eq!(
+            reading.lines[0].signals,
+            [ImportLineSignal {
+                n: 1,
+                kind: Nature::Ask,
+                asserted_by: "npm:pendingyou".into(),
+                assertion: "pendingyou 0.32.0 is released; the fleet pins 0.31.2.".into(),
+                subjects: vec!["release".into(), "pendingyou".into()],
+                argues_with: vec![
+                    "packages/pendingyou/default.nix".into(),
+                    "flake.nix inputs.herdr-pendingyou-src".into()
+                ],
+                excerpt: "## 0.32.0\n\n- `pendingyou hold` waits on a card.".into(),
+                position: "https://www.npmjs.com/package/pendingyou/v/0.32.0, published \
+                           2026-10-08T18:53:39Z"
+                    .into(),
+            }]
+        );
+    }
+
+    #[test]
+    fn a_quote_of_several_lines_crew_attributes() {
+        let body = Body::new();
+        body.capture(
+            SESSION,
+            SESSION_CAPTURE,
+            &[(
+                "01-a.md",
+                &signal(
+                    "reaction",
+                    "subject: [mcp]\n",
+                    "# A heading\nIt says so,\nover two lines.\n\n> \"first line\n>\n> last line\" — 22:21:18Z\n",
+                ),
+            )],
+        );
+        let signal = &body.read().lines[0].signals[0];
+        assert_eq!(signal.excerpt, "first line\n\nlast line");
+        assert_eq!(signal.position, "22:21:18Z");
+        assert_eq!(signal.assertion, "It says so,\nover two lines.");
+        assert_eq!(signal.subjects, ["mcp"]);
+    }
+
+    #[test]
+    fn a_signal_with_no_attribution_is_placed_by_its_file() {
+        let body = Body::new();
+        body.capture(
+            SESSION,
+            SESSION_CAPTURE,
+            &[(
+                "01-a.md",
+                &signal("question", "", "Is it so?\n\n> the words\n"),
+            )],
+        );
+        let signal = &body.read().lines[0].signals[0];
+        assert_eq!(signal.excerpt, "the words");
+        assert_eq!(signal.position, format!("signals/{SESSION}/01-a.md"));
     }
 
     #[test]
