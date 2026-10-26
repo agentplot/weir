@@ -1,0 +1,21 @@
+# A signal whose excerpt stands in none of the capture's raw files is
+# refused.
+satisfies = [26]
+
+[operation.reading]
+key = "release/acme/1.1"
+raw = ["raw/notes.md"]
+
+[[operation.reading.signal]]
+kind = "ask"
+asserted_by = "acme"
+assertion = "acme 1.1 drops the shim."
+subjects = []
+argues_with = []
+excerpt = "The shim is gone for good."
+position = "the notes"
+
+[[refused]]
+what = "release/acme/1.1#1"
+field = "excerpt"
+reason_holds = "stands in none of the capture's raw files"

@@ -1,0 +1,7 @@
+format: weir-move/1
+signal: release/acme/1.0#1
+move: drop
+target: superseded by acme 1.1
+note: superseded by acme 1.1
+by: the operator
+at: 2026-10-21T09:00:00Z

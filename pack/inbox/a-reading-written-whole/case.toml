@@ -1,0 +1,26 @@
+# A reader's reading of an unread capture, written whole beside it:
+# each signal with every field, its excerpt standing in the raw notes,
+# numbered in reading order.
+satisfies = [25, 27, 28, 42]
+
+[operation.reading]
+key = "release/acme/1.1"
+raw = ["raw/notes.md"]
+
+[[operation.reading.signal]]
+kind = "ask"
+asserted_by = "acme"
+assertion = "acme 1.1 brings the shim back."
+subjects = ["acme"]
+argues_with = []
+excerpt = "The shim is back, behind a flag."
+position = "the notes, the first item"
+
+[[operation.reading.signal]]
+kind = "constraint"
+asserted_by = "acme"
+assertion = "Keeping the old behaviour means pinning 1.0."
+subjects = []
+argues_with = []
+excerpt = "Pin 1.0 to keep the old behaviour."
+position = "the notes, the second item"

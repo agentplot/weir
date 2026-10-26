@@ -1,0 +1,13 @@
+# A drop with no reason lacks its consequence, and is refused.
+satisfies = [30]
+
+[operation.move]
+signal = "release/acme/1.0#1"
+word = "drop"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"
+
+[[refused]]
+what = "release/acme/1.0#1"
+field = "target"
+reason_holds = "is missing, and a drop carries its reason"

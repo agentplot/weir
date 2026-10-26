@@ -22,9 +22,9 @@ tasks:
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
   # The tests run recfix, from devenv.nix's recutils, over every file the
-  # crate's operations form.
+  # crate's operations form, and run every inbox case of the pack.
   test:
     command: 'cargo test -p weir-signals'
-    inputs: ['/crates/weir-signals/**/*', '/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    inputs: ['/crates/weir-signals/**/*', '/crates/weir-capture/**/*', '/pack/inbox/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}

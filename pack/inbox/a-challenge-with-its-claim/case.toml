@@ -1,0 +1,9 @@
+# A challenge carries the claim it weighs against.
+satisfies = [30, 31]
+
+[operation.move]
+signal = "release/acme/1.0#2"
+word = "challenge"
+target = "the shim is still needed by the old deploys"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"

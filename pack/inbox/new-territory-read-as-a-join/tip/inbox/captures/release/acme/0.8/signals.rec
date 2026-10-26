@@ -1,0 +1,8 @@
+format: weir-signal/1
+signal: release/acme/0.8#1
+kind: ask
+asserted_by: the operator
+assertion: acme 0.8 changes the pins.
+subjects: acme
+excerpt: acme 0.8 changes the pins
+position: signal 1 of the folder

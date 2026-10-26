@@ -1,0 +1,10 @@
+# A drop carries its reason, kept as its note too, naming who made it and
+# when; the old meeting's signal, unmoved, stays as it was.
+satisfies = [30, 31, 33]
+
+[operation.move]
+signal = "release/acme/1.0#1"
+word = "drop"
+target = "superseded by acme 1.1"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"

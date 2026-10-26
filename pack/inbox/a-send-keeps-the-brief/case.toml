@@ -1,0 +1,7 @@
+# A send keeps the brief as it stood when handed, its outcome open.
+satisfies = [36]
+
+[operation.send]
+items = ["acme-bump"]
+target = "agentplot/weir change"
+sent_at = "2026-10-22T10:00:00Z"

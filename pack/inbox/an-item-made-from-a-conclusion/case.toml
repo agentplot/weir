@@ -1,0 +1,9 @@
+# An item made from the work an accepted conclusion proposed names the
+# conclusion, and holds no signal.
+satisfies = [34]
+
+[operation.propose-item]
+item = "pin-review"
+conclusion = "design/acme.md: keep the pin under review"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"

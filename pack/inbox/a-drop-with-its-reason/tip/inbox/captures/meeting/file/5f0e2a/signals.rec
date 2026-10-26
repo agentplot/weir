@@ -1,0 +1,8 @@
+format: weir-signal/1
+signal: meeting/file/5f0e2a#1
+kind: commitment
+asserted_by: the operator
+assertion: The pin is reviewed every quarter.
+subjects: acme
+excerpt: we review the pin every quarter
+position: the planning meeting, at 10:12

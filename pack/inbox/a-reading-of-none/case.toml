@@ -1,0 +1,7 @@
+# A reading that finds nothing to signal, written as the one line that marks
+# the capture read.
+satisfies = [28]
+
+[operation.reading]
+key = "release/acme/1.1"
+raw = ["raw/notes.md"]

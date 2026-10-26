@@ -1,0 +1,41 @@
+# A reading one of whose signals lacks a field, and another of a nature
+# not of the five, is refused whole, naming each.
+satisfies = [25, 28]
+
+[operation.reading]
+key = "release/acme/1.1"
+raw = ["raw/notes.md"]
+
+[[operation.reading.signal]]
+kind = "ask"
+asserted_by = "acme"
+assertion = "acme 1.1 brings the shim back."
+subjects = []
+argues_with = []
+excerpt = "The shim is back, behind a flag."
+position = "the notes, the first item"
+
+[[operation.reading.signal]]
+kind = "constraint"
+asserted_by = "acme"
+assertion = "Pin 1.0."
+excerpt = "Pin 1.0 to keep the old behaviour."
+
+[[operation.reading.signal]]
+kind = "opinion"
+asserted_by = "acme"
+assertion = "Pinning is a bother."
+subjects = []
+argues_with = []
+excerpt = "Pin 1.0 to keep the old behaviour."
+position = "the notes, the second item"
+
+[[refused]]
+what = "release/acme/1.1#2"
+field = "position"
+reason_holds = "is missing"
+
+[[refused]]
+what = "release/acme/1.1#3"
+field = "kind"
+reason_holds = "not one of"

@@ -1,0 +1,13 @@
+# An item's name nests under no other item's.
+satisfies = [35]
+
+[operation.propose-item]
+item = "acme-bump/shim"
+conclusion = "design/acme.md: bump it"
+by = "the operator"
+at = "2026-10-21T09:00:00Z"
+
+[[refused]]
+what = "acme-bump/shim"
+field = "item"
+reason_holds = "holds a `/`, and a name nests under no other"
