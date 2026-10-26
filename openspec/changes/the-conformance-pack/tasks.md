@@ -49,4 +49,4 @@
 ## 9. The whole pack
 
 - [x] 9.1 The repository's pack passes its own check: a `weir-pack` test runs the check over the embedded pack and finds every case citing, every number naming a clause, and every clause of A.1 to A.10 and 71 cited, the branch cases' 44 to 50 among them ("weir's pack passes its own check", conformance-pack). Proved by `devenv shell -- moon run pack:test`.
-- [ ] 9.2 The checks of the moon projects this change touches pass: `devenv shell -- moon run capture:format capture:lint capture:typecheck capture:test pack:format pack:lint pack:typecheck pack:test cadence:test signals:test kinds:test adapters:test weir:format weir:lint weir:typecheck weir:test branch:test root:format`.
+- [x] 9.2 The checks of the moon projects this change touches pass: `devenv shell -- moon run capture:format capture:lint capture:typecheck capture:test pack:format pack:lint pack:typecheck pack:test cadence:test signals:test kinds:test adapters:test weir:format weir:lint weir:typecheck weir:test branch:test root:format`.
