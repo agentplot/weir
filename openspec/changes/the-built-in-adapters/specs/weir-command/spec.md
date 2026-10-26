@@ -30,11 +30,19 @@ A run that cannot begin, a missing `--raw-dir`, a folder or file that is not the
 
 ### Requirement: The import prints one import line per capture
 
-`weir import signals <dir>` SHALL print one import line per capture `read_signals_folder` gives, in its order, and write no file (63; C.6). A root it cannot read SHALL print nothing to standard output and exit non-zero, saying why.
+`weir import signals <dir>` SHALL print one import line per capture `read_signals_folder` gives, in its order, and write no file (63; C.6). `--moves <file>` SHALL hand the reader that `moves.rec`, the flywheel branch's for a blueprints corpus, in place of the root's (C.6). A root, or a moves file named, it cannot read SHALL print nothing to standard output and exit non-zero, saying why.
 
 #### Scenario: A body imported
 - **WHEN** `weir import signals <root>` runs over a root with three whole captures
 - **THEN** standard output holds three lines `read_import_line` reads, and the command exits 0
+
+#### Scenario: A corpus imported with the flywheel branch's moves
+- **WHEN** `weir import signals <blueprints root> --moves <branch tree>/moves.rec` runs, the branch's file moving one of the corpus's signals
+- **THEN** the corpus's line carries that move, and the command exits 0
+
+#### Scenario: A moves file that is not there
+- **WHEN** `weir import signals <root> --moves <missing>` runs
+- **THEN** it prints nothing to standard output, says why on standard error, and exits non-zero
 
 #### Scenario: Run twice
 - **WHEN** `weir import signals <root>` runs twice over one root

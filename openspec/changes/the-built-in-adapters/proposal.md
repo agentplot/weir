@@ -12,7 +12,8 @@ meeting file are adapters like any other and speak the contract (61,
 62, 64). The import is not an adapter: an imported capture carries a
 pointer, several signals and their moves, which no offer carries, so it
 prints import lines of its own shape for a host's import operation
-(63, 75a; madswan-design's ruling, blueprints main f4aabd9).
+(63, 75a; madswan-design's rulings, blueprints main f4aabd9 and
+d50535a).
 
 ## What Changes
 
@@ -21,7 +22,7 @@ prints import lines of its own shape for a host's import operation
   `raw` and `excerpt`, the pointer as the body gave it, `came_in`
   `import:<body>`, the signals numbered from 1 with every field of a
   signal, and the moves by signal number, a move of any word carried as
-  it stands. It is read, refused naming the field, and written, and
+  it stands with the note the body gave with it. It is read, refused naming the field, and written, and
   `take` refuses it as a line that is not an adapter's (63, 64, 75a;
   C.1).
 - **The folder drop.** `weir capture folder <dir>` offers one capture
@@ -32,20 +33,25 @@ prints import lines of its own shape for a host's import operation
   `folder`, the file is copied whole into the raw place as its raw
   material, and it carries no excerpt (61; C.6; S14).
 - **The meeting file.** `weir capture meeting <file>` offers one
-  capture for the file, keyed `meeting/file/<sha256 of the file>`, its
-  event time the meeting's start where the file states one, else as the
-  folder drop's; its source is `meeting`, the transcript is its raw
-  material, and it carries no excerpt (62; C.6; section 10, question 4).
+  capture for the file, keyed `meeting/file/<sha256 of the file>`. Its
+  event time is the meeting's start where the file says it: a `start`
+  or `date` field of its front matter, else a date that opens its first
+  line, else the folder drop's. Its source is `meeting`, the transcript
+  is its raw material, and it carries no excerpt (62; C.6).
 - **The signals-folder import.** `weir import signals <dir>` reads
   crew's folders, a `capture.md` and one `NN-<slug>.md` per signal for
   each capture, with `moves.rec`, and prints one import line per
   capture. A release capture keeps its key `release/<name>/<version>`
   and every other takes its folder's name; the pointer is the one crew
-  wrote; signals and moves are as read. crew's `new-territory` is
-  carried as a join into a proposed item named for its target, and a
-  word not of the six as it stands, for the import operation to leave
-  unmoved. Nothing is copied from raw material, and reading one folder
-  twice prints the same lines (37 to 39, 63; C.6; S8, S9; core.25).
+  wrote; signals and moves are as read, each move's reason kept as its
+  note. crew's `new-territory` is carried as a join into a proposed
+  item named for its target, and a word not of the six as it stands,
+  for the import operation to leave unmoved. A meeting corpus in a
+  blueprints repository is read the same way, its moves taken from the
+  flywheel branch's `moves.rec` that `--moves` names, a signal no move
+  names arriving unmoved. Nothing is copied from raw material, and
+  reading one folder twice prints the same lines (37 to 39, 63; C.6;
+  S8, S9; core.25).
 - **The `weir` command.** A new crate, `weir`, holds the command line
   that runs the three: the two adapters print contract lines and exit
   as C.1 says, and the import prints import lines and names on

@@ -62,7 +62,7 @@ Each signal SHALL hold `n`, numbered 1, 2, 3 in the list's order, and a number o
 
 ### Requirement: A move of any word is carried as it stands
 
-`moves` SHALL be a list, possibly empty, whose entries hold `signal`, a whole number, and `move`, a non-empty word, and MAY hold `target`, `by` and `at`, strings kept as written (31; C.1). A move SHALL be read whatever its word and whether or not it carries its consequence, so the import operation can leave its signal unmoved and report it (39; core.25); only a move whose `signal` is not a whole number or whose `move` is not a non-empty string SHALL refuse the line, naming the field.
+`moves` SHALL be a list, possibly empty, whose entries hold `signal`, a whole number, and `move`, a non-empty word, and MAY hold `target`, `note`, `by` and `at`, strings kept as written, `note` the reason or note the body gave with the move, for the import operation to keep with it (31, 39; C.1, C.2). A move SHALL be read whatever its word and whether or not it carries its consequence, so the import operation can leave its signal unmoved and report it (39; core.25); only a move whose `signal` is not a whole number or whose `move` is not a non-empty string SHALL refuse the line, naming the field.
 
 #### Scenario: A word not of the six
 - **WHEN** an import line carries a move `{"signal": 1, "move": "promote", "by": "curation", "at": "2026-10-12T00:00:00Z"}`
@@ -70,12 +70,16 @@ Each signal SHALL hold `n`, numbered 1, 2, 3 in the list's order, and a number o
 
 #### Scenario: A drop with no reason
 - **WHEN** an import line carries a move `{"signal": 1, "move": "drop"}`
-- **THEN** it reads with that move and no target
+- **THEN** it reads with that move, no target and no note
+
+#### Scenario: A move with its note
+- **WHEN** an import line carries a move `{"signal": 1, "move": "attach", "target": "intent/x", "note": "the same ask as the standup's"}`
+- **THEN** it reads with that move, its note `the same ask as the standup's` as written
 
 ### Requirement: An import line is written as it is read
 
-`ImportLine::to_json` SHALL write one line of compact JSON, with no newline inside it, its fields in the order C.1 shows and an absent `pointer`, `title`, `url`, `target`, `by` or `at` left out, which `read_import_line` reads back equal (C.1).
+`ImportLine::to_json` SHALL write one line of compact JSON, with no newline inside it, its fields in the order C.1 shows, a move's `note` after its `target`, and an absent `pointer`, `title`, `url`, `target`, `note`, `by` or `at` left out, which `read_import_line` reads back equal (C.1).
 
 #### Scenario: A line round-trips
-- **WHEN** an import line whose signal's excerpt holds three lines, with no pointer, is written and read back
+- **WHEN** an import line whose signal's excerpt holds three lines, with no pointer and one move with a note, is written and read back
 - **THEN** it is one line and reads back equal to the line written

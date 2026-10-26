@@ -6,11 +6,13 @@ weir has one crate, `weir-capture`, which holds the contract's lines,
 the key rule, the sha256 hash, the capture record and `take`. This
 change adds the built-in adapters and the command that runs them. The
 statement (`agentplot/blueprints:design/weir/requirements.md` at main)
-fixes what they do: the folder drop (61), the meeting file (62, and
-section 10, question 4), the import, which is no adapter (63, 64, 75a,
-as madswan-design amended them, blueprints main f4aabd9), imports
-generally (37 to 39), the import line (C.1), the three commands (C.6;
-section 9) and scenarios S8, S9 and S14. crew's folders are read as
+fixes what they do: the folder drop (61), the meeting file (62, C.6,
+and section 10, question 4), the import, which is no adapter (63, 64,
+75a, as madswan-design amended them, blueprints main f4aabd9), imports
+generally (37 to 39), a move's note (39; C.2) and a blueprints
+corpus's moves (C.6), as madswan-design's batch 21 rulings amended them
+(blueprints main d50535a), the import line (C.1), the three commands
+(C.6; section 9) and scenarios S8, S9 and S14. crew's folders are read as
 crew writes them: crew's `README.md` (Signals), its `signals.md` rules
 and `plugin/lib/plan.py` (`capture_text`, `signal_md`, `MOVES`), the
 blueprints' `signals/README.md`, and swancloud's release adapter
@@ -87,7 +89,10 @@ An imported signal is `ImportLineSignal`, not the capture crate's
 while an imported signal's number is read and its excerpt never cut or
 checked (37). A move's word is a `String`, not an enum of the six, so a
 word of another body reaches the import operation, which leaves its
-signal unmoved (39; core.25). Fields are read through `serde_json::Value`
+signal unmoved (39; core.25). A move carries `note`, the reason or note
+the body gave with it, as read, beside its `target`, so the import
+operation writes it into `weir-move/1`'s `note` and nothing a curator
+wrote is lost (39; C.2). Fields are read through `serde_json::Value`
 as `line` reads them, and written by `serde` in C.1's order with absent
 options left out.
 
@@ -140,13 +145,28 @@ Rejected: the event time would move with the machine that listed it.
 
 `meeting::run(file, raw_dir) -> Vec<Line>` offers the one file as the
 folder drop offers a file, keyed `meeting/file/<sha256>` with source
-`meeting` (62; C.6). Its start is read from a block the file opens with:
-a first line `---`, lines `<name>: <value>`, and a closing `---`, as
-crew's and Markdown's front matter are written; a `start` field there
-that parses as RFC 3339 with an offset is kept as written. Otherwise the
-event time is the folder drop's. A file that states its start some
-other way, a WebVTT header or a `.docx` property, is read by its date or
-last write until the design names that way.
+`meeting` (62; C.6). Its event time is the first of these that the file
+says (C.6):
+
+1. A `start` field, and then a `date` field, of its front matter: a
+   block the file opens with, a first line `---`, lines `<name>:
+   <value>` and a closing `---`, as crew's and Markdown's front matter
+   are written. A value wrapped in one pair of `"` or `'` is read
+   without them.
+2. A date that opens its first line: the first line that is not blank,
+   after the front matter when the file opens with one.
+3. The folder drop's event time: the date the file's name begins with,
+   or else its last write.
+
+One reader serves the first two, so a time is read the same wherever
+the file states it: an RFC 3339 time with its offset is kept as
+written, and otherwise a day `YYYY-MM-DD` naming a day of the calendar
+is that day's start in UTC, as a name's day is. A front-matter value
+must be the time or the day whole; a first line need only begin with
+one, its first word an RFC 3339 time, or else its first ten characters
+a day not followed by a digit. A value or line that reads as neither
+passes to the next way. A WebVTT file, whose first line is `WEBVTT`, is
+read by its name's date or its last write.
 
 ### Neither adapter keeps a cursor
 
@@ -157,16 +177,23 @@ keeps its old modification time and would never be offered.
 
 ### The reader of crew's folders
 
-`signals_folder::read(root) -> Reading` returns the import lines, each
+`signals_folder::read(root, moves: Option<&Path>) -> Reading` returns
+the import lines, each
 capture folder not read whole with why, and each move not carried with
 why. It is the one module that names crew (core.2): its body name,
 `crew-folders`, the folder layout, and its help text for the command.
 
 - **The body.** `root` is a body's top: a flywheel branch's tree or a
   blueprints repository. Captures are the folders under `signals/`
-  holding a `capture.md`; moves are `moves.rec` at the root, where the
-  flywheel branch keeps them, and `signals/moves.rec`, where a
-  blueprints repository did. `came_in` is `import:crew-folders`.
+  holding a `capture.md`. Its moves are one `moves.rec`: the file the
+  caller names, or else `moves.rec` at the root, where a flywheel
+  branch keeps them. A blueprints repository's corpus holds its
+  captures and signals, while its moves lie in the partition's flywheel
+  branch's `moves.rec` (C.6), so it is read with that file named;
+  read without it, its signals arrive unmoved. A `signals/moves.rec`
+  is never read, since crew carried those moves onto the flywheel
+  branch and reading both would carry each twice. `came_in` is
+  `import:crew-folders`.
 - **The front matter** is read as crew's `frontmatter` reads it: the
   lines between the opening `---` and the next, each split at its first
   `: `. A list, `[a, b]`, is its entries split at `, `.
@@ -187,9 +214,13 @@ why. It is the one module that names crew (core.2): its body name,
   (28).
 - **The moves** are read with `weir_capture::rec::read`, which skips
   comments; records without `Signal` (crew's `%rec` descriptor) are
-  passed over. A signal is matched by its full id or its short one.
-  crew's words map to the six by name, `drop` taking its `Reason` as its
-  consequence. crew's `new-territory` becomes a join into a proposed
+  passed over. A move names its signal by its capture's key and the
+  signal's number, crew's `<capture>/<NN>-<slug>` or `<capture>/<NN>`:
+  the capture is the folder named, and the signal the one file of it
+  whose name begins `<NN>`, whatever slug follows (C.6). crew's words
+  map to the six by name. Every move's `Reason` is carried as its note,
+  as read, and a drop's `Reason` is its consequence as well, or else
+  its `Target` (30, 39). crew's `new-territory` becomes a join into a proposed
   item named for its target (section 10, question 3; ADR 0002; core.25):
   the name is the target lowercased with every run of characters other
   than ASCII letters and digits made one `-`, so it holds no `/` and
@@ -204,7 +235,8 @@ step, so one body read twice gives the same bytes (S8; core.14).
 
 `weir capture folder <dir> --raw-dir <raw> [--cursor <c>]`, `weir
 capture meeting <file> --raw-dir <raw> [--cursor <c>]` and `weir import
-signals <root>`. The adapters print each line with `Line::to_json` and
+signals <root> [--moves <file>]`, the last handing the reader the
+`moves.rec` to read in place of the root's. The adapters print each line with `Line::to_json` and
 exit 0 after the completion; a run that cannot start prints one line on
 standard error and exits 1, with no completion, so the host records it
 incomplete (9; C.1). The import prints each line with
@@ -247,21 +279,20 @@ kit:testing.3).
   ruling on question 3, ADR 0002 and core.25 make it a join] → This
   change follows the ruling and the rule, the later word; S9's case is
   proved with a word of no body's, `promote`.
-- [A blueprints corpus's moves lie in the flywheel branch's
-  `moves.rec`] → Importing the corpus alone reads only the moves its
-  own `signals/moves.rec` holds, and importing the branch names the
-  corpus's moves as not carried. Nothing is lost silently: each is named
-  on standard error.
-- [crew's moves carry a `Reason` beside a target, and `weir-move/1`
-  has no field for it] → Only a drop carries it, as its consequence;
-  every other move's reason is not carried.
+- [The flywheel branch's `moves.rec` holds moves of the branch's own
+  captures beside the corpus's] → Importing the corpus with that file
+  names each move of a signal outside the corpus on standard error, as
+  not carried, and importing the branch names the corpus's moves the
+  same way; the two imports together carry every move once. The lines
+  on standard error are many on a large branch, and change no exit
+  status.
+- [C.1's import line shows no `note` on a move, while 39 and C.2 keep
+  one] → The line carries `note` beside `target`, left out when the
+  body gave none, so a reader of C.1's example reads it unchanged.
 - [Copying every file of a folder on every run costs time on a large
   folder] → The host banks only what it takes and discards the rest
   (18); a cursor that skipped files would lose some (8).
 
 ## Open Questions
 
-- Where a meeting file states its start beyond an opening block's
-  `start:`, for madswan-design.
-- How a blueprints corpus's signals receive the moves recorded on the
-  flywheel branch, for madswan-design.
+- Whether C.1's import line names a move's `note`, for madswan-design.

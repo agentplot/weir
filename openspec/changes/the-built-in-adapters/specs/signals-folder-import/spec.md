@@ -1,16 +1,24 @@
 ## Purpose
 
-The signals-folder import: reads crew's folders, the captures a partition's flywheel branch holds and the meeting corpus a blueprints repository holds, into import lines, one per capture, with the pointer, signals and moves each was read with. It is no adapter, and writes nothing: a host's import operation writes its lines (37 to 39, 63, 64; C.6; S8, S9).
+The signals-folder import: reads crew's folders, the captures a partition's flywheel branch holds and the meeting corpus a blueprints repository holds, into import lines, one per capture, with the pointer, signals and moves each was read with, a corpus's moves read from the flywheel branch's `moves.rec`. It is no adapter, and writes nothing: a host's import operation writes its lines (37 to 39, 63, 64; C.6; S8, S9).
 
 ## ADDED Requirements
 
 ### Requirement: One import line per capture folder, in the order of their names
 
-`read_signals_folder` SHALL read a body's root: each folder under its `signals/` holding a `capture.md` is one capture, read in the order of the folders' names, and `moves.rec` at the root and in `signals/` hold its moves (63; C.6). It SHALL give one import line per capture it reads whole, `came_in` `import:crew-folders`. Anything under `signals/` that is not such a folder SHALL be passed over, and a root with no `signals/` folder SHALL be refused, naming it.
+`read_signals_folder` SHALL read a body's root: each folder under its `signals/` holding a `capture.md` is one capture, read in the order of the folders' names, and its moves are those of one `moves.rec`, the file the caller names or else the one at the root, a `signals/moves.rec` never read (63; C.6). It SHALL give one import line per capture it reads whole, `came_in` `import:crew-folders`. Anything under `signals/` that is not such a folder SHALL be passed over, and a root with no `signals/` folder SHALL be refused, naming it.
 
 #### Scenario: A flywheel branch's tree
 - **WHEN** a root holds `signals/2026-10-08-release-pendingyou-0-32-0/` and `signals/2026-10-09-swancloud-design-6d65f646/`, each with its `capture.md` and signals, `signals/README.md`, and `moves.rec`
 - **THEN** two import lines are given, the release capture's first, and `README.md` is passed over
+
+#### Scenario: A blueprints repository's corpus with the flywheel branch's moves
+- **WHEN** a blueprints repository's root holds `signals/2026-10-02-standup/` with `capture.md`, `01-a.md` and `02-b.md`, and a `signals/moves.rec` moving `2026-10-02-standup/02-b`, and it is read naming a flywheel branch's `moves.rec` that moves `2026-10-02-standup/01-a`
+- **THEN** one import line is given, carrying the move of signal 1 from the flywheel branch's file, signal 2 carrying no move, so it arrives unmoved
+
+#### Scenario: A blueprints repository's corpus read alone
+- **WHEN** the same root is read naming no moves file
+- **THEN** its line carries no move
 
 #### Scenario: A folder with no capture.md beside one that has one
 - **WHEN** one capture folder lacks `capture.md` and another is whole
@@ -90,27 +98,44 @@ A signal's `excerpt` SHALL be its lines beginning `>`, the mark and one space af
 
 ### Requirement: Moves are carried by signal number
 
-Each record of `moves.rec` naming a signal of a capture read SHALL be carried in that capture's import line, by the signal's number, a signal named by its full id, `<capture>/<NN>-<slug>`, or its short one, `<capture>/<NN>`; `by` from its `By`; and `at` from its `Date`, a day read as its start in UTC, or as written when it is not a day (31, 37; C.1).
+Each record of `moves.rec` naming a signal of a capture read SHALL be carried in that capture's import line, by the signal's number; `by` from its `By`; and `at` from its `Date`, a day read as its start in UTC, or as written when it is not a day (31, 37; C.1).
 
 #### Scenario: A route and a drop
 - **WHEN** `moves.rec` holds a `route` of `<capture>/01-a` to `unit/fix-x` on `2026-10-06` by `swancloud-planner`, and a `drop` of `<capture>/02-b` with `Reason: the same defect as another`
-- **THEN** the capture's line carries `{"signal": 1, "move": "route", "target": "unit/fix-x", "by": "swancloud-planner", "at": "2026-10-06T00:00:00Z"}` and a drop of signal 2 whose target is `the same defect as another`
+- **THEN** the capture's line carries `{"signal": 1, "move": "route", "target": "unit/fix-x", "by": "swancloud-planner", "at": "2026-10-06T00:00:00Z"}` and a drop of signal 2 whose target and note are both `the same defect as another`
+
+
+### Requirement: A move names its signal by its capture's key and number
+
+A move SHALL name its signal by its capture's key and the signal's number, `<capture>/<NN>-<slug>` or `<capture>/<NN>`: the capture is the folder of that name, and the signal its one file whose name begins `<NN>`, whatever slug follows (C.6). A capture holding two files that begin with one `<NN>` SHALL leave the move not carried, named with why.
+
+#### Scenario: A signal named by its number and another slug
+- **WHEN** `moves.rec` moves `<capture>/01-old-slug`, and the capture's first signal is `01-a.md`
+- **THEN** the move is carried as a move of signal 1
+
+#### Scenario: Two signals of one number
+- **WHEN** a capture holds `01-a.md` and `01-b.md`, and `moves.rec` moves `<capture>/01`
+- **THEN** the move is named as not carried, its two files named
 
 ### Requirement: crew's words are carried as the six, any other as it stands
 
-A move's word and consequence SHALL be: `attach`, `challenge`, `answered` and `route` as they stand, the target from `Target`; `drop` as it stands, the target its `Reason`, or else its `Target`; and any other word as it stands, the target from `Target`, for the import operation to leave its signal unmoved (30, 39).
+A move's word and consequence SHALL be: `attach`, `challenge`, `answered` and `route` as they stand, the target from `Target`; `drop` as it stands, the target its `Reason`, or else its `Target`; and any other word as it stands, the target from `Target`, for the import operation to leave its signal unmoved (30, 39). Every move, of any word, SHALL carry its `Reason` as its note, as read, and no note when it gives none (39; C.2).
 
 #### Scenario: A word not of the six
 - **WHEN** a move's word is `promote`
 - **THEN** the line carries it as `promote`, for the import operation to leave unmoved (S9)
+
+#### Scenario: An attach with its reason
+- **WHEN** a move is `attach` with `Target: intent/x` and `Reason: the same ask as the standup's`
+- **THEN** the line carries an `attach` whose target is `intent/x` and whose note is `the same ask as the standup's`
 
 ### Requirement: crew's new-territory is a join into a proposed item named for its target
 
 crew's `new-territory` SHALL be carried as a `join`, its target the name of a proposed item made from `Target`, lowercase ASCII letters and digits kept and every other run of characters one `-`, trimmed of `-` (39; section 10, question 3; core.25). A `new-territory` with no `Target`, or one leaving no name, SHALL be carried as a join with no target.
 
 #### Scenario: crew's new-territory
-- **WHEN** a move's word is `new-territory` with `Target: upstream: Claude Code's HTTP MCP reconnection`
-- **THEN** the line carries a `join` whose target is `upstream-claude-code-s-http-mcp-reconnection`
+- **WHEN** a move's word is `new-territory` with `Target: upstream: Claude Code's HTTP MCP reconnection` and `Reason: nothing covers it`
+- **THEN** the line carries a `join` whose target is `upstream-claude-code-s-http-mcp-reconnection` and whose note is `nothing covers it`
 
 #### Scenario: A new-territory with no target
 - **WHEN** a move's word is `new-territory` and it holds no `Target`
@@ -123,6 +148,10 @@ A record of `moves.rec` naming a signal of no capture read SHALL be named as not
 #### Scenario: A move of a signal in another body
 - **WHEN** a flywheel branch's `moves.rec` moves a signal whose capture lies in a blueprints repository
 - **THEN** it is named as not carried, and every line is given
+
+#### Scenario: The flywheel branch's own moves, read with a corpus
+- **WHEN** a blueprints repository is read naming a flywheel branch's `moves.rec` that also moves a signal of the branch's own release capture
+- **THEN** that move is named as not carried, and the corpus's lines are given
 
 ### Requirement: Reading one body twice gives the same lines
 
