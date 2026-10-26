@@ -55,8 +55,10 @@ write protocol all build on one copy (plan step F2,
   is added beside it (34 to 36).
 - **The import operation.** A host's import (75a) writes the captures
   an import reads from a body before its inbox existed, one per import
-  line, with the pointer, signals and moves each was read with: each
-  held by key, a key the inbox holds writing nothing; no raw material
+  line, with the pointer, signals and moves each was read with: a line
+  whose capture names no key, source or event time refused and
+  reported; each held by key, a key the inbox holds writing nothing, so
+  a second import of one body writes nothing; no raw material
   banked, no pointer of the host's own and no excerpt checked; a move
   not of the six, or without its consequence, not taken and its signal
   left unmoved, named in the import's report; a join making or growing a

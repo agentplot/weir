@@ -238,20 +238,27 @@ occur in some file's bytes (26). The crate reads no bank itself
 
 ### The import operation
 
-`import` takes `ImportedCapture` values, defined here as what an
-import line (C.1) carries: the capture's key, source, event time, title
-and link; the pointer or none; `came_in`, which must be
-`CameIn::Import`; the signals in the body's order with their numbers;
-and the moves, each with a signal number, a word kept as a string, a
-target, who and when. The built-in adapters unit reads the line itself
-in `weir-capture` (ruling f4aabd9), and whichever of the two units
-lands second gives its line type a conversion into `ImportedCapture`,
-so the line is read in one place and written in one place.
+`import` takes `ImportedCapture` values, defined here field for field
+as what an import line (C.1) carries: the capture's key, source and
+event time as the line's text, its title and link; the pointer or none;
+`came_in`, which must be `CameIn::Import`; the signals in the body's
+order with their numbers; and the moves, each with a signal number, a
+word kept as a string, a target, who and when. The key, source and event
+time are text, not `Key`, so the import operation itself refuses a line
+whose capture names no key, as 75a puts it, whatever reader built the
+value. The built-in adapters unit reads the line itself in
+`weir-capture`, with `read_import_line` (ruling f4aabd9), and whichever
+of the two units lands second gives its line type a conversion into
+`ImportedCapture`, so the line is read in one place and written in one
+place. Nothing here calls `take`, and `take` never reads an import line
+(64).
 
-For each capture in order: a held key is counted and passed over, its
-signals and moves with it (38); a capture whose signals do not number
-from 1, lack a field or name another nature is refused whole and
-reported (28); otherwise `capture.rec` (with the machine and time the
+For each capture in order: a key the key rule refuses or left empty, an
+empty source, or an event time that is not RFC 3339 with its offset,
+refuses the capture whole, reported with the field (4, 13, 75a); a held
+key is counted and passed over, its signals and moves with it (38); a
+capture whose signals do not number from 1, lack a field or name another
+nature is refused whole and reported (28); otherwise `capture.rec` (with the machine and time the
 caller hands, unread when it has no signals) and its `signals.rec` are
 added, and each move is checked as `make_move` checks one, against the
 inbox as this import has grown it so far; one not taken is reported

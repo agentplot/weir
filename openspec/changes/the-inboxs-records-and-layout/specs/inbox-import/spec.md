@@ -38,7 +38,7 @@ An imported capture's signals SHALL be written as its reading, numbered from 1 i
 
 ### Requirement: An imported capture is held by key like any other
 
-An imported capture whose key the inbox holds SHALL write nothing, its signals and moves with it, and SHALL be counted held; importing one body twice SHALL write nothing the second time, and a later offer under an imported key SHALL be held (14, 38; core.10, core.25).
+An imported capture whose key the inbox holds SHALL write nothing, its signals and moves with it, and SHALL be counted held; importing one body twice SHALL write nothing the second time, and a later offer under an imported key SHALL be held (14, 38; core.10, core.25). The import SHALL write captures only through the import operation, never through `take`, and `take` SHALL hold a key an import wrote as it holds any other (64).
 
 #### Scenario: One body imported twice
 
@@ -75,7 +75,12 @@ An imported join SHALL make the item it names, proposed with no brief and named 
 
 ### Requirement: An imported capture is taken whole or not at all
 
-An imported capture whose signals do not number from 1 in order, whose signal lacks a field or names a nature not of the five, or whose came-in is not `import:<body>`, SHALL be refused whole, its signals and moves with it, and named in the report with why; every other capture of the import SHALL be taken (15, 28, 75a).
+An imported capture that names no key, or a key the key rule refuses, that names no source, or whose event time is missing or not RFC 3339 with its offset, SHALL be refused whole, its signals and moves with it, and named in the report with the field and why (4, 13, 75a). So SHALL one whose signals do not number from 1 in order, whose signal lacks a field or names a nature not of the five, or whose came-in is not `import:<body>` (15, 28, 75a). Every other capture of the import SHALL be taken.
+
+#### Scenario: A capture that names no key
+
+- **WHEN** an import of three captures holds one whose key is empty, and one whose key's first segment is `moves`
+- **THEN** one capture is written, and the report names the other two refused, each with `key` and why
 
 #### Scenario: One bad capture among many
 
