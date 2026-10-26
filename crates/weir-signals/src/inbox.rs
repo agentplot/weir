@@ -35,7 +35,7 @@ pub struct InboxAt {
 
 /// One capture the inbox holds.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Held {
+pub(crate) struct Held {
     pub capture: Capture,
     /// Its own signal or its reading, from its `signals.rec`; none while
     /// it is unread (19, 28).
@@ -109,7 +109,7 @@ impl Held {
     /// (19), rather than a reading: a capture taken with its own signal is
     /// never unread, while a reading leaves `unread` as the capture was
     /// written (41), and an import's signals are a reading (37).
-    pub fn has_own_signal(&self) -> bool {
+    pub(crate) fn has_own_signal(&self) -> bool {
         self.signals.is_some()
             && !self.capture.unread
             && !matches!(self.capture.came_in, CameIn::Import(_))
