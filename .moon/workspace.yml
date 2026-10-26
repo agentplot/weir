@@ -12,7 +12,7 @@ $schema: 'https://moonrepo.dev/schemas/workspace.json'
 
 projects:
   capture: 'crates/weir-capture'
-  weir-kinds: 'crates/weir-kinds'
+  kinds: 'crates/weir-kinds'
   weir: 'crates/weir'
   root: '.'
 

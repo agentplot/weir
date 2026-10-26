@@ -4,7 +4,7 @@ $schema: 'https://moonrepo.dev/schemas/project.json'
 # per check (core.39). It builds on weir-kinds, whose files are among its
 # inputs beside its own and the toolchain's (kit:testing.3).
 language: 'rust'
-dependsOn: [weir-kinds]
+dependsOn: [kinds]
 
 tasks:
   format:
