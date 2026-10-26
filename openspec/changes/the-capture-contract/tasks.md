@@ -38,4 +38,4 @@
 
 ## 6. The checks of the projects this change touches
 
-- [ ] 6.1 Run `devenv shell -- moon run capture:format capture:lint capture:typecheck capture:test root:format root:toolchain` and see every task pass.
+- [x] 6.1 Run `devenv shell -- moon run capture:format capture:lint capture:typecheck capture:test root:format root:toolchain` and see every task pass.
