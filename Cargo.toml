@@ -13,9 +13,11 @@
 #   crates/weir-cadence    five-field cron, caught up once
 #   the conformance pack   contract lines in, the records a host must
 #                          write from them out
+#   crates/weir            the `weir` command line, a caller of the
+#                          crates: landed, with `check`
 [workspace]
 resolver = "2"
-members = ["crates/weir-capture", "crates/weir-kinds"]
+members = ["crates/weir-capture", "crates/weir-kinds", "crates/weir"]
 
 [workspace.package]
 version = "0.0.0"
@@ -32,6 +34,7 @@ sha2 = "0.11"
 # checked with nothing but its schema (core.1).
 jsonschema = { version = "0.60", default-features = false }
 tempfile = "3"
+clap = { version = "4", features = ["derive"] }
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"
