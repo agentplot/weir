@@ -25,7 +25,7 @@
 ## 5. The lock
 
 - [x] 5.1 The lock is `weir.lock` in the branch's git directory, holding `holder` and `taken_at` in RFC 3339 from the caller's clock, taken by hard-linking a uniquely named file so that of two writers taking it at once one succeeds, held from before the read to after the move, and let go on every end, a panic among them, only when its text is the writer's own (49, core.28); the spec's "Two writers on one machine", "The lock is let go after a refusal" and "Reading a held lock" scenarios pass, the first with two threads sharing one cache; proved by `devenv shell -- moon run branch:test`.
-- [ ] 5.2 A writer finding the lock held looks again every fifty milliseconds until it is gone or older than the `Ask`'s stale age, breaks a stale lock once by renaming it and checking the renamed file is the one judged stale, names the holder and time it broke in its outcome, and reports a lock it cannot read as `Failed` naming the file (49); the spec's "A lock let go while a writer waits", "A stale lock" and "Another machine writes while the lock is held" scenarios pass; proved by `devenv shell -- moon run branch:test`.
+- [x] 5.2 A writer finding the lock held looks again every fifty milliseconds until it is gone or older than the `Ask`'s stale age, breaks a stale lock once by renaming it and checking the renamed file is the one judged stale, names the holder and time it broke in its outcome, and reports a lock it cannot read as `Failed` naming the file (49); the spec's "A lock let go while a writer waits", "A stale lock" and "Another machine writes while the lock is held" scenarios pass; proved by `devenv shell -- moon run branch:test`.
 
 ## 6. The pack's protocol cases
 
