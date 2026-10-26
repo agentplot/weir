@@ -2,8 +2,8 @@
 //! name begins with, as that day's start in UTC, or else its last write in
 //! UTC to the second (5, 61; C.6; core.8). UTC, never the machine's zone, so
 //! two machines listing one file give one event time (24; core.14). The
-//! reader of crew's folders reads a day alone, a capture's `event_date` and
-//! a move's `Date`, with [`day_start`].
+//! signals-folder import reads a day alone, a capture's and a move's, with
+//! [`day_start`].
 
 use std::fs;
 use std::io;
