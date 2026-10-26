@@ -249,7 +249,8 @@ pub fn take<L: AsRef<str>>(
 /// Banks and writes one offer whose key the inbox does not hold, or says
 /// why not: steps 3 to 6 of C.1. An own excerpt, cut to the limit, becomes
 /// the capture's one signal, written with it in one write, and the capture
-/// is not unread; every other capture is written unread (19, 20).
+/// is not unread; every other capture is written unread (19, 20). When the
+/// inbox refuses the write, what was banked for it is discarded (18).
 fn take_offer(
     offer: Offer,
     raw_place: Option<&Path>,
@@ -305,9 +306,12 @@ fn take_offer(
         capture,
         own_signal,
     };
-    inbox
-        .write(&taken)
-        .map_err(|refusal| format!("the inbox refused the capture: {refusal}"))
+    inbox.write(&taken).map_err(|refusal| {
+        if taken.capture.pointer.is_some() {
+            bank.discard(&taken.capture.key);
+        }
+        format!("the inbox refused the capture: {refusal}")
+    })
 }
 
 /// The raw files `raw` names, read whole from `raw_place`; a file that is

@@ -507,3 +507,59 @@ fn a_meeting_with_no_excerpt() {
     assert!(written.capture.unread);
     assert_eq!(written.own_signal, None);
 }
+
+#[test]
+fn the_inbox_refuses_a_write() {
+    let place = raw_place(&[("notes.md", NOTES)]);
+    let (mut inbox, mut bank, calls) = host();
+    inbox.refuse.insert(
+        "release/a/1".into(),
+        "the record fails recfix at the tip".into(),
+    );
+    let lines = [
+        offer("release/a/1", &raw(&["notes.md"])),
+        offer("release/a/2", ""),
+    ];
+    let report = take(
+        &lines,
+        Some(place.path()),
+        &take_on("deneb"),
+        &mut inbox,
+        &mut bank,
+    );
+    assert_eq!(keys(&report), ["release/a/2"]);
+    assert_eq!(report.refused.len(), 1);
+    let refused = &report.refused[0];
+    assert_eq!(refused.line, 1);
+    assert_eq!(refused.key.as_deref(), Some("release/a/1"));
+    assert!(
+        refused
+            .reason
+            .contains("the record fails recfix at the tip"),
+        "{}",
+        refused.reason
+    );
+    assert!(bank.banked.is_empty());
+    assert_eq!(
+        calls.borrow()[..4],
+        [
+            Call::Holds("release/a/1".into()),
+            Call::Bank("release/a/1".into()),
+            Call::Write("release/a/1".into()),
+            Call::Discard("release/a/1".into()),
+        ]
+    );
+}
+
+#[test]
+fn a_refused_write_with_nothing_banked_discards_nothing() {
+    let (mut inbox, mut bank, calls) = host();
+    inbox.refuse.insert("release/a/1".into(), "no".into());
+    let lines = [offer("release/a/1", "")];
+    let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank);
+    assert_eq!(report.refused.len(), 1);
+    assert!(!calls
+        .borrow()
+        .iter()
+        .any(|call| matches!(call, Call::Discard(_))));
+}
