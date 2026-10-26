@@ -8,11 +8,11 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use weir_capture::{CameIn, Taken};
+use weir_capture::{CameIn, Key, RawFile, Taken};
 
 use crate::inbox::{InboxAt, InboxError};
 use crate::layout::Place;
-use crate::signal::{signals_rec, Signal, SignalId};
+use crate::signal::{signals_rec, ReadSignal, Signal, SignalId};
 
 /// The full new text of each file a write adds or replaces, by path from
 /// the tip's root: an append is the tip's text with records added after it
@@ -210,4 +210,70 @@ impl InboxAt {
         self.check(&write)?;
         Ok(write)
     }
+
+    /// The write of a reader's reading of the capture under `key`:
+    /// `signals.rec`, the signals numbered from 1 in the order handed (27),
+    /// or, for a reading of none, the one line that marks the capture read
+    /// (28). Refused when the capture is not held, or has its own signal or
+    /// a reading already (28; core.17); refused whole, naming each signal
+    /// not taken and why, when any lacks a field, names a nature not of the
+    /// five (25) or has an excerpt whose bytes stand in none of the
+    /// capture's raw files the caller hands in, read from its bank (26;
+    /// core.16).
+    pub fn read_capture(
+        &self,
+        key: &Key,
+        signals: &[ReadSignal],
+        raw: &[RawFile],
+    ) -> Result<Write, Refused> {
+        let Some(held) = self.captures.get(key) else {
+            return Err(NotTaken::new(key, "is no capture the inbox holds").into());
+        };
+        if held.signals.is_some() {
+            let why = if held.has_own_signal() {
+                "has its own signal, and a capture whose offer carried an own excerpt takes no reading"
+            } else {
+                "has a reading, and a capture has at most one"
+            };
+            return Err(NotTaken::new(key, why).into());
+        }
+        let mut taken = Vec::with_capacity(signals.len());
+        let mut not_taken = Vec::new();
+        for (n, read) in (1..).zip(signals) {
+            let id = SignalId::new(key.clone(), n);
+            match read.to_signal(id.clone()) {
+                Err(failures) => not_taken.extend(
+                    failures
+                        .into_iter()
+                        .map(|(field, why)| NotTaken::field(&id, field, why)),
+                ),
+                Ok(signal) if !stands_in(signal.excerpt.as_bytes(), raw) => {
+                    not_taken.push(NotTaken::field(
+                        &id,
+                        "excerpt",
+                        "stands in none of the capture's raw files, byte for byte",
+                    ))
+                }
+                Ok(signal) => taken.push(signal),
+            }
+        }
+        if !not_taken.is_empty() {
+            return Err(Refused(not_taken));
+        }
+        let mut write = Write::new();
+        write.put(Place::Signals(key.clone()).path(), signals_rec(&taken));
+        self.check(&write)?;
+        Ok(write)
+    }
+}
+
+/// Whether `excerpt` stands, byte for byte, in one of `raw` (26). An empty
+/// excerpt stands nowhere: it is a field lacking.
+fn stands_in(excerpt: &[u8], raw: &[RawFile]) -> bool {
+    !excerpt.is_empty()
+        && raw.iter().any(|file| {
+            file.bytes
+                .windows(excerpt.len())
+                .any(|window| window == excerpt)
+        })
 }

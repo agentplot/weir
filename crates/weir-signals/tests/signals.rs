@@ -5,9 +5,9 @@
 mod common;
 
 use weir_capture::rec::{self, Record};
-use weir_capture::{CameIn, LeftOut, Nature, OwnSignal, Taken};
+use weir_capture::{CameIn, LeftOut, Nature, OwnSignal, RawFile, Taken};
 use weir_signals::signal::{signals_rec, EMPTY_READING};
-use weir_signals::{InboxAt, Signal, SignalId};
+use weir_signals::{InboxAt, ReadSignal, Signal, SignalId};
 
 use common::{after, capture, key, paths, recfix, recsel_value};
 
@@ -302,4 +302,239 @@ fn a_taken_capture_agrees_with_its_own_signal() {
         })
         .unwrap_err();
     assert_eq!(refused.0[0].field.as_deref(), Some("came_in"));
+}
+
+const TRANSCRIPT: &str = "Ana: the shim times out on the first run.\n\
+                          Ben: we pin mise until it is fixed.\n\
+                          Ana: and we ask upstream for a release.\n";
+
+fn transcript() -> RawFile {
+    RawFile {
+        path: "transcript.txt".into(),
+        bytes: TRANSCRIPT.as_bytes().to_vec(),
+    }
+}
+
+fn read_signal(excerpt: &str) -> ReadSignal {
+    ReadSignal {
+        kind: "constraint".into(),
+        asserted_by: "Ben".into(),
+        assertion: "mise stays pinned until the shim is fixed.".into(),
+        subjects: vec!["mise".into()],
+        argues_with: Vec::new(),
+        excerpt: excerpt.into(),
+        position: "the transcript".into(),
+    }
+}
+
+/// An inbox holding the unread meeting capture `meeting/file/ab12`.
+fn with_meeting() -> InboxAt {
+    let inbox = empty();
+    let write = inbox
+        .take(&Taken {
+            capture: capture("meeting/file/ab12"),
+            own_signal: None,
+        })
+        .unwrap();
+    after(&inbox, &write)
+}
+
+#[test]
+fn three_signals_read() {
+    let inbox = with_meeting();
+    let key = key("meeting/file/ab12");
+    let reading = [
+        read_signal("the shim times out on the first run."),
+        read_signal("we pin mise until it is fixed."),
+        read_signal("we ask upstream for a release."),
+    ];
+    let write = inbox.read_capture(&key, &reading, &[transcript()]).unwrap();
+    assert_eq!(
+        paths(&write),
+        ["inbox/captures/meeting/file/ab12/signals.rec"]
+    );
+    let inbox = after(&inbox, &write);
+    let signals = inbox.signals(&key).unwrap();
+    let ids: Vec<String> = signals.iter().map(|s| s.signal.to_string()).collect();
+    assert_eq!(
+        ids,
+        [
+            "meeting/file/ab12#1",
+            "meeting/file/ab12#2",
+            "meeting/file/ab12#3"
+        ]
+    );
+    for (signal, read) in signals.iter().zip(&reading) {
+        assert_eq!(signal.excerpt, read.excerpt);
+    }
+    assert!(!inbox.is_unread(&key));
+    assert_eq!(
+        inbox.signal(&id("meeting/file/ab12#2")).unwrap().excerpt,
+        "we pin mise until it is fixed."
+    );
+    assert_eq!(inbox.signal(&id("meeting/file/ab12#4")), None);
+}
+
+#[test]
+fn a_gap_in_the_numbers() {
+    let capture = capture("release/a").to_rec();
+    let gap = signals_rec(&[a_signal("release/a#1"), a_signal("release/a#3")]);
+    let error = InboxAt::read([
+        ("inbox/captures/release/a/capture.rec", capture.as_str()),
+        ("inbox/captures/release/a/signals.rec", gap.as_str()),
+    ])
+    .unwrap_err();
+    assert_eq!(error.path, "inbox/captures/release/a/signals.rec");
+    assert_eq!(error.record, Some(2));
+    assert!(error.reason.contains("numbered from 1"), "{error}");
+    // Nor does a signal name another capture's key.
+    let other = signals_rec(&[a_signal("release/b#1")]);
+    let error = InboxAt::read([
+        ("inbox/captures/release/a/capture.rec", capture.as_str()),
+        ("inbox/captures/release/a/signals.rec", other.as_str()),
+    ])
+    .unwrap_err();
+    assert_eq!(error.field.as_deref(), Some("signal"));
+}
+
+#[test]
+fn a_second_reading() {
+    let inbox = with_meeting();
+    let key = key("meeting/file/ab12");
+    let first = [read_signal("we pin mise until it is fixed.")];
+    let write = inbox.read_capture(&key, &first, &[transcript()]).unwrap();
+    let inbox = after(&inbox, &write);
+    let refused = inbox
+        .read_capture(&key, &first, &[transcript()])
+        .unwrap_err();
+    assert_eq!(refused.0.len(), 1);
+    assert_eq!(refused.0[0].what, "meeting/file/ab12");
+    assert!(refused.0[0].why.contains("has a reading"), "{refused}");
+    // A reading of none is a reading all the same.
+    let inbox = with_meeting();
+    let inbox = after(&inbox, &inbox.read_capture(&key, &[], &[]).unwrap());
+    assert!(inbox.read_capture(&key, &first, &[transcript()]).is_err());
+}
+
+#[test]
+fn a_reading_of_a_capture_with_an_own_signal() {
+    let inbox = empty();
+    let inbox = after(
+        &inbox,
+        &inbox.take(&taken_with_own("release/a", None)).unwrap(),
+    );
+    let refused = inbox.read_capture(&key("release/a"), &[], &[]).unwrap_err();
+    assert_eq!(refused.0[0].what, "release/a");
+    assert!(refused.0[0].why.contains("its own signal"), "{refused}");
+}
+
+#[test]
+fn a_reading_of_a_capture_not_held() {
+    let refused = empty()
+        .read_capture(&key("release/a"), &[], &[])
+        .unwrap_err();
+    assert_eq!(refused.0[0].what, "release/a");
+}
+
+#[test]
+fn a_reading_of_nothing() {
+    let inbox = with_meeting();
+    let key = key("meeting/file/ab12");
+    assert!(inbox.is_unread(&key));
+    let write = inbox.read_capture(&key, &[], &[]).unwrap();
+    let signals = &write.files["inbox/captures/meeting/file/ab12/signals.rec"];
+    assert_eq!(signals, "# weir-signal/1: read, no signals\n");
+    assert!(rec::read(signals).unwrap().is_empty());
+    let inbox = after(&inbox, &write);
+    assert!(!inbox.is_unread(&key));
+    assert_eq!(inbox.signals(&key), Some(&[][..]));
+}
+
+#[test]
+fn one_bad_signal_of_three() {
+    let inbox = with_meeting();
+    let key = key("meeting/file/ab12");
+    let reading = [
+        read_signal("the shim times out on the first run."),
+        ReadSignal {
+            asserted_by: String::new(),
+            ..read_signal("we pin mise until it is fixed.")
+        },
+        read_signal("we ask upstream for a release."),
+    ];
+    let refused = inbox
+        .read_capture(&key, &reading, &[transcript()])
+        .unwrap_err();
+    assert_eq!(refused.0.len(), 1);
+    assert_eq!(refused.0[0].what, "meeting/file/ab12#2");
+    assert_eq!(refused.0[0].field.as_deref(), Some("asserted_by"));
+    // Every signal not taken is named, each with why.
+    let reading = [
+        ReadSignal {
+            kind: "complaint".into(),
+            ..read_signal("the shim times out on the first run.")
+        },
+        read_signal("we pin mise until it is fixed."),
+        read_signal("we ask for nothing."),
+    ];
+    let refused = inbox
+        .read_capture(&key, &reading, &[transcript()])
+        .unwrap_err();
+    let named: Vec<(&str, Option<&str>)> = refused
+        .0
+        .iter()
+        .map(|n| (n.what.as_str(), n.field.as_deref()))
+        .collect();
+    assert_eq!(
+        named,
+        [
+            ("meeting/file/ab12#1", Some("kind")),
+            ("meeting/file/ab12#3", Some("excerpt")),
+        ]
+    );
+}
+
+#[test]
+fn a_paraphrase() {
+    let inbox = with_meeting();
+    let refused = inbox
+        .read_capture(
+            &key("meeting/file/ab12"),
+            &[read_signal("we pin mise until it gets fixed.")],
+            &[transcript()],
+        )
+        .unwrap_err();
+    assert_eq!(refused.0[0].what, "meeting/file/ab12#1");
+    assert_eq!(refused.0[0].field.as_deref(), Some("excerpt"));
+    // With no raw file handed in, no excerpt stands.
+    assert!(inbox
+        .read_capture(
+            &key("meeting/file/ab12"),
+            &[read_signal("we pin mise until it is fixed.")],
+            &[],
+        )
+        .is_err());
+}
+
+#[test]
+fn verbatim_across_lines() {
+    let inbox = with_meeting();
+    let two_lines = "Ben: we pin mise until it is fixed.\n\
+                     Ana: and we ask upstream for a release.\n";
+    let notes = RawFile {
+        path: "notes.md".into(),
+        bytes: b"unrelated".to_vec(),
+    };
+    let write = inbox
+        .read_capture(
+            &key("meeting/file/ab12"),
+            &[read_signal(two_lines)],
+            &[notes, transcript()],
+        )
+        .unwrap();
+    let inbox = after(&inbox, &write);
+    assert_eq!(
+        inbox.signal(&id("meeting/file/ab12#1")).unwrap().excerpt,
+        two_lines
+    );
 }

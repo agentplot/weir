@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 use weir_capture::rec::{self, RecError, Record};
-use weir_capture::{Capture, Key};
+use weir_capture::{CameIn, Capture, Key};
 
 use crate::format::Format;
 use crate::layout::Place;
@@ -18,8 +18,8 @@ use crate::signal::{Signal, SignalId, EMPTY_READING};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InboxAt {
     /// Every file under `inbox/`, by path, as the tip holds it.
-    files: BTreeMap<String, String>,
-    captures: BTreeMap<Key, Held>,
+    pub(crate) files: BTreeMap<String, String>,
+    pub(crate) captures: BTreeMap<Key, Held>,
 }
 
 /// One capture the inbox holds.
@@ -29,6 +29,18 @@ pub struct Held {
     /// Its own signal or its reading, from its `signals.rec`; none while
     /// it is unread (19, 28).
     pub signals: Option<Vec<Signal>>,
+}
+
+impl Held {
+    /// Whether its signals are its own signal, written with it by `take`
+    /// (19), rather than a reading: a capture taken with its own signal is
+    /// never unread, while a reading leaves `unread` as the capture was
+    /// written (41), and an import's signals are a reading (37).
+    pub fn has_own_signal(&self) -> bool {
+        self.signals.is_some()
+            && !self.capture.unread
+            && !matches!(self.capture.came_in, CameIn::Import(_))
+    }
 }
 
 /// Why an inbox could not be read: the path, and where there is one, the
@@ -190,6 +202,14 @@ impl InboxAt {
     pub fn signal(&self, id: &SignalId) -> Option<&Signal> {
         let n = usize::try_from(id.n).ok()?.checked_sub(1)?;
         self.signals(&id.key)?.get(n)
+    }
+
+    /// Whether the capture under `key` is unread: held, with no own
+    /// signal and no reading (19, 28).
+    pub fn is_unread(&self, key: &Key) -> bool {
+        self.captures
+            .get(key)
+            .is_some_and(|held| held.signals.is_none())
     }
 
     /// Every key the inbox holds, in order.
