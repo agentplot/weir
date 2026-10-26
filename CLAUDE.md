@@ -15,10 +15,18 @@ the design wins.
 
 ## Rules
 
-weir's rules are written after its statement, into
-`docs/architecture/` with the decisions behind them in `docs/adr/`, and
-then imported here. Until then the kit standard binds as its `code`
-profile says (`.config/kit.toml`).
+The rules are in `docs/architecture/`: `core.md` binds wherever a change
+is made, and an area page, when one exists, binds the paths its
+frontmatter names. The decisions behind them are `docs/adr/`, one MADR
+record each, proposed until the operator's yes. A design or a commit
+that relies on a rule cites its id; one that departs from a rule says
+which and why. Where `docs/architecture/` and the narrative docs
+disagree, `docs/architecture/` wins. A rule is sent to `core.md` or its
+area page with an id, the next free number in its area, amended in the
+same commit as the decision that changes it. The kit standard binds
+beside them as its `code` profile says (`.config/kit.toml`).
+
+@docs/architecture/core.md
 
 ## Checks
 
