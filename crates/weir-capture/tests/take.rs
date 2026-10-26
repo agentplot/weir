@@ -5,7 +5,7 @@ mod fakes;
 
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
-use weir_capture::take::{Bank, Inbox, RawFile, Take, TakeError, Taken};
+use weir_capture::take::{take, Bank, Inbox, RawFile, Refused, Take, TakeError, Taken};
 use weir_capture::{CameIn, Capture, Key, SMALLEST_LIMIT};
 
 use fakes::{host, Call};
@@ -95,6 +95,97 @@ fn the_fakes_record_every_call_in_order() {
             Call::Bank("release/x".into()),
             Call::Write("release/x".into()),
             Call::Discard("release/x".into()),
+        ]
+    );
+}
+
+/// An offer line of the release `key`, with `extra` fields after the three
+/// it needs.
+fn offer(key: &str, extra: &str) -> String {
+    format!(
+        r#"{{"capture": {{"key": "{key}", "source": "release", "event_at": "2026-10-10T14:02:11Z"{extra}}}}}"#
+    )
+}
+
+const RAW_AND_EXCERPT: &str = r#", "raw": ["notes.md"], "excerpt": {"text": "the notes", "kind": "ask", "asserted_by": "jdx/mise", "assertion": "a release", "subjects": [], "argues_with": [], "position": "notes"}"#;
+
+fn keys(report: &weir_capture::Report) -> Vec<&str> {
+    report.taken.iter().map(Key::as_str).collect()
+}
+
+#[test]
+fn one_bad_key_among_fourteen() {
+    let lines: Vec<String> = (1..=14)
+        .map(|n| {
+            if n == 5 {
+                offer("moves/x", "")
+            } else {
+                offer(&format!("release/tool/{n}"), "")
+            }
+        })
+        .collect();
+    let (mut inbox, mut bank, _) = host();
+    let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank);
+    assert_eq!(report.taken.len(), 13);
+    assert_eq!(inbox.written.len(), 13);
+    assert!(!keys(&report).contains(&"moves/x"));
+    assert_eq!(report.refused.len(), 1);
+    let Refused { line, key, reason } = &report.refused[0];
+    assert_eq!(*line, 5);
+    assert_eq!(key.as_deref(), Some("moves/x"));
+    assert!(reason.contains("`moves`"), "{reason}");
+}
+
+#[test]
+fn a_line_that_is_not_json_is_named_and_passed() {
+    let lines = [
+        offer("release/a/1", ""),
+        "not json".into(),
+        offer("release/b/1", ""),
+    ];
+    let (mut inbox, mut bank, _) = host();
+    let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank);
+    assert_eq!(keys(&report), ["release/a/1", "release/b/1"]);
+    assert_eq!(report.refused.len(), 1);
+    assert_eq!(report.refused[0].line, 2);
+    assert_eq!(report.refused[0].key, None);
+    assert!(report.refused[0].reason.contains("not JSON"));
+}
+
+#[test]
+fn the_same_release_the_next_day() {
+    let (mut inbox, mut bank, calls) = host();
+    inbox.held.insert("release/mise/2026.10.10".into());
+    let lines = [offer("release/mise/2026.10.10", RAW_AND_EXCERPT)];
+    let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank);
+    assert_eq!(report.held, 1);
+    assert!(report.taken.is_empty());
+    assert!(report.refused.is_empty());
+    assert!(inbox.written.is_empty());
+    assert!(bank.banked.is_empty());
+    assert_eq!(
+        *calls.borrow(),
+        [Call::Holds("release/mise/2026.10.10".into())]
+    );
+}
+
+#[test]
+fn one_key_twice_in_one_run() {
+    let (mut inbox, mut bank, calls) = host();
+    let lines = [
+        offer("deploy/a/1", ""),
+        offer("deploy/a/1", r#", "title": "again""#),
+    ];
+    let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank);
+    assert_eq!(keys(&report), ["deploy/a/1"]);
+    assert_eq!(report.held, 1);
+    assert_eq!(inbox.written.len(), 1);
+    assert_eq!(inbox.written[0].capture.title, None);
+    assert_eq!(
+        *calls.borrow(),
+        [
+            Call::Holds("deploy/a/1".into()),
+            Call::Write("deploy/a/1".into())
         ]
     );
 }
