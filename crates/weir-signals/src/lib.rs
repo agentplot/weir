@@ -10,6 +10,7 @@
 //! program: every function answers from its arguments alone (core.1).
 
 pub mod format;
+pub mod import;
 pub mod inbox;
 pub mod item;
 pub mod layout;
@@ -18,6 +19,10 @@ pub mod signal;
 pub mod write;
 
 pub use format::{Format, FormatError};
+pub use import::{
+    CaptureRefused, ImportReport, Imported, ImportedCapture, ImportedMove, ImportedSignal,
+    MoveNotTaken,
+};
 pub use inbox::{Held, InboxAt, InboxError, ItemAt, Unmoved, Weight};
 pub use item::{Item, MadeBy, Outcome, SendRecord};
 pub use layout::Place;
