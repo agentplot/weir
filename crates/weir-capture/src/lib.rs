@@ -16,6 +16,7 @@
 //! taken-at time, the limit and the raw place are the caller's to hand in,
 //! and every write is one the caller's inbox or bank makes (core.1).
 
+pub mod capture;
 pub mod declaration;
 pub mod hash;
 pub mod key;
@@ -25,6 +26,7 @@ pub mod rec;
 #[cfg(test)]
 mod testing;
 
+pub use capture::{CameIn, Capture};
 pub use declaration::{
     check_config, read_declarations, ConfigError, ConfigFailure, Declaration, DeclarationError,
     Invocation,
@@ -32,3 +34,4 @@ pub use declaration::{
 pub use hash::{content_hash, content_hash_reader};
 pub use key::{Key, KeyError};
 pub use line::{read_line, Completion, Excerpt, Failure, Line, Malformed, Nature, Offer};
+pub use rec::{RecError, Record};
