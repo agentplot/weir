@@ -9,6 +9,19 @@ use serde::{Serialize, Serializer};
 /// in an inbox (C.2; record 0002).
 const ROOTS: [&str; 3] = ["captures", "moves", "items"];
 
+/// The files the layout places, each with what it holds (C.2). Each segment
+/// of a key is a folder, so a segment of one of these names would stand
+/// where that file lies: `x/capture.rec` where capture `x`'s record does.
+/// A later record's file is added here.
+const LAYOUT_FILES: [(&str, &str); 6] = [
+    ("capture.rec", "a capture's record"),
+    ("signals.rec", "a capture's signals"),
+    ("moves.rec", "the inbox's moves"),
+    ("item.rec", "an item's record"),
+    ("brief.md", "an item's brief"),
+    ("sends.rec", "an item's sends"),
+];
+
 /// A key that keeps the rule. Only [`Key::parse`] makes one.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Key(String);
@@ -22,6 +35,8 @@ pub enum KeyError {
     EmptySegment,
     /// `.` or `..`: the same place as another key, or a place outside.
     DotSegment(String),
+    /// A segment that is the name of a file the layout places.
+    LayoutFile(String),
     /// `captures`, `moves` or `items` as the first segment.
     Root(String),
 }
@@ -39,6 +54,9 @@ impl Key {
             match segment {
                 "" => return Err(KeyError::EmptySegment),
                 "." | ".." => return Err(KeyError::DotSegment(segment.to_string())),
+                _ if LAYOUT_FILES.iter().any(|(file, _)| *file == segment) => {
+                    return Err(KeyError::LayoutFile(segment.to_string()))
+                }
                 _ => {}
             }
         }
@@ -78,6 +96,16 @@ impl fmt::Display for KeyError {
             KeyError::LeadingSlash => write!(f, "a key never starts with `/`"),
             KeyError::EmptySegment => write!(f, "a key never has an empty segment"),
             KeyError::DotSegment(segment) => write!(f, "a key never has a `{segment}` segment"),
+            KeyError::LayoutFile(segment) => {
+                let holds = LAYOUT_FILES
+                    .iter()
+                    .find(|(file, _)| file == segment)
+                    .map_or("a file of the layout", |(_, holds)| holds);
+                write!(
+                    f,
+                    "a key never has a `{segment}` segment, which would stand where the file `{segment}`, {holds}, lies"
+                )
+            }
             KeyError::Root(root) => write!(
                 f,
                 "a key's first segment is never `{root}`, where an inbox's {root} lie"
@@ -127,6 +155,46 @@ mod tests {
             Key::parse("").unwrap_err().to_string(),
             "a key is never empty"
         );
+    }
+
+    #[test]
+    fn a_key_that_names_a_file_of_the_layout_is_refused() {
+        for (text, file) in [
+            ("release/capture.rec", "capture.rec"),
+            ("release/x/signals.rec", "signals.rec"),
+            ("capture.rec", "capture.rec"),
+            ("deploy/moves.rec", "moves.rec"),
+            ("deploy/item.rec", "item.rec"),
+            ("deploy/brief.md", "brief.md"),
+            ("deploy/sends.rec", "sends.rec"),
+        ] {
+            assert_eq!(
+                Key::parse(text),
+                Err(KeyError::LayoutFile(file.into())),
+                "{text}"
+            );
+        }
+        assert_eq!(
+            Key::parse("release/x/signals.rec").unwrap_err().to_string(),
+            "a key never has a `signals.rec` segment, which would stand where the file \
+             `signals.rec`, a capture's signals, lies"
+        );
+        assert_eq!(
+            Key::parse("deploy/brief.md").unwrap_err().to_string(),
+            "a key never has a `brief.md` segment, which would stand where the file \
+             `brief.md`, an item's brief, lies"
+        );
+        // Every name the layout places is one the rule refuses.
+        for (file, _) in LAYOUT_FILES {
+            assert!(Key::parse(&format!("x/{file}/y")).is_err(), "{file}");
+        }
+    }
+
+    #[test]
+    fn a_name_like_a_layout_file_is_taken() {
+        for text in ["release/capture.rec.1", "deploy/brief", "notes/items.rec"] {
+            assert!(Key::parse(text).is_ok(), "{text}");
+        }
     }
 
     #[test]
