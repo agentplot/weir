@@ -167,6 +167,26 @@ fn a_line_that_is_not_json_is_named_and_passed() {
 }
 
 #[test]
+fn an_import_line_is_named_among_the_refusals_and_the_next_line_taken() {
+    let lines = [
+        offer("release/a/1", ""),
+        r#"{"import": {"capture": {"key": "release/b/1", "source": "release", "event_at": "2026-10-10T14:02:11Z"}, "came_in": "import:crew-folders", "signals": [], "moves": []}}"#.into(),
+        offer("release/c/1", ""),
+    ];
+    let (mut inbox, mut bank, _) = host();
+    let report = take(&lines, None, &take_on("deneb"), &mut inbox, &mut bank);
+    assert_eq!(keys(&report), ["release/a/1", "release/c/1"]);
+    assert_eq!(inbox.written.len(), 2);
+    assert_eq!(report.refused.len(), 1);
+    assert_eq!(report.refused[0].line, 2);
+    let reason = &report.refused[0].reason;
+    assert!(
+        reason.contains("an import line is read by a host's import operation and never taken"),
+        "{reason}"
+    );
+}
+
+#[test]
 fn the_same_release_the_next_day() {
     let (mut inbox, mut bank, calls) = host();
     inbox.held.insert("release/mise/2026.10.10".into());

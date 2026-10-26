@@ -7,12 +7,13 @@
 //! and its signal arrives unmoved, but for the one word read as a join
 //! into a proposed item named for its target; every move keeps the note
 //! the body gave with it (39). The import line itself is read in
-//! `weir-capture`; what it carries is handed here as [`ImportedCapture`].
+//! `weir-capture`; what it carries is handed here as [`ImportedCapture`],
+//! by the one conversion from [`ImportLine`].
 
 use time::format_description::well_known::Rfc3339;
 use time::{OffsetDateTime, UtcOffset};
 use weir_capture::rec::{self, Record};
-use weir_capture::{CameIn, Capture, Key};
+use weir_capture::{CameIn, Capture, ImportLine, Key};
 
 use crate::inbox::{Checked, Effect, Held, InboxAt, ItemAt};
 use crate::layout::Place;
@@ -39,6 +40,54 @@ pub struct ImportedCapture {
     /// In the body's order, numbered from 1.
     pub signals: Vec<ImportedSignal>,
     pub moves: Vec<ImportedMove>,
+}
+
+impl From<ImportLine> for ImportedCapture {
+    /// What the line carries, each field handed over as read: the key,
+    /// source and event time as their text, the pointer, how it came in,
+    /// the signals with their numbers and the moves with their words,
+    /// targets and notes, a target, maker or time the line left out handed
+    /// over empty, for the import to refuse as it refuses any move lacking
+    /// one (39, 63, 75a; C.1).
+    fn from(line: ImportLine) -> ImportedCapture {
+        ImportedCapture {
+            key: line.capture.key.as_str().to_string(),
+            source: line.capture.source,
+            event_at: line.capture.event_at,
+            title: line.capture.title,
+            url: line.capture.url,
+            pointer: line.pointer,
+            came_in: line.came_in,
+            signals: line
+                .signals
+                .into_iter()
+                .map(|signal| ImportedSignal {
+                    n: signal.n,
+                    signal: ReadSignal {
+                        kind: signal.kind.as_str().to_string(),
+                        asserted_by: signal.asserted_by,
+                        assertion: signal.assertion,
+                        subjects: signal.subjects,
+                        argues_with: signal.argues_with,
+                        excerpt: signal.excerpt,
+                        position: signal.position,
+                    },
+                })
+                .collect(),
+            moves: line
+                .moves
+                .into_iter()
+                .map(|imported| ImportedMove {
+                    signal: imported.signal,
+                    word: imported.word,
+                    target: imported.target.unwrap_or_default(),
+                    note: imported.note,
+                    by: imported.by.unwrap_or_default(),
+                    at: imported.at.unwrap_or_default(),
+                })
+                .collect(),
+        }
+    }
 }
 
 /// One signal of an imported capture, with its number in the body.
@@ -343,5 +392,74 @@ impl ImportedCapture {
         } else {
             Err(refused)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use weir_capture::read_import_line;
+
+    use super::*;
+
+    /// The line of "A release capture with one signal and one move"
+    /// (import-lines), with a note added to its move, come in from folders
+    /// named for no tool, since this crate names none (core.2).
+    const RELEASE: &str = r#"{"import": {"capture": {"key": "release/mise/2026.10.10", "source": "release", "event_at": "2026-10-10T14:02:11Z", "title": "mise 2026.10.10"}, "pointer": "mac-studio:~/.local/state/x/", "came_in": "import:old-folders", "signals": [{"n": 1, "kind": "ask", "asserted_by": "jdx/mise", "assertion": "mise 2026.10.10 is released.", "subjects": ["release"], "argues_with": [], "excerpt": "notes", "position": "release notes"}], "moves": [{"signal": 1, "move": "route", "target": "unit/bump-mise", "note": "the pin is behind", "by": "planner", "at": "2026-10-11T00:00:00Z"}]}}"#;
+
+    #[test]
+    fn a_release_capture_with_one_signal_and_one_move() {
+        let line = read_import_line(RELEASE).unwrap();
+        assert_eq!(
+            ImportedCapture::from(line),
+            ImportedCapture {
+                key: "release/mise/2026.10.10".into(),
+                source: "release".into(),
+                event_at: "2026-10-10T14:02:11Z".into(),
+                title: Some("mise 2026.10.10".into()),
+                url: None,
+                pointer: Some("mac-studio:~/.local/state/x/".into()),
+                came_in: CameIn::Import("old-folders".into()),
+                signals: vec![ImportedSignal {
+                    n: 1,
+                    signal: ReadSignal {
+                        kind: "ask".into(),
+                        asserted_by: "jdx/mise".into(),
+                        assertion: "mise 2026.10.10 is released.".into(),
+                        subjects: vec!["release".into()],
+                        argues_with: vec![],
+                        excerpt: "notes".into(),
+                        position: "release notes".into(),
+                    },
+                }],
+                moves: vec![ImportedMove {
+                    signal: 1,
+                    word: "route".into(),
+                    target: "unit/bump-mise".into(),
+                    note: Some("the pin is behind".into()),
+                    by: "planner".into(),
+                    at: "2026-10-11T00:00:00Z".into(),
+                }],
+            }
+        );
+    }
+
+    #[test]
+    fn a_move_the_line_gives_no_target_maker_or_time() {
+        let line = read_import_line(&RELEASE.replace(
+            r#"{"signal": 1, "move": "route", "target": "unit/bump-mise", "note": "the pin is behind", "by": "planner", "at": "2026-10-11T00:00:00Z"}"#,
+            r#"{"signal": 1, "move": "promote"}"#,
+        ))
+        .unwrap();
+        assert_eq!(
+            ImportedCapture::from(line).moves,
+            [ImportedMove {
+                signal: 1,
+                word: "promote".into(),
+                target: String::new(),
+                note: None,
+                by: String::new(),
+                at: String::new(),
+            }]
+        );
     }
 }
