@@ -20,6 +20,10 @@ pub mod declaration;
 pub mod hash;
 pub mod key;
 pub mod line;
+pub mod rec;
+
+#[cfg(test)]
+mod testing;
 
 pub use declaration::{
     check_config, read_declarations, ConfigError, ConfigFailure, Declaration, DeclarationError,
