@@ -1,0 +1,19 @@
+[package]
+name = "weir-signals"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "The inbox: its signals, moves, batches, items, briefs and sends in recutils, where each lies, every write checked at the tip it is formed on, and the import operation (statement 25 to 43, 75a)."
+
+[dependencies]
+weir-capture = { path = "../weir-capture" }
+time.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true

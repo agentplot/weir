@@ -4,7 +4,7 @@
 #                          JSON in flight, recutils at rest, the sha256
 #                          content hash and the excerpt cut: landed
 #   crates/weir-signals    the signal, move and item records, and the
-#                          inbox's layout
+#                          inbox's layout: landed
 #   crates/weir-adapters   the folder drop, the meeting file and the
 #                          signals-folder import: landed
 #   crates/weir-branch     the shared-branch write protocol
@@ -23,6 +23,7 @@ members = [
   "crates/weir",
   "crates/weir-cadence",
   "crates/weir-adapters",
+  "crates/weir-signals",
 ]
 
 [workspace.package]
