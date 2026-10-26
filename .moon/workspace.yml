@@ -11,6 +11,7 @@
 $schema: 'https://moonrepo.dev/schemas/workspace.json'
 
 projects:
+  cadence: 'crates/weir-cadence'
   capture: 'crates/weir-capture'
   kinds: 'crates/weir-kinds'
   weir: 'crates/weir'

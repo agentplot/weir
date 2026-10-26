@@ -1,0 +1,18 @@
+[package]
+name = "weir-cadence"
+description = "When a scheduled thing is due, from its five-field cron schedule, its last run and now, caught up once after a sleep, through the clock (59, 60, 83 to 85)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+croner.workspace = true
+jiff.workspace = true
+
+# The tests take their zones from jiff's bundled copy of the time zone
+# database, so a host's own copy cannot change a result.
+[dev-dependencies]
+jiff = { workspace = true, features = ["tzdb-bundle-always"] }
+
+[lints]
+workspace = true
