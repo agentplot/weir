@@ -24,10 +24,25 @@ use serde::Deserialize;
 use time::format_description::well_known::Rfc3339;
 use weir_branch::{write, Ask, Branch, Files, Tip, WriteError, Written, LOCK};
 
-use common::{bare, commits_since, land, message, now, parents, tip};
+use common::{bare, commits_since, land, message, now, parents, recfix_says, tip};
 
 /// The clauses every protocol case together must cite (44 to 50).
 const PROTOCOL: std::ops::RangeInclusive<u32> = 44..=50;
+
+/// The cases the pack holds at least (shared-branch-cases).
+const NAMED: [&str; 11] = [
+    "lands-on-the-tip-read",
+    "first-write-makes-the-branch",
+    "two-writes-from-one-tip",
+    "a-held-key-at-the-new-tip",
+    "a-second-standing-move",
+    "kept-moving-past-the-bound",
+    "the-bound-left-out",
+    "a-branch-with-no-remote",
+    "recfix-refuses-a-record",
+    "a-held-lock-let-go",
+    "a-stale-lock-broken",
+];
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -527,4 +542,59 @@ fn every_case_passes() {
         .filter_map(|(name, case)| run_case(name, case).err())
         .collect();
     assert!(failed.is_empty(), "{}", failed.join("\n"));
+}
+
+#[test]
+fn the_cases_named() {
+    let cases = read_cases(&pack()).unwrap();
+    for name in NAMED {
+        assert!(cases.contains_key(name), "no case {name}");
+    }
+}
+
+#[test]
+fn every_record_a_case_holds_passes_recfix() {
+    for (name, case) in read_cases(&pack()).unwrap() {
+        let held = case.start.iter().chain(case.expect.tip.iter()).flatten();
+        for (path, text) in held.filter(|(path, _)| path.ends_with(".rec")) {
+            if let Some(said) = recfix_says(text) {
+                panic!("pack/branch/{name}: {path}: recfix refused: {said}");
+            }
+        }
+    }
+}
+
+#[test]
+fn an_add_over_a_held_path() {
+    let add = Add {
+        path: "inbox/captures/x/capture.rec".to_string(),
+        text: "format: weir-capture/1\n".to_string(),
+    };
+    let rule = Rule::Add(&add);
+    assert_eq!(
+        rule.form(|_| Ok(Some("held".to_string()))).unwrap(),
+        Files::new()
+    );
+    assert_eq!(rule.form(|_| Ok(None)).unwrap().len(), 1);
+}
+
+#[test]
+fn an_append_meeting_its_line() {
+    let append = Append {
+        path: "inbox/moves/moves.rec".to_string(),
+        text: "\nformat: weir-move/1\nsignal: x#1\n".to_string(),
+        refused_when: Some("signal: x#1".to_string()),
+    };
+    let rule = Rule::Append(&append);
+    let held = "format: weir-move/1\nsignal: x#1\n".to_string();
+    assert_eq!(
+        rule.form(|_| Ok(Some(held.clone()))).unwrap_err(),
+        "signal: x#1"
+    );
+    let other = "format: weir-move/1\nsignal: y#1\n".to_string();
+    let formed = rule.form(|_| Ok(Some(other.clone()))).unwrap();
+    assert_eq!(
+        formed["inbox/moves/moves.rec"],
+        format!("{other}{}", append.text)
+    );
 }

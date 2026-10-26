@@ -1,0 +1,51 @@
+# A lock taken a moment ago stands in the writer's git directory, and its
+# holder lets it go a fifth of a second later: the writer waits, takes it
+# and lands its write, breaking nothing.
+satisfies = [49]
+remote = true
+stale_after_seconds = 60
+
+[lock]
+holder = "curation@one"
+age_seconds = 0
+let_go_after_ms = 200
+
+[start]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+
+[[write]]
+who = "host@one"
+what = "take release/acme/v1"
+
+[write.add]
+path = "inbox/captures/release/acme/v1/capture.rec"
+text = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""
+
+[[expect.write]]
+outcome = "landed"
+tries = 1
+
+
+[[expect.commit]]
+what = "take release/acme/v1"
+asked_by = "host@one"
+
+[expect.tip]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+"inbox/captures/release/acme/v1/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""

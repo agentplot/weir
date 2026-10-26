@@ -1,0 +1,103 @@
+# The writer sets the bound to two, and another write lands between each
+# of its reads and its push: the write is tried three times, then reported
+# refused as the branch kept moving, and the branch holds none of it.
+satisfies = [44]
+remote = true
+bound = 2
+stale_after_seconds = 60
+
+[start]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+
+[[write]]
+who = "host@one"
+what = "take release/acme/v1"
+
+[write.add]
+path = "inbox/captures/release/acme/v1/capture.rec"
+text = """
+format: weir-capture/1
+key: release/acme/v1
+source: releases
+"""
+
+[[write.meanwhile]]
+try = 1
+who = "curation@two"
+what = "propose item-1"
+
+[write.meanwhile.add]
+path = "inbox/items/item-1/item.rec"
+text = """
+format: weir-item/1
+name: item-1
+by: curation@two
+"""
+
+[[write.meanwhile]]
+try = 2
+who = "curation@two"
+what = "propose item-2"
+
+[write.meanwhile.add]
+path = "inbox/items/item-2/item.rec"
+text = """
+format: weir-item/1
+name: item-2
+by: curation@two
+"""
+
+[[write.meanwhile]]
+try = 3
+who = "curation@two"
+what = "propose item-3"
+
+[write.meanwhile.add]
+path = "inbox/items/item-3/item.rec"
+text = """
+format: weir-item/1
+name: item-3
+by: curation@two
+"""
+
+[[expect.write]]
+outcome = "kept-moving"
+tries = 3
+
+[[expect.commit]]
+what = "propose item-1"
+asked_by = "curation@two"
+
+[[expect.commit]]
+what = "propose item-2"
+asked_by = "curation@two"
+
+[[expect.commit]]
+what = "propose item-3"
+asked_by = "curation@two"
+
+[expect.tip]
+"inbox/captures/release/acme/v0/capture.rec" = """
+format: weir-capture/1
+key: release/acme/v0
+source: releases
+"""
+"inbox/items/item-1/item.rec" = """
+format: weir-item/1
+name: item-1
+by: curation@two
+"""
+"inbox/items/item-2/item.rec" = """
+format: weir-item/1
+name: item-2
+by: curation@two
+"""
+"inbox/items/item-3/item.rec" = """
+format: weir-item/1
+name: item-3
+by: curation@two
+"""
