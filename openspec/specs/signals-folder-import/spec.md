@@ -131,7 +131,7 @@ A move's word and consequence SHALL be: `attach`, `challenge`, `answered` and `r
 
 ### Requirement: crew's new-territory is a join into a proposed item named for its target
 
-crew's `new-territory` SHALL be carried as a `join`, its target the name of a proposed item made from `Target`, lowercase ASCII letters and digits kept and every other run of characters one `-`, trimmed of `-` (39; section 10, question 3; core.25). A `new-territory` with no `Target`, or one leaving no name, SHALL be carried as a join with no target.
+crew's `new-territory` SHALL be carried as a `join`, its target the name of a proposed item made from `Target`, lowercase ASCII letters and digits kept and every other run of characters one `-`, trimmed of `-` (39; section 10, question 3; S9; core.25). A `new-territory` with no `Target`, or one leaving no name, SHALL be carried as a join with no target.
 
 #### Scenario: crew's new-territory
 - **WHEN** a move's word is `new-territory` with `Target: upstream: Claude Code's HTTP MCP reconnection` and `Reason: nothing covers it`

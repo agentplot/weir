@@ -275,18 +275,18 @@ nature is refused whole and reported (28); otherwise `capture.rec` (with the mac
 caller hands, unread when it has no signals) and its `signals.rec` are
 added, and each move is checked as `make_move` checks one, against the
 inbox as this import has grown it so far; one not taken is reported
-with its signal, its word and why, and its signal stays unmoved (39).
-A move whose word is `new-territory` is read first as a join whose item
-is the move's target, as given, and then checked as any join: it makes
-or grows that proposed item, and one whose target is empty, is not an
-item's name, or names a sent item is not taken and is reported with the
-word it came with. Its record is a `join`; the word it came with is
-not kept beside it, since C.2's record has no field for it and the
-join is what the ruling says it is. Every move written carries the
-note the body gave with it, and a drop given none carries its reason
-as its note (39; C.2). An imported join makes or grows a proposed item
-with no brief. The word `new-territory` is the only word of crew's the
-crate holds, written as a constant with no tool's name beside it
+with its signal, its word and why, and its signal stays unmoved (39;
+S9). A move whose word is `new-territory` is read first as a join whose
+item is the move's target, as given, and then checked as any join: it
+makes or grows that proposed item, and one whose target is empty, is
+not an item's name, or names a sent item is not taken and is reported
+with the word it came with (39; S9). Its record is a `join`; the word it
+came with is not kept beside it, since C.2's record has no field for it
+and the join is what S9 and the ruling say it is. Every move written
+carries the note the body gave with it, and a drop given none carries
+its reason as its note (39; C.1, C.2; S9). An imported join makes or
+grows a proposed item with no brief. The word `new-territory` is the
+only word of crew's the crate holds, written as a constant with no tool's name beside it
 (core.2). Nothing
 is banked and no excerpt looked for (37). The whole import is one
 write, checked as every write is, with an `ImportReport`: the keys
@@ -327,15 +327,6 @@ planned crates names the signals crate landed.
   alone; the conversion from the line is one function, added by
   whichever unit lands second, and the two units touch no file in
   common.
-- [S9 still says an imported `new-territory` arrives unmoved, while
-  clause 39, core.25 and the batch 21 ruling read it as a join] → The
-  clause and the ruling govern: the import reads it as a join, and the
-  test of S9's "not taken, arrives unmoved, reported" uses a word of no
-  meaning, `promote`. S9's wording is named for madswan-design.
-- [C.1's import line spells no `note` in its moves] → `ImportedMove`
-  carries the note as an option, so the import keeps it whichever way
-  the line comes to spell it; the line's field is the built-in adapters
-  unit's, and named for madswan-design.
 - [A move record with no `note`] → The field is optional within
   `weir-move/1`, so its major stays 1 (40); a reader meeting no `note`
   reads none.

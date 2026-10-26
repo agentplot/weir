@@ -38,7 +38,7 @@ An imported capture's signals SHALL be written as its reading, numbered from 1 i
 
 ### Requirement: An imported move keeps its note as read
 
-A reason or note the body gave with any imported move SHALL be kept with it as its note, as read, and an imported drop given no note SHALL carry its reason as its note (39; C.2).
+A reason or note the body gave with any imported move SHALL be kept with it as its note, as read, and an imported drop given no note SHALL carry its reason as its note (39; C.1, C.2; S9).
 
 #### Scenario: A move's note kept as read
 
@@ -61,7 +61,7 @@ An imported capture whose key the inbox holds SHALL write nothing, its signals a
 
 ### Requirement: An imported new-territory is a join into a proposed item named for its target
 
-An imported move whose word is `new-territory` SHALL be read as a join into the proposed item its target names, then checked and written as any imported join, its record's word `join` (39; core.25). One whose target is empty, is not an item's name, or names a sent item SHALL not be taken: its signal SHALL arrive unmoved, and the report SHALL name the move with the word it came with and why.
+An imported move whose word is `new-territory` SHALL be read as a join into the proposed item its target names, then checked and written as any imported join, its record's word `join` (39; S9; core.25). One whose target is empty, is not an item's name, or names a sent item SHALL not be taken: its signal SHALL arrive unmoved, and the report SHALL name the move with the word it came with and why.
 
 #### Scenario: Two signals into new territory
 

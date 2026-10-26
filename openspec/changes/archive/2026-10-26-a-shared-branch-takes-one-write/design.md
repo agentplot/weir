@@ -229,8 +229,8 @@ so a lock never stands in for it (49; core.28).
 
 ### The pack's protocol cases
 
-`pack/branch/<case>/case.toml`, one per folder, the shape `branch` beside
-C.7's `host`, `adapter` and `cadence`. A case is data alone, read with
+`pack/branch/<case>/case.toml`, one per folder, the shape `branch`, one of
+the six C.7 names. A case is data alone, read with
 unknown fields refused:
 
 ```toml
@@ -347,10 +347,10 @@ landed.
   changes edit `Cargo.toml`, `Cargo.lock` and `.moon/workspace.yml`] →
   Each adds one member and one project; the second to merge takes the
   other's lines beside its own.
-- [The pack's check of 67 does not yet know a `branch` shape, and C.7 names
-  three] → The cases carry `satisfies` as every case does, and the crate's
-  runner checks this shape's citations; C.7's list is named for
-  madswan-design.
+- [The pack's check of 67 is the pack's own unit, not this one] → The cases
+  carry `satisfies` as every case does, and the crate's runner checks this
+  shape's citations; C.7 names `branch` among the pack's six shapes, a
+  case of it run against weir's own crate in its tests.
 - [A local branch checked out in a working tree moves under it] → 47 is
   kept, since no working copy is touched; the working tree then differs
   from its branch, as after any `update-ref`.
