@@ -109,7 +109,8 @@ fn git(repo: &Path, args: &[&str], input: Option<&Path>) -> Result<String, Strin
 }
 
 /// Seeds the branch with the case's starting records in one write of
-/// `weir-branch`, or with an empty tree when it has none.
+/// `weir-branch`, or with an empty tree when it has none, the branch made
+/// from the expected old value of none (core.27).
 fn seed(
     branch: &Branch,
     repo: &Path,
@@ -133,7 +134,7 @@ fn seed(
         )?;
         git(
             repo,
-            &["update-ref", &format!("refs/heads/{BRANCH}"), &commit],
+            &["update-ref", &format!("refs/heads/{BRANCH}"), &commit, ""],
             None,
         )?;
         return Ok(());
