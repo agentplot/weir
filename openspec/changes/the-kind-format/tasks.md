@@ -18,7 +18,7 @@
 ## 3. weir check
 
 - [x] 3.1 Add `crates/weir`, package `weir` with a `[[bin]]` named `weir`, depending on `weir-kinds` and on `clap` 4 with `derive` through `[workspace.dependencies]`, as a workspace member and as moon project `weir` with the same four tasks, its inputs taking `crates/weir-kinds/**/*` too. True when `devenv shell -- moon run weir:typecheck` passes.
-- [ ] 3.2 Implement `weir check <path>` as the design states: the kinds and every elaboration section read, the kinds listed and exit 0 on success, each problem as `<field>: <reason>` on standard error and exit 1 on refusal, an unreadable file named on standard error with exit 2, and the file opened read-only. True when `devenv shell -- moon run weir:test` passes the tests for "weir check reads a declaration", each running the built binary against the crate's fixtures and comparing a fixture's bytes before and after.
+- [x] 3.2 Implement `weir check <path>` as the design states: the kinds and every elaboration section read, the kinds listed and exit 0 on success, each problem as `<field>: <reason>` on standard error and exit 1 on refusal, an unreadable file named on standard error with exit 2, and the file opened read-only. True when `devenv shell -- moon run weir:test` passes the tests for "weir check reads a declaration", each running the built binary against the crate's fixtures and comparing a fixture's bytes before and after.
 - [ ] 3.3 Hold the command line to clippy and rustfmt. True when `devenv shell -- moon run weir:lint` and `devenv shell -- moon run weir:format` pass.
 
 ## 4. The projects this change touches
