@@ -1,0 +1,29 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# weir-capture: the capture contract. One task per check, each run from the
+# workspace root (core.39).
+language: 'rust'
+
+tasks:
+  format:
+    command: 'cargo fmt -p weir-capture --check'
+    inputs: ['/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/rust-toolchain.toml', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  lint:
+    command: 'cargo clippy -p weir-capture --all-targets -- -D warnings'
+    inputs: ['/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/rust-toolchain.toml', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  typecheck:
+    command: 'cargo check -p weir-capture --all-targets'
+    inputs: ['/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/rust-toolchain.toml', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  # The tests run recfix, from devenv.nix's recutils, over every record
+  # they write.
+  test:
+    command: 'cargo test -p weir-capture'
+    inputs: ['/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/rust-toolchain.toml', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
