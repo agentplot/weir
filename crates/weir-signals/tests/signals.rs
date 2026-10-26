@@ -5,11 +5,11 @@
 mod common;
 
 use weir_capture::rec::{self, Record};
-use weir_capture::{LeftOut, Nature};
+use weir_capture::{CameIn, LeftOut, Nature, OwnSignal, Taken};
 use weir_signals::signal::{signals_rec, EMPTY_READING};
 use weir_signals::{InboxAt, Signal, SignalId};
 
-use common::{capture, recfix, recsel_value};
+use common::{after, capture, key, paths, recfix, recsel_value};
 
 fn id(text: &str) -> SignalId {
     SignalId::parse(text).unwrap()
@@ -160,4 +160,146 @@ fn a_reading_of_none_is_one_line_naming_the_format() {
     assert_eq!(written, format!("{EMPTY_READING}\n"));
     assert_eq!(written, "# weir-signal/1: read, no signals\n");
     recfix(&written);
+}
+
+fn own_signal(key: &str, cut: Option<LeftOut>) -> OwnSignal {
+    let signal = a_signal(&format!("{key}#1"));
+    OwnSignal {
+        signal: signal.signal.to_string(),
+        kind: signal.kind,
+        asserted_by: signal.asserted_by,
+        assertion: signal.assertion,
+        subjects: signal.subjects,
+        argues_with: signal.argues_with,
+        position: signal.position,
+        excerpt: signal.excerpt,
+        cut,
+    }
+}
+
+fn taken_with_own(key: &str, cut: Option<LeftOut>) -> Taken {
+    Taken {
+        capture: weir_capture::Capture {
+            unread: false,
+            ..capture(key)
+        },
+        own_signal: Some(own_signal(key, cut)),
+    }
+}
+
+fn empty() -> InboxAt {
+    InboxAt::read(Vec::<(String, String)>::new()).unwrap()
+}
+
+#[test]
+fn a_captures_place() {
+    let write = empty()
+        .take(&taken_with_own("release/mise/2026.10.10", None))
+        .unwrap();
+    assert_eq!(
+        paths(&write),
+        [
+            "inbox/captures/release/mise/2026.10.10/capture.rec",
+            "inbox/captures/release/mise/2026.10.10/signals.rec",
+        ]
+    );
+}
+
+#[test]
+fn a_cut_own_signal() {
+    let left_out = LeftOut {
+        lines: 812,
+        bytes: 39020,
+    };
+    let taken = taken_with_own("release/mise/2026.10.10", Some(left_out));
+    let inbox = empty();
+    let write = inbox.take(&taken).unwrap();
+    let signals = &write.files["inbox/captures/release/mise/2026.10.10/signals.rec"];
+    assert_eq!(recsel_value(signals, "signal"), "release/mise/2026.10.10#1");
+    assert_eq!(recsel_value(signals, "cut"), "812 lines and 39020 bytes");
+    let inbox = after(&inbox, &write);
+    let key = key("release/mise/2026.10.10");
+    assert_eq!(inbox.capture(&key), Some(&taken.capture));
+    let signals = inbox.signals(&key).unwrap();
+    assert_eq!(signals.len(), 1);
+    assert_eq!(signals[0].cut, Some(left_out));
+    assert_eq!(
+        signals[0],
+        Signal::own(taken.own_signal.as_ref().unwrap()).unwrap()
+    );
+}
+
+#[test]
+fn an_unread_capture() {
+    let taken = Taken {
+        capture: capture("release/a"),
+        own_signal: None,
+    };
+    let inbox = empty();
+    let write = inbox.take(&taken).unwrap();
+    assert_eq!(paths(&write), ["inbox/captures/release/a/capture.rec"]);
+    assert_eq!(
+        recsel_value(
+            &write.files["inbox/captures/release/a/capture.rec"],
+            "unread"
+        ),
+        "yes"
+    );
+    let inbox = after(&inbox, &write);
+    assert!(inbox.holds(&key("release/a")));
+    assert_eq!(inbox.signals(&key("release/a")), None);
+}
+
+#[test]
+fn a_held_key() {
+    let inbox = empty();
+    let write = inbox.take(&taken_with_own("release/a", None)).unwrap();
+    let inbox = after(&inbox, &write);
+    let refused = inbox
+        .take(&Taken {
+            capture: capture("release/a"),
+            own_signal: None,
+        })
+        .unwrap_err();
+    assert_eq!(refused.0.len(), 1);
+    assert_eq!(refused.0[0].what, "release/a");
+    assert!(refused.0[0].why.contains("is held"), "{refused}");
+}
+
+#[test]
+fn a_taken_capture_agrees_with_its_own_signal() {
+    let inbox = empty();
+    // An own signal on a capture marked unread, or none on one marked read.
+    let mut taken = taken_with_own("release/a", None);
+    taken.capture.unread = true;
+    let refused = inbox.take(&taken).unwrap_err();
+    assert_eq!(refused.0[0].field.as_deref(), Some("unread"));
+    let refused = inbox
+        .take(&Taken {
+            capture: weir_capture::Capture {
+                unread: false,
+                ..capture("release/a")
+            },
+            own_signal: None,
+        })
+        .unwrap_err();
+    assert_eq!(refused.0[0].field.as_deref(), Some("unread"));
+    // An own signal numbered other than 1, or naming another key.
+    for signal in ["release/a#2", "release/b#1"] {
+        let mut taken = taken_with_own("release/a", None);
+        taken.own_signal.as_mut().unwrap().signal = signal.into();
+        let refused = inbox.take(&taken).unwrap_err();
+        assert_eq!(refused.0[0].field.as_deref(), Some("signal"), "{signal}");
+    }
+    // An import's captures come in through the import operation alone.
+    let refused = inbox
+        .take(&Taken {
+            capture: weir_capture::Capture {
+                came_in: CameIn::Import("partition".into()),
+                ..capture("release/a")
+            },
+            own_signal: None,
+        })
+        .unwrap_err();
+    assert_eq!(refused.0[0].field.as_deref(), Some("came_in"));
 }

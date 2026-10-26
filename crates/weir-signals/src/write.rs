@@ -1,0 +1,213 @@
+//! A write, and the operations that form one: each a method of [`InboxAt`]
+//! taking what its caller hands, forming the full new text of every file
+//! it adds or replaces from the inbox read at one tip (47), and checking
+//! the write there (46). The write protocol forms it again on a new tip by
+//! calling the same operation on the inbox read there, so every check is
+//! made again (44; core.26).
+
+use std::collections::BTreeMap;
+use std::fmt;
+
+use weir_capture::{CameIn, Taken};
+
+use crate::inbox::{InboxAt, InboxError};
+use crate::layout::Place;
+use crate::signal::{signals_rec, Signal, SignalId};
+
+/// The full new text of each file a write adds or replaces, by path from
+/// the tip's root: an append is the tip's text with records added after it
+/// (47).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Write {
+    pub files: BTreeMap<String, String>,
+}
+
+impl Write {
+    pub fn new() -> Write {
+        Write::default()
+    }
+
+    /// Gives the file at `path` the text `text`.
+    pub fn put(&mut self, path: impl Into<String>, text: impl Into<String>) {
+        self.files.insert(path.into(), text.into());
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.files.is_empty()
+    }
+}
+
+/// One thing a write did not take: what it names (a path, a key, a signal,
+/// a move, a batch or an item), the field where there is one, and why.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NotTaken {
+    pub what: String,
+    pub field: Option<String>,
+    pub why: String,
+}
+
+impl NotTaken {
+    pub(crate) fn new(what: impl fmt::Display, why: impl Into<String>) -> NotTaken {
+        NotTaken {
+            what: what.to_string(),
+            field: None,
+            why: why.into(),
+        }
+    }
+
+    pub(crate) fn field(
+        what: impl fmt::Display,
+        field: impl Into<String>,
+        why: impl Into<String>,
+    ) -> NotTaken {
+        NotTaken {
+            what: what.to_string(),
+            field: Some(field.into()),
+            why: why.into(),
+        }
+    }
+}
+
+impl From<InboxError> for NotTaken {
+    fn from(error: InboxError) -> NotTaken {
+        let why = match error.record {
+            Some(record) => format!("record {record}: {}", error.reason),
+            None => error.reason,
+        };
+        NotTaken {
+            what: error.path,
+            field: error.field,
+            why,
+        }
+    }
+}
+
+impl fmt::Display for NotTaken {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "`{}`: ", self.what)?;
+        if let Some(field) = &self.field {
+            write!(f, "`{field}` ")?;
+        }
+        f.write_str(&self.why)
+    }
+}
+
+/// A write refused whole, naming each thing not taken and why; nothing of
+/// it is written.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Refused(pub Vec<NotTaken>);
+
+impl Refused {
+    pub(crate) fn one(not_taken: NotTaken) -> Refused {
+        Refused(vec![not_taken])
+    }
+}
+
+impl From<InboxError> for Refused {
+    fn from(error: InboxError) -> Refused {
+        Refused::one(error.into())
+    }
+}
+
+impl From<NotTaken> for Refused {
+    fn from(not_taken: NotTaken) -> Refused {
+        Refused::one(not_taken)
+    }
+}
+
+impl fmt::Display for Refused {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let each: Vec<String> = self.0.iter().map(NotTaken::to_string).collect();
+        f.write_str(&each.join("; "))
+    }
+}
+
+impl std::error::Error for Refused {}
+
+impl InboxAt {
+    /// The inbox `write` would leave, laid over this tip's files and read
+    /// whole by every rule of [`InboxAt::read`], or the write refused
+    /// naming the path. Every operation ends here, and a caller may hand in
+    /// a write formed elsewhere (46; core.24).
+    pub fn check(&self, write: &Write) -> Result<InboxAt, Refused> {
+        for path in write.files.keys() {
+            if Place::of(path).is_none() {
+                return Err(NotTaken::new(
+                    path,
+                    "lies outside `inbox/`, and a write changes the inbox alone",
+                )
+                .into());
+            }
+        }
+        let mut files = self.files().clone();
+        files.extend(write.files.clone());
+        Ok(InboxAt::read(&files)?)
+    }
+
+    /// The write of a capture the capture crate's `take` hands over:
+    /// `capture.rec` and, with its own signal, a `signals.rec` holding
+    /// `<key>#1`, in one write (19; core.13); refused when the key is held,
+    /// writing nothing (14).
+    pub fn take(&self, taken: &Taken) -> Result<Write, Refused> {
+        let capture = &taken.capture;
+        let key = &capture.key;
+        if self.holds(key) {
+            return Err(NotTaken::new(
+                key,
+                "is held: the inbox holds a capture under it, and nothing is written",
+            )
+            .into());
+        }
+        if let CameIn::Import(_) = capture.came_in {
+            return Err(NotTaken::field(
+                key,
+                "came_in",
+                format!(
+                    "is `{}`: an import's captures are written by the import operation alone",
+                    capture.came_in
+                ),
+            )
+            .into());
+        }
+        let mut write = Write::new();
+        write.put(Place::Capture(key.clone()).path(), capture.to_rec());
+        match &taken.own_signal {
+            Some(own) => {
+                if capture.unread {
+                    return Err(NotTaken::field(
+                        key,
+                        "unread",
+                        "is yes, and a capture with its own signal is never unread",
+                    )
+                    .into());
+                }
+                let signal = Signal::own(own).map_err(|why| NotTaken::field(key, "signal", why))?;
+                let first = SignalId::new(key.clone(), 1);
+                if signal.signal != first {
+                    return Err(NotTaken::field(
+                        key,
+                        "signal",
+                        format!(
+                            "is `{}`, and a capture's own signal is `{first}`",
+                            signal.signal
+                        ),
+                    )
+                    .into());
+                }
+                write.put(Place::Signals(key.clone()).path(), signals_rec(&[signal]));
+            }
+            None => {
+                if !capture.unread {
+                    return Err(NotTaken::field(
+                        key,
+                        "unread",
+                        "is no, and a capture with no own signal is unread when written",
+                    )
+                    .into());
+                }
+            }
+        }
+        self.check(&write)?;
+        Ok(write)
+    }
+}

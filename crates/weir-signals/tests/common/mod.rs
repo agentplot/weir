@@ -44,7 +44,7 @@ pub fn recsel_value(text: &str, name: &str) -> String {
 }
 
 use weir_capture::{CameIn, Capture, Key};
-use weir_signals::InboxAt;
+use weir_signals::{InboxAt, Write};
 
 /// The key `text`, which the test expects the rule to take.
 pub fn key(text: &str) -> Key {
@@ -70,4 +70,26 @@ pub fn capture(key_text: &str) -> Capture {
 /// The inbox a tip of `files` holds, which the test expects to read.
 pub fn read(files: &[(&str, &str)]) -> InboxAt {
     InboxAt::read(files.iter().copied()).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Holds every `.rec` file of `write` to `recfix`, file by file (core.24).
+pub fn recfix_write(write: &Write) {
+    for (path, text) in &write.files {
+        if path.ends_with(".rec") {
+            recfix(text);
+        }
+    }
+}
+
+/// The inbox after `write`, which the test expects the check to take.
+pub fn after(inbox: &InboxAt, write: &Write) -> InboxAt {
+    recfix_write(write);
+    inbox
+        .check(write)
+        .unwrap_or_else(|refused| panic!("{refused}"))
+}
+
+/// The paths `write` adds or replaces, in order.
+pub fn paths(write: &Write) -> Vec<&str> {
+    write.files.keys().map(String::as_str).collect()
 }
