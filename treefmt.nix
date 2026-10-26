@@ -23,6 +23,19 @@ _: {
     ".moon/cache/**"
   ];
 
+  # The crates' Rust, with the pinned toolchain's rustfmt (devenv.nix).
+  programs.rustfmt.enable = true;
+  programs.rustfmt.edition = "2021";
+
+  # Shell scripts, linted by shellcheck before shfmt lays them out.
+  programs.shellcheck.enable = true;
+  programs.shfmt.enable = true;
+  programs.shfmt.indent_size = 2;
+  settings.formatter.shellcheck.pipeline = "shell";
+  settings.formatter.shellcheck.priority = 1;
+  settings.formatter.shfmt.pipeline = "shell";
+  settings.formatter.shfmt.priority = 2;
+
   programs.deadnix.enable = true;
   programs.nixfmt.enable = true;
   settings.formatter.deadnix.pipeline = "nix";

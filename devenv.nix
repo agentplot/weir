@@ -89,6 +89,15 @@ let
     sourceRoot = ".";
     installPhase = "install -Dm755 vale $out/bin/vale";
   };
+
+  # treefmt's rustfmt: the pinned toolchain's.
+  rustfmt = pkgs.writeShellApplication {
+    name = "rustfmt";
+    text = ''
+      ${activate}
+      exec rustfmt "$@"
+    '';
+  };
 in
 {
   # The system tools are this file's, pinned by devenv.lock; moon is
@@ -99,6 +108,9 @@ in
     pkgs.jq
     proto
     vale
+    # GNU recutils: the crates' tests hold every record they write to
+    # `recfix`, as a write is held before it lands (core.24).
+    pkgs.recutils
   ];
 
   # The commit hooks' config (.pre-commit-config.yaml) is linked at the top of
@@ -153,6 +165,7 @@ in
   treefmt.config = {
     imports = [ ./treefmt.nix ];
     projectRootFile = "devenv.nix";
+    programs.rustfmt.package = rustfmt;
   };
 
   scripts.prose = {
