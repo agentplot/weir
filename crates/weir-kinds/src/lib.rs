@@ -29,4 +29,6 @@ pub use deliverable::{Deliverable, End};
 pub use elaboration::{read_elaboration, Elaboration, Ending};
 pub use kinds::{read_kinds, Declaration, Kind, Stage};
 pub use refusal::{Problem, Refusal};
+/// The TOML crate whose values a section the format does not name holds
+/// (56), so that a caller reads them with the same version.
 pub use toml;

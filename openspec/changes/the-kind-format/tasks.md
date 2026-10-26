@@ -13,7 +13,7 @@
 - [x] 2.3 Check a declaration whole: `Refusal` with every `Problem { field, reason }`, field paths with stages indexed from 0, every check the design lists, and a parse failure placed by line and column (57, 81). True when `devenv shell -- moon run weir-kinds:test` passes the tests for every scenario of "A deliverable is one of six spellings" that refuses and of "A declaration is checked whole and refused naming the field", S12 among them.
 - [x] 2.4 Read an elaboration kind's section: `read_elaboration`, `Elaboration` and `Ending`, checked whole and refused naming the field, while `read_kinds` never looks inside it (55, 56). True when `devenv shell -- moon run weir-kinds:test` passes the tests for "An elaboration kind's section is read only by whoever runs elaborations", S11 among them.
 - [x] 2.5 Prove the same declaration reads the same: `fix-and-change.toml` holds `fix@1` and `change@1` as S10 states, each kind reads with its stages and deliverables, and a second read equals the first (58, 82). True when `devenv shell -- moon run weir-kinds:test` passes "Two kinds read the same twice".
-- [ ] 2.6 Document the crate's public items, each with the clause it reads, and hold it to clippy. True when `devenv shell -- moon run weir-kinds:lint` and `devenv shell -- moon run weir-kinds:format` pass.
+- [x] 2.6 Document the crate's public items, each with the clause it reads, and hold it to clippy. True when `devenv shell -- moon run weir-kinds:lint` and `devenv shell -- moon run weir-kinds:format` pass.
 
 ## 3. weir check
 
