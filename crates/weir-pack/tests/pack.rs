@@ -75,3 +75,12 @@ fn a_folder_that_is_not_there() {
     let refused = Pack::read(Path::new("/nonexistent/pack")).unwrap_err();
     assert!(refused.starts_with("the pack's"), "{refused}");
 }
+
+#[test]
+fn the_built_in_pack_holds_the_index_and_a_case_of_each_shape() {
+    let pack = Pack::embedded();
+    assert!(pack.file("clauses.toml").is_some(), "no clauses.toml");
+    for shape in Shape::ALL {
+        assert!(!pack.cases(shape).is_empty(), "no case of {shape}");
+    }
+}
