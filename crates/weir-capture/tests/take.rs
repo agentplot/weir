@@ -687,3 +687,84 @@ fn the_report_serializes_to_json() {
     assert_eq!(json["cursor"], "c9");
     assert!(json.get("last_cursor").is_none());
 }
+
+/// What one host writes of the lines of two_hosts: each capture's record,
+/// and each own signal, in the order written.
+fn one_host(machine: &str) -> (Vec<String>, Vec<Option<OwnSignal>>, weir_capture::Report) {
+    let text = forty_kibibytes();
+    let lines = [
+        offer(
+            "release/mise/2026.10.10",
+            &format!("{}{}", raw(&["mise/notes.md"]), excerpt(&text)),
+        ),
+        offer("release/mise/2026.9.18", &raw(&["mise/old.md"])),
+        offer("moves/x", ""),
+        offer(
+            "release/mise/2026.10.10-title",
+            r#", "title": "mise\nsecond line", "url": "https://example.org/m""#,
+        ),
+        cursor("c1"),
+        done(4, ""),
+    ];
+    // Each host its own raw place, holding the same files.
+    let place = raw_place(&[("mise/notes.md", NOTES), ("mise/old.md", b"old")]);
+    let (mut inbox, mut bank, _) = host();
+    inbox.held.insert("release/mise/2026.9.18".into());
+    let report = take(
+        &lines,
+        Some(place.path()),
+        &take_on(machine),
+        &mut inbox,
+        &mut bank,
+    )
+    .finish(true);
+    let records = inbox
+        .written
+        .iter()
+        .map(|taken| taken.capture.to_rec())
+        .collect();
+    let signals = inbox
+        .written
+        .iter()
+        .map(|taken| taken.own_signal.clone())
+        .collect();
+    (records, signals, report)
+}
+
+#[test]
+fn two_hosts_one_set_of_lines() {
+    let (records, signals, report) = one_host("deneb");
+    assert_eq!(report.taken.len(), 2);
+    assert_eq!(report.held, 1);
+    assert_eq!(report.refused.len(), 1);
+    assert!(signals[0].as_ref().unwrap().cut.is_some());
+    let (other_records, other_signals, other_report) = one_host("deneb");
+    assert_eq!(records, other_records);
+    assert_eq!(signals, other_signals);
+    assert_eq!(report, other_report);
+}
+
+#[test]
+fn only_the_machine_differs() {
+    let (records, signals, _) = one_host("deneb");
+    let (other_records, other_signals, _) = one_host("vega");
+    assert_eq!(signals, other_signals);
+    assert_eq!(records.len(), other_records.len());
+    for (record, other) in records.iter().zip(&other_records) {
+        let lines: Vec<&str> = record.lines().collect();
+        let other_lines: Vec<&str> = other.lines().collect();
+        assert_eq!(lines.len(), other_lines.len());
+        for (line, other_line) in lines.iter().zip(&other_lines) {
+            if line == other_line {
+                continue;
+            }
+            if let Some(path) = line.strip_prefix("pointer: deneb:") {
+                assert_eq!(other_line.strip_prefix("pointer: vega:"), Some(path));
+            } else {
+                assert_eq!(*line, "machine: deneb");
+                assert_eq!(*other_line, "machine: vega");
+            }
+        }
+        assert_ne!(record, other);
+    }
+}
