@@ -473,6 +473,69 @@ fn make_cache(cache: &Path) -> Result<(), Failure> {
     }
 }
 
+/// How a move ended: the branch moved, or refused it with git's words.
+pub(crate) enum Moved {
+    Moved,
+    Refused(String),
+}
+
+/// Moves `branch` to `commit` only while it stands at `tip`, none meaning
+/// it must not exist: on a remote by a push with the tip as the lease's
+/// expected value, never with force; with no remote by `update-ref` from
+/// the tip, forty zeros for none (44, 48, 79; C.3 step 4; core.27).
+pub(crate) fn move_to(
+    branch: &Branch,
+    tip: Option<&Tip>,
+    commit: &str,
+    what: &str,
+) -> Result<Moved, Failure> {
+    let failed = |said: String| Failure::new(Step::Move, said);
+    let head = branch.head_ref();
+    match &branch.place {
+        Place::Remote { cache, url } => {
+            let git = Git::new(cache);
+            let lease = format!(
+                "--force-with-lease={head}:{}",
+                tip.map(Tip::commit).unwrap_or_default()
+            );
+            let pushed = git
+                .run(
+                    &[
+                        "push",
+                        "--porcelain",
+                        "--quiet",
+                        &lease,
+                        "--",
+                        url,
+                        &format!("{commit}:{head}"),
+                    ],
+                    None,
+                )
+                .map_err(failed)?;
+            if !pushed.ok() {
+                return Ok(Moved::Refused(pushed.said()));
+            }
+            // The cache's own record of the remote's tip, not the branch:
+            // it follows the push, as a fetch would set it.
+            git.text(&["update-ref", &branch.cache_ref(), commit], None)
+                .map_err(failed)?;
+            Ok(Moved::Moved)
+        }
+        Place::Local { git_dir } => {
+            let zeros = "0".repeat(40);
+            let old = tip.map(Tip::commit).unwrap_or(&zeros);
+            let moved = Git::new(git_dir)
+                .run(&["update-ref", "-m", what, &head, commit, old], None)
+                .map_err(failed)?;
+            if moved.ok() {
+                Ok(Moved::Moved)
+            } else {
+                Ok(Moved::Refused(moved.said()))
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

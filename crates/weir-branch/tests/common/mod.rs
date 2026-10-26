@@ -164,6 +164,21 @@ pub fn land(
     what: &str,
     who: &str,
 ) -> String {
+    let entries: Vec<(&[u8], &[u8])> = files
+        .iter()
+        .map(|(path, text)| (path.as_bytes(), text.as_bytes()))
+        .collect();
+    land_raw(git_dir, branch, &entries, what, who)
+}
+
+/// [`land`] with paths and contents as bytes, which need not be UTF-8.
+pub fn land_raw(
+    git_dir: &Path,
+    branch: &str,
+    files: &[(&[u8], &[u8])],
+    what: &str,
+    who: &str,
+) -> String {
     let parent = tip(git_dir, branch);
     let folder = tempfile::tempdir().expect("a temporary folder");
     let index = folder.path().join("index");
@@ -175,13 +190,10 @@ pub fn land(
     };
     let mut entries = Vec::new();
     for (path, text) in files {
-        let blob = git_with(
-            git_dir,
-            &["hash-object", "-w", "--stdin"],
-            &[],
-            Some(text.as_bytes()),
-        );
-        entries.extend_from_slice(format!("100644 {blob}\t{path}\0").as_bytes());
+        let blob = git_with(git_dir, &["hash-object", "-w", "--stdin"], &[], Some(text));
+        entries.extend_from_slice(format!("100644 {blob}\t").as_bytes());
+        entries.extend_from_slice(path);
+        entries.push(0);
     }
     git_with(
         git_dir,
@@ -320,4 +332,75 @@ pub fn at(time: &str) -> OffsetDateTime {
 /// The machine's clock, in UTC.
 pub fn now() -> OffsetDateTime {
     OffsetDateTime::now_utc()
+}
+
+/// A remote and a writer's cache in one temporary folder.
+pub struct Stage {
+    pub folder: tempfile::TempDir,
+    pub remote: PathBuf,
+}
+
+impl Stage {
+    pub fn new() -> Stage {
+        let folder = tempfile::tempdir().expect("a temporary folder");
+        let remote = bare(folder.path(), "remote.git");
+        Stage { folder, remote }
+    }
+
+    /// The writer's cache: `cache` for the first machine, any other name
+    /// for another.
+    pub fn cache(&self, name: &str) -> PathBuf {
+        self.folder.path().join(name)
+    }
+
+    /// The branch `inbox` on the remote, through the cache `name`.
+    pub fn branch(&self, name: &str) -> weir_branch::Branch {
+        weir_branch::Branch::remote(
+            "inbox",
+            self.cache(name),
+            self.remote.to_str().expect("a UTF-8 path"),
+        )
+    }
+
+    pub fn tip(&self) -> Option<String> {
+        tip(&self.remote, "inbox")
+    }
+}
+
+/// An ask of `what` by `who` with no bound set and a minute's stale age.
+pub fn ask<'a>(
+    what: &'a str,
+    who: &'a str,
+    clock: &'a dyn Fn() -> OffsetDateTime,
+) -> weir_branch::Ask<'a> {
+    weir_branch::Ask {
+        what,
+        who,
+        bound: None,
+        stale_after: std::time::Duration::from_secs(60),
+        clock,
+    }
+}
+
+/// `files` as a write's files.
+pub fn write_of(files: &[(&str, &str)]) -> weir_branch::Files {
+    files
+        .iter()
+        .map(|(path, text)| (path.to_string(), text.to_string()))
+        .collect()
+}
+
+/// Every commit `git_dir` holds, by any ref.
+pub fn all_commits(git_dir: &Path) -> Vec<String> {
+    let listed = git(git_dir, &["rev-list", "--all"]);
+    listed.lines().map(str::to_string).collect()
+}
+
+/// Every entry of `folder` whose name begins with `prefix`.
+pub fn left_in(folder: &Path, prefix: &str) -> Vec<String> {
+    std::fs::read_dir(folder)
+        .expect("the folder")
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .filter(|name| name.starts_with(prefix))
+        .collect()
 }

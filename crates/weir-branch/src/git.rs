@@ -107,6 +107,13 @@ impl<'a> Git<'a> {
         }
     }
 
+    /// Sets `name` for every command this runs: the temporary index, the
+    /// commit's identity and date.
+    pub fn env(mut self, name: &'static str, value: impl Into<String>) -> Git<'a> {
+        self.env.push((name, value.into()));
+        self
+    }
+
     fn command(&self) -> Command {
         let mut command = Command::new("git");
         command.arg("--git-dir").arg(self.dir);

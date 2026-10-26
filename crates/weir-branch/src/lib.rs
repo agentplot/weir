@@ -15,7 +15,11 @@
 //! git and `recfix` for the write it was asked to make, each ended before
 //! the call returns (69; C.3).
 
+mod commit;
 mod git;
 pub mod keeper;
+mod recfix;
+pub mod write;
 
 pub use keeper::{read, Branch, Failure, Files, Place, Step, Tip, TipError};
+pub use write::{write, Ask, Landed, Nothing, WriteError, Written, BOUND};
