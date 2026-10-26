@@ -1,6 +1,7 @@
 //! Moves, curation's standing judgment on a signal, as `weir-move/1`
 //! records them in `moves.rec` (29 to 31; C.2): one of six words, each with
-//! its consequence, who made it and when, and the batch it stood in. A
+//! its consequence, the note given with it, who made it and when, and the
+//! batch it stood in. A
 //! signal's standing move is its last; a replacement names, as `replaces`,
 //! the number of the move it replaces among its signal's moves, from 1.
 
@@ -82,6 +83,9 @@ pub struct Move {
     /// The consequence: a reason, a claim or record, an item, a chore or an
     /// ask (30).
     pub target: String,
+    /// The reason or note given with the move, as given; a drop's reason
+    /// where it was given none of its own (39; C.2).
+    pub note: Option<String>,
     pub by: String,
     /// RFC 3339 with its offset, as the caller handed it (31).
     pub at: String,
@@ -100,6 +104,7 @@ impl Move {
         record.push("signal", self.signal.to_string());
         record.push("move", self.word.as_str());
         record.push("target", self.target.as_str());
+        record.push_optional("note", self.note.as_deref());
         record.push("by", self.by.as_str());
         record.push("at", self.at.as_str());
         record.push_optional("batch", self.batch.as_deref());
@@ -111,7 +116,8 @@ impl Move {
 
     /// The move of a `weir-move/1` record, refused naming the field that is
     /// missing, given twice or not of its shape: a word not of the six or a
-    /// consequence missing among them (30).
+    /// consequence missing among them, whatever its note (30). A record
+    /// with no `note` is a move with none.
     pub fn from_record(record: &Record) -> Result<Move, RecError> {
         Format::of_record(record, &[Format::Move])?;
         let signal = record.required("signal")?;
@@ -141,6 +147,7 @@ impl Move {
             signal,
             word,
             target: record.required("target")?.to_string(),
+            note: given(record.single("note")?).map(str::to_string),
             by: record.required("by")?.to_string(),
             at: record.required("at")?.to_string(),
             batch: batch.map(str::to_string),
@@ -164,6 +171,8 @@ pub struct NewMove {
     pub signal: SignalId,
     pub word: String,
     pub target: String,
+    /// The reason or note given with it, or none (39; C.2).
+    pub note: Option<String>,
     pub by: String,
     pub at: String,
     /// The number of the standing move it replaces, on a replacement (29).
@@ -172,14 +181,20 @@ pub struct NewMove {
 
 impl NewMove {
     /// The move this is, in `batch` where it is proposed in one, or the
-    /// field out of its shape and why.
+    /// field out of its shape and why. Its note is the one given, and a
+    /// drop given none carries its reason as its note (39; C.2).
     pub(crate) fn to_move(&self, batch: Option<&str>) -> Result<Move, (String, String)> {
         let word = shape(&self.word, &self.target, &self.by, &self.at)
             .map_err(|(field, reason)| (field.to_string(), reason))?;
+        let note = match given(self.note.as_deref()) {
+            None if word == Word::Drop => Some(self.target.as_str()),
+            note => note,
+        };
         Ok(Move {
             signal: self.signal.clone(),
             word,
             target: self.target.clone(),
+            note: note.map(str::to_string),
             by: self.by.clone(),
             at: self.at.clone(),
             batch: batch.map(str::to_string),
@@ -339,6 +354,11 @@ fn shape(word: &str, target: &str, by: &str, at: &str) -> Result<Word, (&'static
     }
     check_time(at).map_err(|reason| ("at", reason))?;
     Ok(parsed)
+}
+
+/// A note, where one is given: an empty note is none.
+fn given(note: Option<&str>) -> Option<&str> {
+    note.filter(|note| !note.is_empty())
 }
 
 /// That `text` is a time in RFC 3339 with its offset, as every time an

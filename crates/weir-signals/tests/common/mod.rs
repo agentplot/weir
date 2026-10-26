@@ -149,12 +149,14 @@ pub fn signal(text: &str) -> SignalId {
     SignalId::parse(text).unwrap_or_else(|error| panic!("{error}"))
 }
 
-/// A move of `signal` with `word` and `target`, by `by` at `at`.
+/// A move of `signal` with `word` and `target`, by `by` at `at`, given no
+/// note.
 pub fn a_move(signal_text: &str, word: &str, target: &str, by: &str, at: &str) -> NewMove {
     NewMove {
         signal: signal(signal_text),
         word: word.into(),
         target: target.into(),
+        note: None,
         by: by.into(),
         at: at.into(),
         replaces: None,

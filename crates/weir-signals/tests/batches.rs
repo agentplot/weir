@@ -72,6 +72,7 @@ fn a_proposed_batch() {
              signal: release/x#1\n\
              move: drop\n\
              target: noise\n\
+             note: noise\n\
              by: curation\n\
              at: 2026-10-25T09:00:00Z\n\
              batch: 2026-10-25-a\n"

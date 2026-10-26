@@ -189,6 +189,7 @@ impl InboxAt {
                     signal: SignalId::new(key.clone(), imported_move.signal),
                     word: imported_move.word.clone(),
                     target: imported_move.target.clone(),
+                    note: None,
                     by: imported_move.by.clone(),
                     at: imported_move.at.clone(),
                     replaces: None,

@@ -118,7 +118,8 @@ fn every_record_written_by_its_operation_reads_back_as_written() {
             .unwrap(),
     );
 
-    // Moves of every word, one making an item and one a replacement.
+    // Moves of every word, one making an item and one a replacement, one
+    // with a note of two lines.
     let moves = [
         a_move(
             "meeting/file/ab12#1",
@@ -127,13 +128,16 @@ fn every_record_written_by_its_operation_reads_back_as_written() {
             "curation",
             AT,
         ),
-        a_move(
-            "meeting/file/ab12#2",
-            "challenge",
-            "claim: the pin is\ncurrent",
-            "curation",
-            AT,
-        ),
+        NewMove {
+            note: Some("the pin was chosen\nfor the shim".into()),
+            ..a_move(
+                "meeting/file/ab12#2",
+                "challenge",
+                "claim: the pin is\ncurrent",
+                "curation",
+                AT,
+            )
+        },
         NewMove {
             replaces: Some(1),
             ..a_move(
@@ -177,9 +181,13 @@ fn every_record_written_by_its_operation_reads_back_as_written() {
             .unwrap(),
     );
 
-    // Batches: one standing with a join and an attach, one refused.
+    // Batches: one standing with an attach and a route, the attach with a
+    // note; one refused, its drop's reason its note.
     let batch_moves = [
-        a_move("meeting/file/ab12#3", "attach", "pin-mise", "curation", AT),
+        NewMove {
+            note: Some("same root cause as the October outage".into()),
+            ..a_move("meeting/file/ab12#3", "attach", "pin-mise", "curation", AT)
+        },
         a_move(
             "release/mise/2026.10.10#1",
             "route",
@@ -250,6 +258,7 @@ fn every_record_written_by_its_operation_reads_back_as_written() {
             signal: new.signal.clone(),
             word: Word::parse(&new.word).unwrap(),
             target: new.target.clone(),
+            note: new.note.clone(),
             by: new.by.clone(),
             at: new.at.clone(),
             batch: None,
@@ -259,6 +268,7 @@ fn every_record_written_by_its_operation_reads_back_as_written() {
             signal: new.signal.clone(),
             word: Word::parse(&new.word).unwrap(),
             target: new.target.clone(),
+            note: new.note.clone(),
             by: new.by.clone(),
             at: new.at.clone(),
             batch: Some("2026-10-25-a".into()),
@@ -312,7 +322,15 @@ fn every_record_written_by_its_operation_reads_back_as_written() {
             decided_at: AT.into(),
         })
     );
-    assert_eq!(read.batch("2026-10-25-b").unwrap().stands(), Some(false));
+    let refused = read.batch("2026-10-25-b").unwrap();
+    assert_eq!(refused.stands(), Some(false));
+    assert_eq!(refused.moves[0].note.as_deref(), Some("noise"));
+    for path in [
+        "inbox/moves/moves.rec",
+        "inbox/moves/batches/2026-10-25-a.rec",
+    ] {
+        assert!(read.files()[path].contains("\nnote: "), "{path}");
+    }
     assert_eq!(
         read.standing(&signal("meeting/file/ab12#1"))
             .unwrap()

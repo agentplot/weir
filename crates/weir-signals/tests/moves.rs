@@ -1,12 +1,15 @@
 //! Moves, held to the scenarios of inbox-signals and inbox-layout: one
 //! standing move per signal, replaced only by number, one of six words
-//! with its consequence (29 to 31; S6).
+//! with its consequence, keeping the note given with it (29 to 31, 39;
+//! S6; C.2).
 
 mod common;
 
-use weir_signals::{InboxAt, Item, MadeBy, Move, NotTaken, Outcome, SendRecord, Word, Write};
+use weir_signals::{
+    InboxAt, Item, MadeBy, Move, NewMove, NotTaken, Outcome, SendRecord, Word, Write,
+};
 
-use common::{a_move, after, empty, moved, paths, recsel_value, signal, with_signals};
+use common::{a_move, after, empty, moved, paths, recfix, recsel_value, signal, with_signals};
 
 const CURATION_AT: &str = "2026-10-25T09:00:00Z";
 const OPERATOR_AT: &str = "2026-10-25T09:00:00.4+02:00";
@@ -35,6 +38,7 @@ fn a_move_stands_once_written() {
          signal: release/x#1\n\
          move: drop\n\
          target: noise\n\
+         note: noise\n\
          by: curation\n\
          at: 2026-10-25T09:00:00Z\n"
     );
@@ -446,6 +450,7 @@ fn every_word_reads_back_as_written() {
             signal: new.signal,
             word: Word::parse(word).unwrap(),
             target: target.into(),
+            note: (word == "drop").then(|| target.into()),
             by: "curation".into(),
             at: CURATION_AT.into(),
             batch: None,
@@ -455,6 +460,150 @@ fn every_word_reads_back_as_written() {
     assert_eq!(inbox.moves(), written.as_slice());
     let again = InboxAt::read(inbox.files().iter()).unwrap();
     assert_eq!(again, inbox);
+}
+
+/// `new` given the note `note`.
+fn noted(new: NewMove, note: &str) -> NewMove {
+    NewMove {
+        note: Some(note.into()),
+        ..new
+    }
+}
+
+#[test]
+fn a_challenge_with_a_note() {
+    let inbox = three();
+    let challenge = noted(
+        a_move(
+            "release/x#1",
+            "challenge",
+            "claim: the pin is current",
+            "curation",
+            CURATION_AT,
+        ),
+        "the pin was chosen for the shim",
+    );
+    let write = inbox.make_move(&challenge).unwrap();
+    let text = &write.files["inbox/moves/moves.rec"];
+    recfix(text);
+    assert_eq!(
+        text,
+        "format: weir-move/1\n\
+         signal: release/x#1\n\
+         move: challenge\n\
+         target: claim: the pin is current\n\
+         note: the pin was chosen for the shim\n\
+         by: curation\n\
+         at: 2026-10-25T09:00:00Z\n"
+    );
+    assert_eq!(
+        recsel_value(text, "note"),
+        "the pin was chosen for the shim"
+    );
+    let inbox = after(&inbox, &write);
+    let again = InboxAt::read(inbox.files().iter()).unwrap();
+    let (_, standing) = again.standing(&signal("release/x#1")).unwrap();
+    assert_eq!(
+        standing.note.as_deref(),
+        Some("the pin was chosen for the shim")
+    );
+    assert_eq!(standing.target, "claim: the pin is current");
+}
+
+#[test]
+fn a_drops_reason_is_its_note() {
+    let inbox = three();
+    let drop = a_move(
+        "release/x#2",
+        "drop",
+        "fixed by the tile cache",
+        "curation",
+        CURATION_AT,
+    );
+    let write = inbox.make_move(&drop).unwrap();
+    let text = &write.files["inbox/moves/moves.rec"];
+    assert_eq!(recsel_value(text, "target"), "fixed by the tile cache");
+    assert_eq!(recsel_value(text, "note"), "fixed by the tile cache");
+    let inbox = after(&inbox, &write);
+    let (_, standing) = inbox.standing(&signal("release/x#2")).unwrap();
+    assert_eq!(standing.target, "fixed by the tile cache");
+    assert_eq!(standing.note.as_deref(), Some("fixed by the tile cache"));
+    // A drop given a note of its own keeps that note, its reason its
+    // target alone.
+    let own = noted(
+        a_move("release/x#3", "drop", "noise", "curation", CURATION_AT),
+        "a duplicate of #2",
+    );
+    let inbox = moved(&inbox, &own);
+    let (_, standing) = inbox.standing(&signal("release/x#3")).unwrap();
+    assert_eq!(standing.target, "noise");
+    assert_eq!(standing.note.as_deref(), Some("a duplicate of #2"));
+    // A move of another word given no note has none.
+    let route = a_move(
+        "release/x#1",
+        "route",
+        "an ask upstream",
+        "curation",
+        CURATION_AT,
+    );
+    let write = inbox.make_move(&route).unwrap();
+    let text = &write.files["inbox/moves/moves.rec"];
+    assert_eq!(text.matches("note:").count(), 2, "{text}");
+    let inbox = after(&inbox, &write);
+    assert_eq!(inbox.standing(&signal("release/x#1")).unwrap().1.note, None);
+}
+
+#[test]
+fn a_note_is_not_a_consequence() {
+    let not = refused(
+        &three(),
+        &noted(
+            a_move("release/x#1", "answered", "", "curation", CURATION_AT),
+            "settled in the October review",
+        ),
+    );
+    assert_eq!(not.field.as_deref(), Some("target"));
+    assert!(not.why.starts_with("is missing"), "{}", not.why);
+    assert!(
+        not.why
+            .ends_with("carries the claim or record that settled the signal"),
+        "{}",
+        not.why
+    );
+    // A drop's note is no reason either.
+    let not = refused(
+        &three(),
+        &noted(
+            a_move("release/x#1", "drop", "", "curation", CURATION_AT),
+            "noise",
+        ),
+    );
+    assert_eq!(not.field.as_deref(), Some("target"));
+    // Nor in a record a tip holds.
+    let mut files = three().files().clone();
+    files.insert(
+        "inbox/moves/moves.rec".into(),
+        "format: weir-move/1\nsignal: release/x#1\nmove: drop\nnote: noise\n\
+         by: curation\nat: 2026-10-25T09:00:00Z\n"
+            .into(),
+    );
+    let error = InboxAt::read(files.iter()).unwrap_err();
+    assert_eq!(error.field.as_deref(), Some("target"), "{error}");
+}
+
+#[test]
+fn a_move_record_with_no_note_reads_as_a_move_with_none() {
+    let mut files = three().files().clone();
+    files.insert(
+        "inbox/moves/moves.rec".into(),
+        "format: weir-move/1\nsignal: release/x#1\nmove: drop\ntarget: noise\n\
+         by: curation\nat: 2026-10-25T09:00:00Z\n"
+            .into(),
+    );
+    let inbox = InboxAt::read(files.iter()).unwrap();
+    let (_, standing) = inbox.standing(&signal("release/x#1")).unwrap();
+    assert_eq!(standing.word, Word::Drop);
+    assert_eq!(standing.note, None);
 }
 
 #[test]
