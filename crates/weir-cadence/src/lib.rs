@@ -29,7 +29,7 @@ pub fn is_due(schedule: &Schedule, last_run: Option<Timestamp>, now: &Zoned) -> 
 /// The clock (B.5): now (83) and a thing's last run (84), the two things
 /// cadence asks of it (85).
 pub trait Clock {
-    /// What the caller schedules, as the caller names it.
+    /// A thing with a schedule (84), as the caller names it.
     type Thing: ?Sized;
 
     /// Now (83), in the time zone a schedule is read in.

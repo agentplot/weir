@@ -26,8 +26,8 @@ this group, the line holds as it is; add only what is missing.
 - [x] 4.2 A run missed while the machine slept is caught up once: the spec's "Three hourly times slept through" scenario (S13) passes; proved by `devenv shell -- moon run cadence:test`.
 - [x] 4.3 Daylight-saving days name each fixed time once: the spec's skipped-time and repeated-time scenarios in America/New_York pass, zones taken from jiff's bundled database (`tzdb-bundle-always`, a dev-dependency feature); proved by `devenv shell -- moon run cadence:test`.
 - [x] 4.4 The `Clock` trait has `now` and `last_run` alone, `due(schedule, thing, clock)` asks each once and answers as `is_due`, and `machine_now()` gives the system clock in the machine's local zone: the recording-clock scenario passes, and `tests/process_zone.rs` proves the two-machines scenario (Asia/Tokyo and America/Los_Angeles) and the machine's-now scenario (Australia/Adelaide) by running the test binary again with `TZ` set; proved by `devenv shell -- moon run cadence:test`.
-- [ ] 4.5 Every public item has a doc comment citing the clause it serves by number (59, 60, 83 to 85) without restating it (core.37), enforced by `#![deny(missing_docs)]`; and `tests/names.rs` fails when a file under the crate's `src/` holds any string core.2 rules out (core.2); proved by `devenv shell -- moon run cadence:lint cadence:test`.
+- [x] 4.5 Every public item has a doc comment citing the clause it serves by number (59, 60, 83 to 85) without restating it (core.37), enforced by `#![deny(missing_docs)]`; and `tests/names.rs` fails when a file under the crate's `src/` holds any string core.2 rules out (core.2); proved by `devenv shell -- moon run cadence:lint cadence:test`.
 
 ## 5. The checks
 
-- [ ] 5.1 The checks of the projects this change touches pass: `devenv shell -- moon run root:format root:prose root:toolchain cadence:format cadence:lint cadence:typecheck cadence:test`.
+- [x] 5.1 The checks of the projects this change touches pass: `devenv shell -- moon run root:format root:prose root:toolchain cadence:format cadence:lint cadence:typecheck cadence:test`.

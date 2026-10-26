@@ -12,7 +12,7 @@ use croner::Cron;
 use jiff::tz::TimeZone;
 use jiff::{Timestamp, Zoned};
 
-/// A five-field cron schedule, read in the time zone of the now it is
+/// A schedule (59), five-field cron read in the time zone of the now it is
 /// asked against (C.5).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Schedule {
@@ -20,7 +20,7 @@ pub struct Schedule {
 }
 
 impl Schedule {
-    /// Reads `text` as five-field cron (C.5), or refuses it naming the
+    /// Reads `text` as five-field cron (59; C.5), or refuses it naming the
     /// field and the token that is not.
     pub fn parse(text: &str) -> Result<Schedule, ScheduleError> {
         let text = text.trim();
@@ -63,8 +63,8 @@ impl Schedule {
     }
 }
 
-/// Why a schedule was refused: the part of it that is not five-field cron
-/// (C.5).
+/// Why a schedule was refused (59): the part of it that is not five-field
+/// cron (C.5).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScheduleError {
     /// Other than five fields: the count found.
@@ -126,7 +126,7 @@ impl fmt::Display for ScheduleError {
 
 impl std::error::Error for ScheduleError {}
 
-/// One of the five fields of a schedule (C.5).
+/// One of the five fields of a schedule (59; C.5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Field {
     /// The minute, 0 to 59.
@@ -153,7 +153,7 @@ impl fmt::Display for Field {
     }
 }
 
-/// Why a token of a field is refused.
+/// Why a token of a field of a schedule is refused (59; C.5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Reason {
     /// A specifier five-field cron does not have: `L`, `W`, `#`, `?` or `+`.
