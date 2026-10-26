@@ -8,10 +8,13 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
+use weir_capture::rec::{self, Record};
 use weir_capture::{CameIn, Key, RawFile, Taken};
 
-use crate::inbox::{InboxAt, InboxError};
+use crate::inbox::{Checked, Effect, InboxAt, InboxError, NotMoved};
+use crate::item::{Item, MadeBy};
 use crate::layout::Place;
+use crate::moves::{Move, NewMove};
 use crate::signal::{signals_rec, ReadSignal, Signal, SignalId};
 
 /// The full new text of each file a write adds or replaces, by path from
@@ -124,7 +127,48 @@ impl fmt::Display for Refused {
 
 impl std::error::Error for Refused {}
 
+impl NotMoved {
+    /// The refusal of the move of `signal` this names.
+    pub(crate) fn of(self, signal: &SignalId) -> NotTaken {
+        NotTaken {
+            what: signal.to_string(),
+            field: self.field.map(str::to_string),
+            why: self.why,
+        }
+    }
+}
+
+/// The item a join naming a name no item has had makes: proposed, named by
+/// the move's maker at the move's time (34).
+pub(crate) fn joined_item(join: &Move) -> Item {
+    Item {
+        item: join.target.clone(),
+        made_by: MadeBy::Join,
+        named_by: join.by.clone(),
+        named_at: join.at.clone(),
+    }
+}
+
 impl InboxAt {
+    /// The new text of the file at `path` with `records` appended after the
+    /// tip's: a blank line, then the records (41, 47).
+    pub(crate) fn appended(&self, path: &str, records: &[Record]) -> String {
+        let added = rec::write(records);
+        match self.files.get(path) {
+            None => added,
+            Some(text) if text.is_empty() => added,
+            Some(text) => {
+                let mut whole = text.clone();
+                if !whole.ends_with('\n') {
+                    whole.push('\n');
+                }
+                whole.push('\n');
+                whole.push_str(&added);
+                whole
+            }
+        }
+    }
+
     /// The inbox `write` would leave, laid over this tip's files and read
     /// whole by every rule of [`InboxAt::read`], or the write refused
     /// naming the path. Every operation ends here, and a caller may hand in
@@ -262,6 +306,33 @@ impl InboxAt {
         }
         let mut write = Write::new();
         write.put(Place::Signals(key.clone()).path(), signals_rec(&taken));
+        self.check(&write)?;
+        Ok(write)
+    }
+
+    /// The write of one move: a record appended to `moves.rec`, and, for a
+    /// join naming a name no item has had, that item's `item.rec` (29 to
+    /// 31; core.18). Refused naming the move's signal when its word is not
+    /// one of the six, its consequence is missing or no item's name where
+    /// it is one, its signal is not held, the signal has a standing move it
+    /// does not replace by number, or it joins a sent item or attaches to
+    /// one not sent.
+    pub fn make_move(&self, new: &NewMove) -> Result<Write, Refused> {
+        let taken = new
+            .to_move(None)
+            .map_err(|(field, why)| NotTaken::field(&new.signal, field, why))?;
+        let effect = self
+            .check_move(&taken, Checked::Formed)
+            .map_err(|not| not.of(&new.signal))?;
+        let mut write = Write::new();
+        let moves = Place::Moves.path();
+        write.put(&moves, self.appended(&moves, &[taken.to_record()]));
+        if effect == Effect::MakesItem {
+            write.put(
+                Place::Item(taken.target.clone()).path(),
+                rec::write(&[joined_item(&taken).to_record()]),
+            );
+        }
         self.check(&write)?;
         Ok(write)
     }

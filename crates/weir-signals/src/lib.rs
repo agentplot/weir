@@ -11,12 +11,16 @@
 
 pub mod format;
 pub mod inbox;
+pub mod item;
 pub mod layout;
+pub mod moves;
 pub mod signal;
 pub mod write;
 
 pub use format::{Format, FormatError};
-pub use inbox::{Held, InboxAt, InboxError};
+pub use inbox::{Held, InboxAt, InboxError, ItemAt};
+pub use item::{Item, MadeBy, Outcome, SendRecord};
 pub use layout::Place;
+pub use moves::{Move, NewMove, Word};
 pub use signal::{ReadSignal, Signal, SignalId};
 pub use write::{NotTaken, Refused, Write};

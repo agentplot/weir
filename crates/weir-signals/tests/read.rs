@@ -135,7 +135,12 @@ fn a_record_with_no_format() {
         error.to_string(),
         "`inbox/moves/moves.rec`, record 2: `format` is missing"
     );
-    let error = refused(&[("inbox/items/shim-timeout/brief.md", "# Shim\n")]);
+    let item = "format: weir-item/1\nitem: shim-timeout\nmade_by: join\n\
+                named_by: curation\nnamed_at: 2026-10-25T09:00:00Z\n";
+    let error = refused(&[
+        ("inbox/items/shim-timeout/item.rec", item),
+        ("inbox/items/shim-timeout/brief.md", "# Shim\n"),
+    ]);
     assert_eq!(error.path, "inbox/items/shim-timeout/brief.md");
     assert!(error.reason.contains("names its format"), "{error}");
 }

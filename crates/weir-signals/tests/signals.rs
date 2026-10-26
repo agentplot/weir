@@ -9,7 +9,7 @@ use weir_capture::{CameIn, LeftOut, Nature, OwnSignal, RawFile, Taken};
 use weir_signals::signal::{signals_rec, EMPTY_READING};
 use weir_signals::{InboxAt, ReadSignal, Signal, SignalId};
 
-use common::{after, capture, key, paths, recfix, recsel_value};
+use common::{after, capture, empty, key, paths, recfix, recsel_value};
 
 fn id(text: &str) -> SignalId {
     SignalId::parse(text).unwrap()
@@ -185,10 +185,6 @@ fn taken_with_own(key: &str, cut: Option<LeftOut>) -> Taken {
         },
         own_signal: Some(own_signal(key, cut)),
     }
-}
-
-fn empty() -> InboxAt {
-    InboxAt::read(Vec::<(String, String)>::new()).unwrap()
 }
 
 #[test]

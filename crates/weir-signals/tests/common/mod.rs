@@ -43,8 +43,8 @@ pub fn recsel_value(text: &str, name: &str) -> String {
     printed.strip_suffix('\n').unwrap_or(&printed).to_string()
 }
 
-use weir_capture::{CameIn, Capture, Key};
-use weir_signals::{InboxAt, Write};
+use weir_capture::{CameIn, Capture, Key, RawFile, Taken};
+use weir_signals::{InboxAt, NewMove, ReadSignal, SignalId, Write};
 
 /// The key `text`, which the test expects the rule to take.
 pub fn key(text: &str) -> Key {
@@ -92,4 +92,73 @@ pub fn after(inbox: &InboxAt, write: &Write) -> InboxAt {
 /// The paths `write` adds or replaces, in order.
 pub fn paths(write: &Write) -> Vec<&str> {
     write.files.keys().map(String::as_str).collect()
+}
+
+/// An inbox with nothing in it.
+pub fn empty() -> InboxAt {
+    InboxAt::read(Vec::<(String, String)>::new()).unwrap()
+}
+
+/// `inbox` with the capture `key` taken, unread, and read into `n`
+/// signals, the excerpt of each a line of its one raw file.
+pub fn with_signals(inbox: &InboxAt, key_text: &str, n: usize) -> InboxAt {
+    let inbox = after(
+        inbox,
+        &inbox
+            .take(&Taken {
+                capture: capture(key_text),
+                own_signal: None,
+            })
+            .unwrap_or_else(|refused| panic!("{refused}")),
+    );
+    let lines: Vec<String> = (1..=n)
+        .map(|n| format!("line {n} of {key_text}, as it stands"))
+        .collect();
+    let raw = RawFile {
+        path: "notes.md".into(),
+        bytes: lines.join("\n").into_bytes(),
+    };
+    let reading: Vec<ReadSignal> = lines
+        .iter()
+        .map(|line| ReadSignal {
+            kind: "ask".into(),
+            asserted_by: "upstream".into(),
+            assertion: format!("{line}, asserted"),
+            subjects: Vec::new(),
+            argues_with: Vec::new(),
+            excerpt: line.clone(),
+            position: "the notes".into(),
+        })
+        .collect();
+    let write = inbox
+        .read_capture(&key(key_text), &reading, &[raw])
+        .unwrap_or_else(|refused| panic!("{refused}"));
+    after(&inbox, &write)
+}
+
+/// The signal `text` names.
+pub fn signal(text: &str) -> SignalId {
+    SignalId::parse(text).unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// A move of `signal` with `word` and `target`, by `by` at `at`.
+pub fn a_move(signal_text: &str, word: &str, target: &str, by: &str, at: &str) -> NewMove {
+    NewMove {
+        signal: signal(signal_text),
+        word: word.into(),
+        target: target.into(),
+        by: by.into(),
+        at: at.into(),
+        replaces: None,
+    }
+}
+
+/// `inbox` after `new`, which the test expects to be taken.
+pub fn moved(inbox: &InboxAt, new: &NewMove) -> InboxAt {
+    after(
+        inbox,
+        &inbox
+            .make_move(new)
+            .unwrap_or_else(|refused| panic!("{refused}")),
+    )
 }

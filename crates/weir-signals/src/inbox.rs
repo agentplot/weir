@@ -10,7 +10,9 @@ use weir_capture::rec::{self, RecError, Record};
 use weir_capture::{CameIn, Capture, Key};
 
 use crate::format::Format;
+use crate::item::{Item, SendRecord};
 use crate::layout::Place;
+use crate::moves::{Move, Word};
 use crate::signal::{Signal, SignalId, EMPTY_READING};
 
 /// An inbox as one tip holds it. The name keeps it apart from
@@ -20,6 +22,12 @@ pub struct InboxAt {
     /// Every file under `inbox/`, by path, as the tip holds it.
     pub(crate) files: BTreeMap<String, String>,
     pub(crate) captures: BTreeMap<Key, Held>,
+    /// `moves.rec`'s moves, in order.
+    pub(crate) moves: Vec<Move>,
+    /// Each moved signal's moves, as places in `moves`, in order: the last
+    /// is its standing move (29).
+    pub(crate) by_signal: BTreeMap<SignalId, Vec<usize>>,
+    pub(crate) items: BTreeMap<String, ItemAt>,
 }
 
 /// One capture the inbox holds.
@@ -29,6 +37,48 @@ pub struct Held {
     /// Its own signal or its reading, from its `signals.rec`; none while
     /// it is unread (19, 28).
     pub signals: Option<Vec<Signal>>,
+}
+
+/// One item the inbox holds, with its brief and its sends.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ItemAt {
+    pub item: Item,
+    /// The brief's text, after the line naming its format; none until one
+    /// is written.
+    pub brief: Option<String>,
+    /// `sends.rec`'s records, in order.
+    pub sends: Vec<SendRecord>,
+}
+
+impl ItemAt {
+    /// Whether it is sent: proposed until its first send (36).
+    pub fn is_sent(&self) -> bool {
+        self.sends.iter().any(SendRecord::is_send)
+    }
+}
+
+/// Where a move is checked: as a record read from the tip, or as one an
+/// operation forms. A join formed for a sent item is refused (30), while a
+/// join read from the tip may name an item sent since it was made.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Checked {
+    Read,
+    Formed,
+}
+
+/// What a move that is taken does beside standing.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Effect {
+    Stands,
+    /// A join naming a name no item has had makes that item (34).
+    MakesItem,
+}
+
+/// Why a move is not taken, with the field where there is one.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct NotMoved {
+    pub field: Option<&'static str>,
+    pub why: String,
 }
 
 impl Held {
@@ -132,12 +182,19 @@ impl InboxAt {
         let mut inbox = InboxAt {
             files: texts,
             captures: BTreeMap::new(),
+            moves: Vec::new(),
+            by_signal: BTreeMap::new(),
+            items: BTreeMap::new(),
         };
         inbox.read_places(&places)?;
         Ok(inbox)
     }
 
+    /// Reads each place in its order: every capture before every signals'
+    /// place, every item before every brief and sends, so what lies beside
+    /// a record is read before it. Moves are read last, against all of it.
     fn read_places(&mut self, places: &BTreeMap<Place, String>) -> Result<(), InboxError> {
+        let mut moves = None;
         for (place, path) in places {
             let text = &self.files[path];
             match place {
@@ -151,8 +208,6 @@ impl InboxAt {
                         },
                     );
                 }
-                // Every capture's place orders before every signals' place,
-                // so the capture beside these signals is read by now.
                 Place::Signals(key) => {
                     let Some(held) = self.captures.get_mut(key) else {
                         return Err(InboxError::at(
@@ -162,24 +217,137 @@ impl InboxAt {
                     };
                     held.signals = Some(read_signals(path, text, key)?);
                 }
-                Place::Moves => {
-                    records(path, text, &[Format::Move])?;
-                }
+                Place::Moves => moves = Some(path),
                 Place::Batch(_) => {
                     records(path, text, &[Format::Batch, Format::Move])?;
                 }
-                Place::Item(_) => {
-                    records(path, text, &[Format::Item])?;
+                Place::Item(name) => {
+                    let item = read_item(path, text, name)?;
+                    self.items.insert(
+                        name.clone(),
+                        ItemAt {
+                            item,
+                            brief: None,
+                            sends: Vec::new(),
+                        },
+                    );
                 }
-                Place::Brief(_) => {
-                    Format::read_brief(text).map_err(|reason| InboxError::at(path, reason))?;
+                Place::Brief(name) => {
+                    let item = beside_item(&mut self.items, path, name)?;
+                    let brief =
+                        Format::read_brief(text).map_err(|reason| InboxError::at(path, reason))?;
+                    item.brief = Some(brief.to_string());
                 }
-                Place::Sends(_) => {
-                    records(path, text, &[Format::Send])?;
+                Place::Sends(name) => {
+                    let sends = read_sends(path, text, name)?;
+                    beside_item(&mut self.items, path, name)?.sends = sends;
                 }
             }
         }
+        if let Some(path) = moves {
+            self.read_moves(path)?;
+        }
         Ok(())
+    }
+
+    /// Reads `moves.rec`, each move checked against those before it.
+    fn read_moves(&mut self, path: &str) -> Result<(), InboxError> {
+        let records = records(path, &self.files[path], &[Format::Move])?;
+        for (n, record) in (1..).zip(&records) {
+            let at = |field: Option<&str>, why: String| InboxError {
+                path: path.to_string(),
+                record: Some(n),
+                field: field.map(str::to_string),
+                reason: why,
+            };
+            let taken = Move::from_record(record)
+                .map_err(|error| InboxError::field(path, Some(n), error))?;
+            self.check_move(&taken, Checked::Read)
+                .map_err(|not| at(not.field, not.why))?;
+            self.push_move(taken);
+        }
+        Ok(())
+    }
+
+    /// Whether `taken` may stand on this inbox, and what it does beside:
+    /// its signal held; a signal's first move naming no `replaces`, and
+    /// every later one naming the standing move's number (29); a join's
+    /// item held or, where formed, made, and never sent when formed; an
+    /// attach's item sent (30).
+    pub(crate) fn check_move(&self, taken: &Move, checked: Checked) -> Result<Effect, NotMoved> {
+        let signal = &taken.signal;
+        if self.signal(signal).is_none() {
+            return Err(NotMoved {
+                field: Some("signal"),
+                why: format!("names `{signal}`, a signal the inbox does not hold"),
+            });
+        }
+        match (self.standing(signal), taken.replaces) {
+            (None, None) => {}
+            (None, Some(replaces)) => {
+                return Err(NotMoved {
+                    field: Some("replaces"),
+                    why: format!("names move {replaces}, and `{signal}` has no move to replace"),
+                })
+            }
+            (Some((number, standing)), None) => {
+                return Err(NotMoved {
+                    field: None,
+                    why: format!(
+                    "`{signal}` has a standing move, {}; only a replacement naming it changes it",
+                    standing.describe(number)
+                ),
+                })
+            }
+            (Some((number, standing)), Some(replaces)) if replaces != number => {
+                return Err(NotMoved {
+                    field: Some("replaces"),
+                    why: format!(
+                        "names move {replaces}, and the move standing is {}",
+                        standing.describe(number)
+                    ),
+                })
+            }
+            (Some(_), Some(_)) => {}
+        }
+        let name = &taken.target;
+        match (taken.word, self.items.get(name)) {
+            (Word::Join, None) if checked == Checked::Formed => Ok(Effect::MakesItem),
+            (Word::Join, None) => Err(NotMoved {
+                field: Some("target"),
+                why: format!("names `{name}`, which no item of the inbox is"),
+            }),
+            (Word::Join, Some(item)) if checked == Checked::Formed && item.is_sent() => {
+                Err(NotMoved {
+                    field: Some("target"),
+                    why: format!(
+                        "names `{name}`, which is sent: an attach is the move that adds to a sent item"
+                    ),
+                })
+            }
+            (Word::Attach, None) => Err(NotMoved {
+                field: Some("target"),
+                why: format!(
+                    "names `{name}`, which no item of the inbox is, and an attach adds to a sent item"
+                ),
+            }),
+            (Word::Attach, Some(item)) if !item.is_sent() => Err(NotMoved {
+                field: Some("target"),
+                why: format!(
+                    "names `{name}`, which is not sent: a join is the move that grows a proposed item"
+                ),
+            }),
+            _ => Ok(Effect::Stands),
+        }
+    }
+
+    /// Adds `taken` to the moves, standing for its signal.
+    pub(crate) fn push_move(&mut self, taken: Move) {
+        self.by_signal
+            .entry(taken.signal.clone())
+            .or_default()
+            .push(self.moves.len());
+        self.moves.push(taken);
     }
 
     /// Whether the inbox holds a capture under `key` (14).
@@ -210,6 +378,24 @@ impl InboxAt {
         self.captures
             .get(key)
             .is_some_and(|held| held.signals.is_none())
+    }
+
+    /// The standing move of the signal `id`, its last, with its number
+    /// among the signal's moves, from 1 (29).
+    pub fn standing(&self, id: &SignalId) -> Option<(u64, &Move)> {
+        let places = self.by_signal.get(id)?;
+        let last = *places.last()?;
+        Some((places.len() as u64, &self.moves[last]))
+    }
+
+    /// Every move of `moves.rec`, in order.
+    pub fn moves(&self) -> &[Move] {
+        &self.moves
+    }
+
+    /// The item named `name`, with its brief and sends.
+    pub fn item(&self, name: &str) -> Option<&ItemAt> {
+        self.items.get(name)
     }
 
     /// Every key the inbox holds, in order.
@@ -300,4 +486,109 @@ fn read_signals(path: &str, text: &str, key: &Key) -> Result<Vec<Signal>, InboxE
         signals.push(signal);
     }
     Ok(signals)
+}
+
+/// The one `weir-item/1` record of the `item.rec` at `path`, which names
+/// the item its folder is.
+fn read_item(path: &str, text: &str, name: &str) -> Result<Item, InboxError> {
+    let records = records(path, text, &[Format::Item])?;
+    let [record] = records.as_slice() else {
+        return Err(InboxError::at(
+            path,
+            format!(
+                "holds {} records, and an item's record is one",
+                records.len()
+            ),
+        ));
+    };
+    let item =
+        Item::from_record(record).map_err(|error| InboxError::field(path, Some(1), error))?;
+    if item.item != name {
+        return Err(InboxError::field(
+            path,
+            Some(1),
+            RecError::field(
+                "item",
+                format!(
+                    "is `{}`, and the item lies in the folder of `{name}`",
+                    item.item
+                ),
+            ),
+        ));
+    }
+    Ok(item)
+}
+
+/// The item a brief or a sends file at `path` lies beside.
+fn beside_item<'a>(
+    items: &'a mut BTreeMap<String, ItemAt>,
+    path: &str,
+    name: &str,
+) -> Result<&'a mut ItemAt, InboxError> {
+    items.get_mut(name).ok_or_else(|| {
+        InboxError::at(
+            path,
+            "lies beside no `item.rec`: an item's brief and sends lie beside the item",
+        )
+    })
+}
+
+/// The records of the `sends.rec` at `path`, of the item `name`: each send
+/// once to a target at a time, and what became of each after it, once.
+fn read_sends(path: &str, text: &str, name: &str) -> Result<Vec<SendRecord>, InboxError> {
+    let records = records(path, text, &[Format::Send])?;
+    let mut sends: Vec<SendRecord> = Vec::with_capacity(records.len());
+    for (n, record) in (1..).zip(&records) {
+        let at = |field: &str, reason: String| {
+            InboxError::field(path, Some(n), RecError::field(field, reason))
+        };
+        let read = SendRecord::from_record(record)
+            .map_err(|error| InboxError::field(path, Some(n), error))?;
+        if read.item != name {
+            return Err(at(
+                "item",
+                format!(
+                    "is `{}`, and the sends lie in the folder of `{name}`",
+                    read.item
+                ),
+            ));
+        }
+        let names_it = |earlier: &&SendRecord| {
+            earlier.target == read.target && earlier.sent_at == read.sent_at
+        };
+        let send = sends.iter().filter(|r| r.is_send()).find(names_it);
+        let settled = sends.iter().filter(|r| !r.is_send()).find(names_it);
+        match (read.is_send(), send, settled) {
+            (true, Some(_), _) => {
+                return Err(at(
+                    "sent_at",
+                    format!(
+                        "is `{}`, and the item was sent to `{}` then already",
+                        read.sent_at, read.target
+                    ),
+                ))
+            }
+            (false, None, _) => {
+                return Err(at(
+                    "sent_at",
+                    format!(
+                        "is `{}`, and no send to `{}` then comes before it",
+                        read.sent_at, read.target
+                    ),
+                ))
+            }
+            (false, Some(_), Some(earlier)) => {
+                return Err(at(
+                    "outcome",
+                    format!(
+                        "settles the send to `{}` at `{}`, settled already as `{}`",
+                        read.target, read.sent_at, earlier.outcome
+                    ),
+                ))
+            }
+            _ => {}
+        }
+        sends.push(read);
+    }
+    Ok(sends)
 }
