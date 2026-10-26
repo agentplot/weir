@@ -10,7 +10,7 @@
 #   crates/weir-branch     the shared-branch write protocol
 #   crates/weir-kinds      the kind format, with an elaboration kind's
 #                          section: landed
-#   crates/weir-cadence    five-field cron, caught up once
+#   crates/weir-cadence    five-field cron, caught up once: landed
 #   the conformance pack   contract lines in, the records a host must
 #                          write from them out
 #   crates/weir            the `weir` command line, a caller of the
