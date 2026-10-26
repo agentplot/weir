@@ -27,7 +27,7 @@ fn usage() -> String {
          offer one capture per file in <dir>, keyed by the folder and the file's content\n  \
          weir capture meeting <file> --raw-dir <dir> [--cursor <c>]\n      \
          offer one capture for the meeting file <file>\n  \
-         weir import signals <root>\n      \
+         weir import signals <root> [--moves <file>]\n      \
          {}\n",
         signals_folder::HELP
     )
@@ -83,7 +83,7 @@ fn main() -> ExitCode {
             Command::Check { declaration } => check(&declaration),
         },
         ["capture", adapter @ ("folder" | "meeting"), rest @ ..] => capture(adapter, rest).into(),
-        ["import", "signals", root] => import_signals(Path::new(root)).into(),
+        ["import", "signals", rest @ ..] => import_signals(rest).into(),
         _ => Exit::Usage.into(),
     }
 }
@@ -189,12 +189,30 @@ fn capture(adapter: &str, args: &[&str]) -> Exit {
     }
 }
 
-/// The import lines of the body at `root`, and on standard error each
-/// capture not read whole and each move not carried, one a line; it fails
-/// when any capture was not read, once the rest is printed (15).
-fn import_signals(root: &Path) -> Exit {
+/// The import lines of the body at its root, its moves those of the file
+/// `--moves` names when it names one, and on standard error each capture
+/// not read whole and each move not carried, one a line; it fails when any
+/// capture was not read, once the rest is printed (15).
+fn import_signals(args: &[&str]) -> Exit {
     let command = "import signals";
-    let reading = match signals_folder::read(root, None) {
+    let mut root = None;
+    let mut moves = None;
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        match *arg {
+            "--moves" => match args.next() {
+                Some(file) => moves = Some(PathBuf::from(file)),
+                None => return Exit::Usage,
+            },
+            option if option.starts_with("--") => return Exit::Usage,
+            given if root.is_none() => root = Some(PathBuf::from(given)),
+            _ => return Exit::Usage,
+        }
+    }
+    let Some(root) = root else {
+        return Exit::Usage;
+    };
+    let reading = match signals_folder::read(&root, moves.as_deref()) {
         Ok(reading) => reading,
         Err(why) => return failed(command, &why),
     };

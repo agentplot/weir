@@ -16,8 +16,12 @@ fn weir(args: &[&str]) -> Output {
         .expect("the weir binary runs")
 }
 
+fn path(path: &Path) -> &str {
+    path.to_str().expect("a UTF-8 path")
+}
+
 fn import(root: &Path) -> Output {
-    weir(&["import", "signals", root.to_str().expect("a UTF-8 path")])
+    weir(&["import", "signals", path(root)])
 }
 
 fn stdout_lines(output: &Output) -> Vec<String> {
@@ -154,6 +158,93 @@ fn a_move_not_carried() {
     assert_eq!(output.status.code(), Some(0));
 }
 
+/// A blueprints corpus: one capture of two signals, `01-said` and
+/// `02-said`, its old `signals/moves.rec` moving the second.
+fn corpus() -> tempfile::TempDir {
+    let dir = tempfile::tempdir().unwrap();
+    let capture = "signals/2026-10-02-standup";
+    write(dir.path(), &format!("{capture}/capture.md"), &capture_md(2));
+    write(
+        dir.path(),
+        &format!("{capture}/01-said.md"),
+        &signal_md("ask"),
+    );
+    write(
+        dir.path(),
+        &format!("{capture}/02-said.md"),
+        &signal_md("ask"),
+    );
+    write(
+        dir.path(),
+        "signals/moves.rec",
+        "Signal: 2026-10-02-standup/02-said\nMove: drop\nReason: r\nDate: 2026-10-03\nBy: p\n",
+    );
+    dir
+}
+
+#[test]
+fn a_corpus_imported_with_the_flywheel_branchs_moves() {
+    let root = corpus();
+    let branch = tempfile::tempdir().unwrap();
+    write(
+        branch.path(),
+        "moves.rec",
+        "Signal: 2026-10-02-standup/01-said\nMove: attach\nTarget: intent/x\n\
+         Reason: the same ask\nDate: 2026-10-03\nBy: p\n",
+    );
+    let moves = branch.path().join("moves.rec");
+    for args in [
+        [
+            "import",
+            "signals",
+            path(root.path()),
+            "--moves",
+            path(&moves),
+        ],
+        [
+            "import",
+            "signals",
+            "--moves",
+            path(&moves),
+            path(root.path()),
+        ],
+    ] {
+        let output = weir(&args);
+        assert_eq!(output.status.code(), Some(0), "{:?}", stderr_lines(&output));
+        let lines = stdout_lines(&output);
+        assert_eq!(lines.len(), 1);
+        let read = read_import_line(&lines[0]).unwrap();
+        assert_eq!(read.moves.len(), 1, "{:?}", read.moves);
+        assert_eq!(
+            (read.moves[0].signal, read.moves[0].word.as_str()),
+            (1, "attach")
+        );
+        assert_eq!(read.moves[0].note.as_deref(), Some("the same ask"));
+    }
+    let alone = import(root.path());
+    let lines = stdout_lines(&alone);
+    assert!(read_import_line(&lines[0]).unwrap().moves.is_empty());
+}
+
+#[test]
+fn a_moves_file_that_is_not_there() {
+    let root = body(2);
+    let dir = tempfile::tempdir().unwrap();
+    let missing = dir.path().join("moves.rec");
+    let output = weir(&[
+        "import",
+        "signals",
+        path(root.path()),
+        "--moves",
+        path(&missing),
+    ]);
+    assert!(output.stdout.is_empty());
+    let said = stderr_lines(&output);
+    assert_eq!(said.len(), 1, "{said:?}");
+    assert!(said[0].contains(path(&missing)), "{said:?}");
+    assert_eq!(output.status.code(), Some(1));
+}
+
 #[test]
 fn a_root_that_cannot_be_read() {
     let dir = tempfile::tempdir().unwrap();
@@ -170,10 +261,16 @@ fn the_imports_help_comes_from_the_reader() {
         vec!["import"],
         vec!["import", "signals"],
         vec!["import", "signals", "a", "b"],
+        vec!["import", "signals", "a", "--moves"],
+        vec!["import", "signals", "a", "--cursor", "c1"],
+        vec!["import", "signals", "--moves", "m.rec"],
     ] {
         let output = weir(&args);
         let said = String::from_utf8(output.stderr).unwrap();
-        assert!(said.contains("weir import signals <root>"), "{said}");
+        assert!(
+            said.contains("weir import signals <root> [--moves <file>]"),
+            "{said}"
+        );
         assert!(said.contains(signals_folder::HELP), "{said}");
         assert_eq!(output.status.code(), Some(2), "{args:?}");
     }

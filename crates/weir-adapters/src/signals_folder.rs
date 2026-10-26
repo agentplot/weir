@@ -34,10 +34,13 @@ use crate::event_time::day_start;
 /// The body crew's folders are, as each line's `came_in` names it (22).
 pub const BODY: &str = "crew-folders";
 
-/// What `weir import signals <root>` does, for the command's help.
+/// What `weir import signals <root> [--moves <file>]` does, for the
+/// command's help.
 pub const HELP: &str = "print one import line per capture of crew's signals folders under \
                         <root>/signals/, with its pointer, signals and moves, for a host's \
-                        import operation to write";
+                        import operation to write; the moves are those of <root>/moves.rec, \
+                        or of the moves.rec <file> names, a flywheel branch's for a \
+                        blueprints corpus";
 
 /// What a body's reading gives: one line per capture read whole, each
 /// capture not read whole with why, and each move not carried with why.
