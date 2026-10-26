@@ -36,4 +36,4 @@ this group, the line holds as it is; add only what is missing.
 
 ## 6. The checks
 
-- [ ] 6.1 The checks of the projects this change touches pass: `devenv shell -- moon run root:format root:prose root:toolchain cadence:format cadence:lint cadence:typecheck cadence:test`.
+- [x] 6.1 The checks of the projects this change touches pass: `devenv shell -- moon run root:format root:prose root:toolchain cadence:format cadence:lint cadence:typecheck cadence:test`.
