@@ -7,7 +7,10 @@
 //! import lines of a body read before its inbox existed, for a host's
 //! import operation, and names on standard error what it could not carry
 //! (63, 75a). What it says of the body comes from the crate that reads it
-//! (core.2).
+//! (core.2). `weir conform <host command>` runs a host against every host
+//! case of the pack and says which it passed (65, 87; C.7).
+
+mod conform;
 
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
@@ -17,6 +20,7 @@ use clap::{Parser, Subcommand};
 use weir_adapters::{folder, meeting, signals_folder};
 use weir_capture::{ImportLine, Line};
 use weir_kinds::{read_elaboration, read_kinds, End, Problem};
+use weir_pack::Pack;
 
 fn usage() -> String {
     format!(
@@ -28,7 +32,9 @@ fn usage() -> String {
          weir capture meeting <file> --raw-dir <dir> [--cursor <c>]\n      \
          offer one capture for the meeting file <file>\n  \
          weir import signals <root> [--moves <file>]\n      \
-         {}\n",
+         {}\n  \
+         weir conform [--pack <dir>] <host command> [<arg>...]\n      \
+         run a host against every host case of the pack, one line a case\n",
         signals_folder::HELP
     )
 }
@@ -84,6 +90,7 @@ fn main() -> ExitCode {
         },
         ["capture", adapter @ ("folder" | "meeting"), rest @ ..] => capture(adapter, rest).into(),
         ["import", "signals", rest @ ..] => import_signals(rest).into(),
+        ["conform", rest @ ..] => conform(rest).into(),
         _ => Exit::Usage.into(),
     }
 }
@@ -226,6 +233,41 @@ fn import_signals(args: &[&str]) -> Exit {
     match printed {
         Exit::Done if reading.not_read.is_empty() => Exit::Done,
         _ => Exit::Failed,
+    }
+}
+
+/// `weir conform [--pack <dir>] <program> [<arg>...]`: the options first,
+/// and the first word that is none of them begins the host command, run
+/// with no shell (C.7). Exits 0 when every case passed, 1 when any failed,
+/// and 2 when no host command is given (65, 87).
+fn conform(args: &[&str]) -> Exit {
+    let command = "conform";
+    let mut pack_dir = None;
+    let mut args = args;
+    loop {
+        match args {
+            ["--pack", dir, rest @ ..] => {
+                pack_dir = Some(PathBuf::from(dir));
+                args = rest;
+            }
+            ["--pack"] => return Exit::Usage,
+            _ => break,
+        }
+    }
+    let [program, host_args @ ..] = args else {
+        return Exit::Usage;
+    };
+    let pack = match pack_dir {
+        Some(dir) => match Pack::read(&dir) {
+            Ok(pack) => pack,
+            Err(why) => return failed(command, &why),
+        },
+        None => Pack::embedded(),
+    };
+    match conform::conform(&pack, program, host_args) {
+        Ok(true) => Exit::Done,
+        Ok(false) => Exit::Failed,
+        Err(why) => failed(command, &why),
     }
 }
 

@@ -1291,8 +1291,11 @@ dependencies = [
  "tempfile",
  "time",
  "weir-adapters",
+ "weir-branch",
  "weir-capture",
  "weir-kinds",
+ "weir-pack",
+ "weir-signals",
 ]
 
 [[package]]

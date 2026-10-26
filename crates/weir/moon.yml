@@ -1,16 +1,18 @@
 $schema: 'https://moonrepo.dev/schemas/project.json'
 
 # The weir command line: its format, lint, typecheck and test, one task
-# per check (core.39). It builds on weir-kinds, weir-capture and
-# weir-adapters, whose files are among its inputs beside its own and the
-# toolchain's (kit:testing.3).
+# per check (core.39). It builds on weir-kinds, weir-capture,
+# weir-adapters, weir-pack, weir-signals and weir-branch, whose files are
+# among its inputs beside its own, the pack's and the toolchain's
+# (kit:testing.3); `weir conform` builds the pack in, and its tests run
+# every host case against the example host.
 language: 'rust'
-dependsOn: [kinds, capture, adapters]
+dependsOn: [kinds, capture, adapters, pack, signals, branch]
 
 tasks:
   format:
     command: 'cargo fmt -p weir --check'
-    inputs: &inputs ['/crates/weir/**/*', '/crates/weir-kinds/**/*', '/crates/weir-adapters/**/*', '/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    inputs: &inputs ['/crates/weir/**/*', '/crates/weir-kinds/**/*', '/crates/weir-adapters/**/*', '/crates/weir-capture/**/*', '/crates/weir-pack/**/*', '/crates/weir-signals/**/*', '/crates/weir-branch/**/*', '/pack/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
   lint:
