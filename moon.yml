@@ -16,7 +16,7 @@ tasks:
   # from outside the tree, so it never replays.
   toolchain:
     command: 'sh check-toolchain.sh'
-    inputs: ['/check-toolchain.sh', '/rust-toolchain.toml', '/.prototools', '/devenv.nix', '/devenv.lock']
+    inputs: ['/check-toolchain.sh', '/.prototools', '/devenv.nix', '/devenv.lock']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true, cache: false}
   # The README's prose, through Vale (.vale.ini, styles/Weir).

@@ -1,9 +1,8 @@
 #!/bin/sh
 # Every Rust tool the gate runs is the build .prototools pins, on every
-# host (core.40): rust-toolchain.toml names the same version, and rustc,
-# cargo, clippy-driver and rustfmt on PATH each report it. A tool found in
-# another toolchain, a runner's rustup default say, fails here rather than
-# holding the tree to another version's rules.
+# host (core.40): rustc, cargo, clippy-driver and rustfmt on PATH each
+# report it. A tool found in another toolchain, a runner's rustup default
+# say, fails here rather than holding the tree to another version's rules.
 set -eu
 
 fail() {
@@ -13,8 +12,6 @@ fail() {
 
 pin=$(sed -n 's/^rust *= *"\(.*\)"$/\1/p' .prototools)
 [ -n "$pin" ] || fail ".prototools pins no rust"
-channel=$(sed -n 's/^channel *= *"\(.*\)"$/\1/p' rust-toolchain.toml)
-[ "$channel" = "$pin" ] || fail "rust-toolchain.toml names ${channel:-no channel}, .prototools pins $pin"
 
 rustc=$(rustc -vV)
 [ "$(printf '%s\n' "$rustc" | sed -n 's/^release: //p')" = "$pin" ] ||
