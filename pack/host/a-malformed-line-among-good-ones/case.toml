@@ -1,0 +1,18 @@
+# An intake's lines with a line that is no JSON and one that holds two of
+# the three among good ones: each bad line is refused by its number, and
+# stops no other offer being taken (1, 10, 13, 15).
+satisfies = [1, 10, 13, 15, 22]
+limit = 8192
+
+[[step]]
+intake = "lines.jsonl"
+taken = ["deploy/acme/prod-41", "deploy/acme/prod-42", "deploy/acme/prod-43"]
+held = 0
+
+[[step.refused]]
+line = 2
+reason_holds = "the line is not JSON"
+
+[[step.refused]]
+line = 4
+reason_holds = "more than one of `capture`, `cursor` and `done`"

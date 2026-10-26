@@ -1,0 +1,2 @@
+{"capture": {"key": "deploy/acme/prod-51", "source": "deploy", "event_at": "2026-10-24T09:00:00Z", "raw": ["prod-51/deploy.log"]}}
+{"capture": {"key": "deploy/acme/prod-52", "source": "deploy", "event_at": "2026-10-25T09:00:00Z"}}

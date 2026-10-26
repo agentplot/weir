@@ -1,0 +1,3 @@
+{"capture": {"key": "release/acme/1.0", "source": "release", "event_at": "2026-10-10T14:02:11Z", "title": "acme 1.0, again", "raw": ["acme-1.0/notes.md"], "excerpt": {"kind": "ask", "asserted_by": "acme", "assertion": "acme 1.0 is released, and the repository pins 0.9.", "subjects": ["release", "acme"], "argues_with": ["packages/acme/default.nix"], "position": "release notes", "text": "## acme 1.0\n\n- the shim fixed\n"}}}
+{"cursor": "2026-10-18T04:30:05Z"}
+{"done": {"listed": 1, "failed": []}}
