@@ -111,6 +111,9 @@ in
     # GNU recutils: the crates' tests hold every record they write to
     # `recfix`, as a write is held before it lands (core.24).
     pkgs.recutils
+    # shellcheck: the shell's scripts, linted in the shell as treefmt lints
+    # them before shfmt lays them out.
+    pkgs.shellcheck
   ];
 
   # The commit hooks' config (.pre-commit-config.yaml) is linked at the top of
