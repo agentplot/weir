@@ -370,12 +370,12 @@ fn read_raw(raw: &[String], raw_place: Option<&Path>) -> Result<Vec<RawFile>, St
         .join(", ");
     let Some(raw_place) = raw_place else {
         return Err(format!(
-            "names raw material, {named}, and no raw place was given"
+            "the offer names raw material, {named}, and no raw place was given"
         ));
     };
     let place = raw_place.canonicalize().map_err(|error| {
         format!(
-            "names raw material, {named}, and the raw place {} cannot be read: {error}",
+            "the offer names raw material, {named}, and the raw place {} cannot be read: {error}",
             raw_place.display()
         )
     })?;
