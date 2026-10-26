@@ -1,0 +1,70 @@
+# S6: curation and the operator each move one signal in the same second.
+# Curation's move lands while the operator's write is formed; formed again
+# on curation's commit, the operator's move is refused naming the move
+# that stands.
+satisfies = [44, 46]
+remote = true
+stale_after_seconds = 60
+
+[start]
+"inbox/moves/moves.rec" = """
+format: weir-move/1
+signal: release/acme/v0#1
+word: keep
+by: operator@one
+"""
+
+[[write]]
+who = "operator@two"
+what = "move release/acme/v1#1"
+
+[write.append]
+path = "inbox/moves/moves.rec"
+refused_when = "signal: release/acme/v1#1"
+text = """
+
+format: weir-move/1
+signal: release/acme/v1#1
+word: drop
+by: operator@two
+"""
+
+[[write.meanwhile]]
+try = 1
+who = "curation@one"
+what = "move release/acme/v1#1"
+
+[write.meanwhile.append]
+path = "inbox/moves/moves.rec"
+refused_when = "signal: release/acme/v1#1"
+text = """
+
+format: weir-move/1
+signal: release/acme/v1#1
+word: join
+item: acme-releases
+by: curation@one
+"""
+
+[[expect.write]]
+outcome = "refused"
+tries = 2
+reason_holds = "signal: release/acme/v1#1"
+
+[[expect.commit]]
+what = "move release/acme/v1#1"
+asked_by = "curation@one"
+
+[expect.tip]
+"inbox/moves/moves.rec" = """
+format: weir-move/1
+signal: release/acme/v0#1
+word: keep
+by: operator@one
+
+format: weir-move/1
+signal: release/acme/v1#1
+word: join
+item: acme-releases
+by: curation@one
+"""
