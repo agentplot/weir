@@ -40,6 +40,13 @@ pub struct Held {
     pub signals: Option<Vec<Signal>>,
 }
 
+/// A signal with no standing move, and its capture's event time (33).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Unmoved<'a> {
+    pub signal: &'a Signal,
+    pub event_at: &'a str,
+}
+
 /// One item the inbox holds, with its brief and its sends.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ItemAt {
@@ -508,6 +515,22 @@ impl InboxAt {
     /// Every move of `moves.rec`, in order.
     pub fn moves(&self) -> &[Move] {
         &self.moves
+    }
+
+    /// Every signal with no standing move, in key and reading order, each
+    /// with its capture's event time, which its age is read from, however
+    /// old (33; core.8). A move in a proposed batch does not stand (32).
+    pub fn unmoved(&self) -> Vec<Unmoved<'_>> {
+        self.captures
+            .values()
+            .flat_map(|held| {
+                held.signals.iter().flatten().map(|signal| Unmoved {
+                    signal,
+                    event_at: &held.capture.event_at,
+                })
+            })
+            .filter(|unmoved| !self.by_signal.contains_key(&unmoved.signal.signal))
+            .collect()
     }
 
     /// The batch named `name`, as its file holds it.

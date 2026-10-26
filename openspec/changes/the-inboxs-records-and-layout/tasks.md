@@ -21,7 +21,7 @@
 
 - [x] 4.1 `weir-move/1` is written and read with the design's fields; `InboxAt::make_move` refuses a word not of the six, a missing consequence, a signal the inbox does not hold, a second move naming the standing one with its maker and time, a replacement whose `replaces` is not the standing move's number, a join naming a sent item and an attach naming an item not sent, and a join naming a new name makes the item in the same write (29, 30, 31, core.18); the spec's scenarios of "A signal has at most one standing move" (S6 among them, formed on one tip and again on the next), "Only a replacement changes a standing move" and "A move is one of six" pass; proved by `devenv shell -- moon run signals:test`.
 - [x] 4.2 `weir-batch/1` is written and read as the design gives it; `propose_batch` writes the batch's file whole and refuses whole a used name, an invalid move or two moves for one signal; while proposed its moves do not stand; `decide_batch` appends the decision and, when it stands, the moves to `moves.rec` in one write, refusing whole, naming each move, when one can no longer be taken, and refusing a batch already decided (31, 32, core.19); the spec's batch scenarios pass; proved by `devenv shell -- moon run signals:test`.
-- [ ] 4.3 `InboxAt` lists every unmoved signal with its capture's event time, and no operation removes a signal (33, core.8, core.19); the spec's "An old unmoved signal" scenario passes; proved by `devenv shell -- moon run signals:test`.
+- [x] 4.3 `InboxAt` lists every unmoved signal with its capture's event time, and no operation removes a signal (33, core.8, core.19); the spec's "An old unmoved signal" scenario passes; proved by `devenv shell -- moon run signals:test`.
 
 ## 5. Items, briefs and sends
 

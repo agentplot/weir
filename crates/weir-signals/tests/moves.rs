@@ -481,3 +481,93 @@ fn a_tip_whose_moves_break_the_rules_is_refused() {
         assert_eq!(error.field.as_deref(), field, "{error}");
     }
 }
+
+#[test]
+fn an_old_unmoved_signal() {
+    // A capture whose event time is two years before now.
+    let inbox = empty();
+    let mut old = common::capture("meeting/file/2024");
+    old.event_at = "2024-10-25T09:00:00+02:00".into();
+    let inbox = after(
+        &inbox,
+        &inbox
+            .take(&weir_capture::Taken {
+                capture: old,
+                own_signal: None,
+            })
+            .unwrap(),
+    );
+    let raw = weir_capture::RawFile {
+        path: "transcript.txt".into(),
+        bytes: b"we keep the old pin".to_vec(),
+    };
+    let reading = [weir_signals::ReadSignal {
+        kind: "commitment".into(),
+        asserted_by: "Ben".into(),
+        assertion: "the old pin stays".into(),
+        subjects: Vec::new(),
+        argues_with: Vec::new(),
+        excerpt: "we keep the old pin".into(),
+        position: "the transcript".into(),
+    }];
+    let inbox = after(
+        &inbox,
+        &inbox
+            .read_capture(&common::key("meeting/file/2024"), &reading, &[raw])
+            .unwrap(),
+    );
+    let mut inbox = with_signals(&inbox, "release/x", 3);
+    let listed = |inbox: &InboxAt| -> Vec<(String, String)> {
+        inbox
+            .unmoved()
+            .iter()
+            .map(|u| (u.signal.signal.to_string(), u.event_at.to_string()))
+            .collect()
+    };
+    assert_eq!(
+        listed(&inbox)[0],
+        (
+            "meeting/file/2024#1".to_string(),
+            "2024-10-25T09:00:00+02:00".to_string()
+        )
+    );
+    assert_eq!(listed(&inbox).len(), 4);
+    // Every operation leaves it, unmoved: moves of others, a batch
+    // proposed of it, and that batch refused.
+    inbox = moved(
+        &inbox,
+        &a_move("release/x#1", "drop", "noise", "curation", CURATION_AT),
+    );
+    inbox = after(
+        &inbox,
+        &inbox
+            .propose_batch(
+                "b",
+                "curation",
+                CURATION_AT,
+                &[a_move(
+                    "meeting/file/2024#1",
+                    "drop",
+                    "stale",
+                    "curation",
+                    CURATION_AT,
+                )],
+            )
+            .unwrap(),
+    );
+    assert!(listed(&inbox).contains(&(
+        "meeting/file/2024#1".to_string(),
+        "2024-10-25T09:00:00+02:00".to_string()
+    )));
+    inbox = after(
+        &inbox,
+        &inbox
+            .decide_batch("b", false, "operator", OPERATOR_AT)
+            .unwrap(),
+    );
+    let still = listed(&inbox);
+    assert_eq!(still.len(), 3);
+    assert_eq!(still[0].0, "meeting/file/2024#1");
+    assert!(inbox.signal(&signal("release/x#1")).is_some());
+    assert!(!still.iter().any(|(id, _)| id == "release/x#1"));
+}
