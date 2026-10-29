@@ -1,0 +1,21 @@
+# Tables that hold agents and nothing that declares a kind: settings given
+# to kinds of those names declared elsewhere, beside a kind this file
+# declares (52, 57, C.4).
+[kinds.change.agents]
+model = "sonnet"
+instructions = "Work in British English."
+
+[kinds.change.agents.stages.verify]
+model = "opus"
+
+[kinds.fix]
+owner = "docs"
+agents = { program = "claude", env = { ACCOUNT = "work" } }
+
+[kinds.review.agents.stages.read]
+model = "haiku"
+
+[[kinds.tidy.stages]]
+name = "code"
+prompt = "prompts/tidy.md"
+deliverables = ["commits"]

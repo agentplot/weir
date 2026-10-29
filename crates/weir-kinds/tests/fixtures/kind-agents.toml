@@ -1,0 +1,31 @@
+# A kind's agents table, for every stage and for one stage by name, beside
+# a stage's own agents; and the same table written inline (52, C.4).
+[kinds.bump]
+
+[kinds.bump.agents]
+program = "claude"
+model = "sonnet"
+instructions = "Keep each commit to one change."
+env = { ACCOUNT = "work" }
+
+[kinds.bump.agents.stages.review]
+model = "opus"
+
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits"]
+agents = [{ model = "haiku" }]
+
+[[kinds.bump.stages]]
+name = "review"
+prompt = "prompts/bump-review.md"
+conversation = true
+
+[kinds.tidy]
+agents = { model = "haiku" }
+
+[[kinds.tidy.stages]]
+name = "code"
+prompt = "prompts/tidy.md"
+deliverables = ["commits"]

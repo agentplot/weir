@@ -84,6 +84,23 @@ fn settings_left_out_are_returned_left_out() {
     assert_eq!(code.max_send_backs, None);
 }
 
+// A stage names what it makes besides its deliverable.
+
+#[test]
+fn a_stage_reads_what_it_makes() {
+    let spike = &read("makes.toml").unwrap().kinds["spike"];
+    assert_eq!(spike.stages[0].makes, ["preview", "page"]);
+    assert!(spike.stages[0].sections.is_empty());
+}
+
+#[test]
+fn a_stage_that_names_nothing_it_makes_makes_nothing() {
+    let spike = &read("makes.toml").unwrap().kinds["spike"];
+    assert!(spike.stages[1].makes.is_empty());
+    let code = &read("stages-only.toml").unwrap().kinds["tidy"].stages[0];
+    assert!(code.makes.is_empty());
+}
+
 // A stage's quiet time is one whole number of s, m or h.
 
 #[test]

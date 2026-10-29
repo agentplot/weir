@@ -1,0 +1,41 @@
+# The agents tables and makes of the wrong shape, once each (52, 53, 57).
+[kinds.agents-array]
+agents = ["claude"]
+
+[[kinds.agents-array.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+
+[kinds.settings-number]
+agents = 3
+
+[kinds.stages-number.agents]
+stages = 3
+
+[kinds.stage-string.agents.stages]
+code = "opus"
+
+[[kinds.makes-shapes.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+makes = "preview"
+
+[[kinds.makes-shapes.stages]]
+name = "build"
+prompt = "prompts/build.md"
+deliverables = ["commits"]
+makes = ["preview", 3]
+
+[[kinds.makes-shapes.stages]]
+name = "page"
+prompt = "prompts/page.md"
+deliverables = ["commits"]
+makes = [""]
+
+[kinds.elaboration-agents]
+agents = { model = "opus" }
+
+[kinds.elaboration-agents.elaboration]
+ending = "standing"
