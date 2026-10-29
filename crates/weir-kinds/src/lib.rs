@@ -2,7 +2,7 @@
 //!
 //! A declaration is TOML. [`read_kinds`] is `read-kinds` (81): given a
 //! declaration's text, it returns every kind under its `kinds` table, each
-//! with its stages, its agents' settings and the sections the format does
+//! with its stages, whether each repeats, its agents' settings and the sections the format does
 //! not name, and apart from them the settings given to kinds the
 //! declaration does not declare, or refuses the declaration whole, naming
 //! every field that fails it (52, 57, C.4). An
@@ -27,11 +27,13 @@ mod fields;
 mod kinds;
 mod quiet;
 mod refusal;
+mod repeat;
 
 pub use deliverable::{Deliverable, End};
 pub use elaboration::{read_elaboration, Elaboration, Ending};
 pub use kinds::{read_kinds, Declaration, Kind, KindAgents, KindSettings, Stage};
 pub use refusal::{Problem, Refusal};
+pub use repeat::Repeat;
 /// The TOML crate whose values a section the format does not name holds
 /// (56), so that a caller reads them with the same version.
 pub use toml;

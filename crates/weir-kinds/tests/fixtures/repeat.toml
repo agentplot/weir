@@ -1,0 +1,20 @@
+# A stage delivering tasks that repeats per task group, beside stages that
+# declare no repeat (53, C.4).
+[kinds.change]
+version = 2
+
+[[kinds.change.stages]]
+name = "construct"
+prompt = "prompts/change-construct.md"
+deliverables = ["change"]
+
+[[kinds.change.stages]]
+name = "code"
+prompt = "prompts/change-code.md"
+deliverables = ["tasks"]
+repeat = "per-task-group"
+
+[[kinds.change.stages]]
+name = "verify"
+prompt = "prompts/change-verify.md"
+deliverables = ["archived"]

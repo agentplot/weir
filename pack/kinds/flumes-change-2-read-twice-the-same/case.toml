@@ -1,0 +1,33 @@
+# flume reads its own change@2 (S10): construct, code and verify delivering
+# a change written, tasks ticked and a change archived, its code stage
+# repeating per task group. It reads the same twice, and reading changes
+# nothing.
+satisfies = [53, 57, 58]
+declaration = """
+[kinds.change]
+version = 2
+
+[[kinds.change.stages]]
+name = "construct"
+prompt = "prompts/change-construct.md"
+deliverables = ["change"]
+
+[[kinds.change.stages]]
+name = "code"
+prompt = "prompts/change-code.md"
+deliverables = ["tasks"]
+repeat = "per-task-group"
+
+[[kinds.change.stages]]
+name = "verify"
+prompt = "prompts/change-verify.md"
+deliverables = ["archived"]
+"""
+
+[expect.kinds.change]
+version = 2
+stages = [
+  { name = "construct", end = "change" },
+  { name = "code", end = "tasks", repeat = "per-task-group" },
+  { name = "verify", end = "archived" },
+]
