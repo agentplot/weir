@@ -20,12 +20,15 @@ struct Case {
     expect: Expect,
 }
 
-/// What the declaration reads into: its kinds and the sections beside them
+/// What the declaration reads into: its kinds, the names of the kinds it
+/// gives settings to and declares not, and the sections beside them
 /// returned unread, or each field refused.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Expect {
     kinds: Option<BTreeMap<String, ExpectKind>>,
+    #[serde(default)]
+    settings: Vec<String>,
     #[serde(default)]
     unread: Vec<String>,
     refused: Option<Vec<ExpectRefusal>>,
@@ -130,11 +133,18 @@ fn differences(name: &str, case: &Case) -> Vec<String> {
             Ok(declaration),
             Expect {
                 kinds: Some(kinds),
+                settings,
                 unread,
                 ..
             },
         ) => {
             let mut said = Vec::new();
+            let given: Vec<&String> = declaration.settings.keys().collect();
+            if given != settings.iter().collect::<Vec<_>>() {
+                said.push(format!(
+                    "{name}: reads settings for {given:?}, and the case expects {settings:?}"
+                ));
+            }
             let beside: Vec<&String> = declaration.sections.keys().collect();
             if beside != unread.iter().collect::<Vec<_>>() {
                 said.push(format!(

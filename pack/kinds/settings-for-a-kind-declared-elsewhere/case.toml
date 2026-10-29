@@ -1,0 +1,33 @@
+# A kind's agents table, read with the kind and never returned unread; and
+# a kind's table holding agents and no stages, read as settings given to a
+# kind of that name declared elsewhere, flume's own change among them, and
+# never refused as a kind with no stage (52, 57, C.4).
+satisfies = [52, 57]
+declaration = """
+[kinds.bump.agents]
+program = "claude"
+model = "sonnet"
+
+[kinds.bump.agents.stages.code]
+model = "opus"
+
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits"]
+makes = ["preview"]
+
+[kinds.change.agents]
+model = "opus"
+instructions = "Work in British English."
+
+[kinds.change.agents.stages.verify]
+model = "sonnet"
+"""
+
+[expect]
+settings = ["change"]
+
+[expect.kinds.bump]
+version = 1
+stages = [{ name = "code", end = "commits" }]
