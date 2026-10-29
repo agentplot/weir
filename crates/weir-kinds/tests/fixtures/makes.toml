@@ -1,0 +1,12 @@
+# A stage that names what it makes besides its deliverable, and one that
+# names nothing (53).
+[[kinds.spike.stages]]
+name = "build"
+prompt = "prompts/build.md"
+deliverables = ["commits"]
+makes = ["preview", "page"]
+
+[[kinds.spike.stages]]
+name = "review"
+prompt = "prompts/review.md"
+conversation = true

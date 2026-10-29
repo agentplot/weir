@@ -4,33 +4,59 @@ use std::time::Duration;
 use toml::{Table, Value};
 
 use crate::deliverable::{Deliverable, End};
-use crate::fields::{boolean, field, key, unnamed};
+use crate::fields::{boolean, field, key, strings, unnamed};
 use crate::quiet;
 use crate::refusal::{not_toml, Problems, Refusal};
 
 /// The fields of a kind the format names; every other key is a section.
-const KIND_FIELDS: [&str; 5] = ["version", "branch", "starts_unready", "lands", "stages"];
+const KIND_FIELDS: [&str; 6] = [
+    "version",
+    "branch",
+    "starts_unready",
+    "lands",
+    "agents",
+    "stages",
+];
+
+/// The fields of a kind's table that declare a kind: a table holding
+/// `agents` and none of these gives settings and declares no kind (57,
+/// C.4). An elaboration kind's section is the format's own (55).
+const DECLARING_FIELDS: [&str; 6] = [
+    "version",
+    "branch",
+    "starts_unready",
+    "lands",
+    "stages",
+    "elaboration",
+];
 
 /// The fields of a stage the format names; every other key is a section.
-const STAGE_FIELDS: [&str; 9] = [
+const STAGE_FIELDS: [&str; 10] = [
     "name",
     "prompt",
     "deliverables",
     "conversation",
     "agents",
+    "makes",
     "wait",
     "quiet",
     "on_fail",
     "max_send_backs",
 ];
 
-/// A declaration read: every kind it declares, and every section beside
-/// them (81).
+/// A declaration read: every kind it declares, the settings it gives kinds
+/// it does not declare, and every section beside them (81).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Declaration {
     /// Every kind under the `kinds` table, by name, in name order; none
     /// when there is no `kinds` table (51, 52).
     pub kinds: BTreeMap<String, Kind>,
+    /// Every `[kinds.<kind>]` table that holds `agents` and nothing that
+    /// declares a kind, by name, in name order: settings given to a kind of
+    /// that name declared elsewhere, never a kind with no stage (57, C.4).
+    /// Whether a stage they name exists, and which declaration they join,
+    /// are the reader's to say (58, core.32).
+    pub settings: BTreeMap<String, KindSettings>,
     /// Every top-level key but `kinds`, unread and as written (56).
     pub sections: Table,
 }
@@ -52,6 +78,10 @@ pub struct Kind {
     /// Whether its work is submitted after the last stage; false when left
     /// out (52).
     pub lands: bool,
+    /// Its `agents` table: settings for every stage's agents and for the
+    /// stages it names, which a stage's own `agents` come before; empty
+    /// when left out (52, C.4).
+    pub agents: KindAgents,
     /// Its stages, at least one, in the order written (51).
     pub stages: Vec<Stage>,
     /// Every key of the kind the format does not name, unread and as
@@ -73,6 +103,9 @@ pub struct Stage {
     /// Its agents, each a table of its settings as written, since an
     /// agent's settings are its runner's; none when left out (53).
     pub agents: Vec<Table>,
+    /// What it makes besides its deliverable, each by its name as written,
+    /// in the order written; none when left out (53).
+    pub makes: Vec<String>,
     /// Whether it waits on its caller's word; false when left out (53).
     pub wait: bool,
     /// How long its agent may be quiet before the stage is stuck, one
@@ -91,6 +124,42 @@ pub struct Stage {
     pub sections: Table,
 }
 
+/// A kind's `agents` table: settings for its agents as written, since an
+/// agent's settings are its runner's (52, C.4). Its fields, such as
+/// `program`, `model`, `instructions` and `env`, are returned unread; the
+/// format checks only that the table and each stage's are tables.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct KindAgents {
+    /// The settings for every stage's agents: every key of the table but
+    /// `stages`, as written; empty when there are none.
+    pub every_stage: Table,
+    /// The settings for one stage's agents, by the stage's name, from each
+    /// `agents.stages.<stage>` table, as written; none when left out.
+    pub stages: BTreeMap<String, Table>,
+}
+
+impl KindAgents {
+    /// Whether the table gives no setting, for every stage or for any.
+    pub fn is_empty(&self) -> bool {
+        self.every_stage.is_empty() && self.stages.is_empty()
+    }
+}
+
+/// Settings a declaration gives a kind it does not declare: a
+/// `[kinds.<kind>]` table holding `agents` and nothing that declares a kind
+/// (57, C.4).
+#[derive(Debug, Clone, PartialEq)]
+pub struct KindSettings {
+    /// The name of the kind the settings are given to, its key under
+    /// `kinds`.
+    pub name: String,
+    /// The settings for its agents, for every stage and for the stages
+    /// named (52).
+    pub agents: KindAgents,
+    /// Every other key of the table, unread and as written (56).
+    pub sections: Table,
+}
+
 /// `read-kinds` (81): every kind a declaration's text declares, each with
 /// its stages and its sections, or the declaration refused whole, naming
 /// every field that fails it (57).
@@ -102,12 +171,23 @@ pub fn read_kinds(text: &str) -> Result<Declaration, Refusal> {
     let root: Table = text.parse().map_err(|error| not_toml(text, &error))?;
     let mut problems = Problems::default();
     let mut kinds = BTreeMap::new();
+    let mut settings = BTreeMap::new();
     match root.get("kinds") {
         None => {}
         Some(Value::Table(table)) => {
             for (name, kind) in table {
                 let at = format!("kinds.{}", key(name));
                 match kind {
+                    Value::Table(kind) if gives_settings(kind) => {
+                        settings.insert(
+                            name.clone(),
+                            KindSettings {
+                                name: name.clone(),
+                                agents: read_agents(kind, &at, &mut problems),
+                                sections: unnamed(kind, &["agents"]),
+                            },
+                        );
+                    }
                     Value::Table(kind) => {
                         kinds.insert(name.clone(), read_kind(name, kind, &at, &mut problems));
                     }
@@ -119,8 +199,58 @@ pub fn read_kinds(text: &str) -> Result<Declaration, Refusal> {
     }
     problems.finish(Declaration {
         kinds,
+        settings,
         sections: unnamed(&root, &["kinds"]),
     })
+}
+
+/// Whether a kind's table gives settings and declares no kind: it holds
+/// `agents` and nothing that declares a kind (57, C.4).
+fn gives_settings(kind: &Table) -> bool {
+    kind.contains_key("agents") && !DECLARING_FIELDS.iter().any(|f| kind.contains_key(*f))
+}
+
+/// A kind's `agents` table, for every stage and for the stages it names;
+/// empty when left out. A table of the wrong shape is refused naming the
+/// field, and the settings inside are returned as written (52, 57, C.4).
+fn read_agents(kind: &Table, at: &str, problems: &mut Problems) -> KindAgents {
+    let here = field(at, "agents");
+    let table = match kind.get("agents") {
+        None => return KindAgents::default(),
+        Some(Value::Table(table)) => table,
+        Some(_) => {
+            problems.refuse(
+                &here,
+                "must be a table of settings for every stage's agents",
+            );
+            return KindAgents::default();
+        }
+    };
+    let mut stages = BTreeMap::new();
+    match table.get("stages") {
+        None => {}
+        Some(Value::Table(named)) => {
+            for (stage, settings) in named {
+                match settings {
+                    Value::Table(settings) => {
+                        stages.insert(stage.clone(), settings.clone());
+                    }
+                    _ => problems.refuse(
+                        &field(&field(&here, "stages"), stage),
+                        "must be a table of settings for that stage's agents",
+                    ),
+                }
+            }
+        }
+        Some(_) => problems.refuse(
+            &field(&here, "stages"),
+            "must be a table of stages, each a table of its agents' settings",
+        ),
+    }
+    KindAgents {
+        every_stage: unnamed(table, &["stages"]),
+        stages,
+    }
 }
 
 fn read_kind(name: &str, kind: &Table, at: &str, problems: &mut Problems) -> Kind {
@@ -146,6 +276,7 @@ fn read_kind(name: &str, kind: &Table, at: &str, problems: &mut Problems) -> Kin
         branch,
         starts_unready: boolean(kind, "starts_unready", at, problems),
         lands: boolean(kind, "lands", at, problems),
+        agents: read_agents(kind, at, problems),
         stages: read_stages(kind, at, problems),
         sections: unnamed(kind, &KIND_FIELDS),
     }
@@ -222,6 +353,13 @@ fn read_stage(stage: &Table, at: &str, problems: &mut Problems) -> Stage {
         );
         Vec::new()
     });
+    let makes = strings(stage, "makes", at, problems);
+    if makes.iter().any(String::is_empty) {
+        problems.refuse(
+            &field(at, "makes"),
+            "names a thing by an empty string, and each thing it makes has a name",
+        );
+    }
     let wait = boolean(stage, "wait", at, problems);
     let quiet = match stage.get("quiet") {
         None => None,
@@ -270,6 +408,7 @@ fn read_stage(stage: &Table, at: &str, problems: &mut Problems) -> Stage {
         prompt,
         end,
         agents,
+        makes,
         wait,
         quiet,
         on_fail,
