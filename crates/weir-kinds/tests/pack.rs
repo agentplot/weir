@@ -1,5 +1,6 @@
 //! The pack's kinds cases, `pack/kinds/<case>/case.toml`, each a
-//! declaration and the kinds it reads into or each field refused, read
+//! declaration and the kinds it reads into, each stage with its end and
+//! its repeat, or each field refused, read
 //! against the crate, held to "The pack holds the kind format's cases"
 //! (kinds; 51 to 58, 65, 67; C.4, C.7; core.36).
 
@@ -50,6 +51,8 @@ struct ExpectStage {
     name: String,
     /// Its deliverable as the format spells it, or `conversation`.
     end: String,
+    /// How it repeats as the format spells it; left out when it does not.
+    repeat: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -162,15 +165,21 @@ fn differences(name: &str, case: &Case) -> Vec<String> {
                 let Some(kind) = declaration.kinds.get(kind_name) else {
                     continue;
                 };
-                let stages: Vec<(String, String)> = kind
+                let stages: Vec<(String, String, Option<String>)> = kind
                     .stages
                     .iter()
-                    .map(|stage| (stage.name.clone(), spelled(&stage.end)))
+                    .map(|stage| {
+                        (
+                            stage.name.clone(),
+                            spelled(&stage.end),
+                            stage.repeat.map(|repeat| repeat.to_string()),
+                        )
+                    })
                     .collect();
-                let expected_stages: Vec<(String, String)> = expected
+                let expected_stages: Vec<(String, String, Option<String>)> = expected
                     .stages
                     .iter()
-                    .map(|stage| (stage.name.clone(), stage.end.clone()))
+                    .map(|stage| (stage.name.clone(), stage.end.clone(), stage.repeat.clone()))
                     .collect();
                 if kind.version != expected.version || stages != expected_stages {
                     said.push(format!(
@@ -249,6 +258,22 @@ fn the_cases_of_s10_s11_and_s12() {
     let flume = &cases["flumes-own-declaration-read-twice-the-same"];
     let kinds = flume.expect.kinds.as_ref().unwrap();
     assert_eq!(kinds.keys().collect::<Vec<_>>(), ["change", "fix"]);
+    let change_2 = &cases["flumes-change-2-read-twice-the-same"];
+    let change = &change_2.expect.kinds.as_ref().unwrap()["change"];
+    assert_eq!(change.version, 2);
+    let repeats: Vec<_> = change
+        .stages
+        .iter()
+        .map(|stage| (stage.name.as_str(), stage.repeat.as_deref()))
+        .collect();
+    assert_eq!(
+        repeats,
+        [
+            ("construct", None),
+            ("code", Some("per-task-group")),
+            ("verify", None),
+        ]
+    );
     let elaboration = &cases["an-elaboration-kind"];
     assert_eq!(
         elaboration.expect.kinds.as_ref().unwrap()["writeback"].unread,

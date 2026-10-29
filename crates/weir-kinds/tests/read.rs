@@ -82,6 +82,7 @@ fn settings_left_out_are_returned_left_out() {
     assert_eq!(code.quiet, None);
     assert_eq!(code.on_fail, None);
     assert_eq!(code.max_send_backs, None);
+    assert_eq!(code.repeat, None);
 }
 
 // A stage names what it makes besides its deliverable.

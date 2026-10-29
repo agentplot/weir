@@ -7,6 +7,7 @@ use crate::deliverable::{Deliverable, End};
 use crate::fields::{boolean, field, key, strings, unnamed};
 use crate::quiet;
 use crate::refusal::{not_toml, Problems, Refusal};
+use crate::repeat::Repeat;
 
 /// The fields of a kind the format names; every other key is a section.
 const KIND_FIELDS: [&str; 6] = [
@@ -31,7 +32,7 @@ const DECLARING_FIELDS: [&str; 6] = [
 ];
 
 /// The fields of a stage the format names; every other key is a section.
-const STAGE_FIELDS: [&str; 10] = [
+const STAGE_FIELDS: [&str; 11] = [
     "name",
     "prompt",
     "deliverables",
@@ -42,6 +43,7 @@ const STAGE_FIELDS: [&str; 10] = [
     "quiet",
     "on_fail",
     "max_send_backs",
+    "repeat",
 ];
 
 /// A declaration read: every kind it declares, the settings it gives kinds
@@ -119,6 +121,11 @@ pub struct Stage {
     /// How many times a place may go back before it waits on its caller;
     /// `None` when left out, its meaning then its reader's (52, 58).
     pub max_send_backs: Option<u64>,
+    /// Whether it repeats, worked one group of its change's tasks at a
+    /// time; `None` when left out (53, C.4). Only a stage whose deliverable
+    /// is tasks ticked repeats (57); how a reader works a repetition is its
+    /// own (58).
+    pub repeat: Option<Repeat>,
     /// Every key of the stage the format does not name, unread and as
     /// written (56).
     pub sections: Table,
@@ -337,7 +344,9 @@ fn read_stages(kind: &Table, at: &str, problems: &mut Problems) -> Vec<Stage> {
 fn read_stage(stage: &Table, at: &str, problems: &mut Problems) -> Stage {
     let name = required(stage, "name", at, problems);
     let prompt = required(stage, "prompt", at, problems);
+    let before = problems.len();
     let end = read_end(stage, at, problems);
+    let end_read = problems.len() == before;
     let agents = match stage.get("agents") {
         None => Some(Vec::new()),
         Some(Value::Array(items)) => items
@@ -403,6 +412,7 @@ fn read_stage(stage: &Table, at: &str, problems: &mut Problems) -> Stage {
             None
         }
     };
+    let repeat = read_repeat(stage, &end, end_read, at, problems);
     Stage {
         name,
         prompt,
@@ -413,8 +423,55 @@ fn read_stage(stage: &Table, at: &str, problems: &mut Problems) -> Stage {
         quiet,
         on_fail,
         max_send_backs,
+        repeat,
         sections: unnamed(stage, &STAGE_FIELDS),
     }
+}
+
+/// A stage's `repeat`: none when left out, and refused naming the field
+/// when it is not `per-task-group` or the stage's end is not tasks ticked
+/// (53, 57, C.4). An end the read already refused is named once, by its own
+/// field, and the `repeat` is judged against no end.
+fn read_repeat(
+    stage: &Table,
+    end: &End,
+    end_read: bool,
+    at: &str,
+    problems: &mut Problems,
+) -> Option<Repeat> {
+    let here = field(at, "repeat");
+    let repeat = match stage.get("repeat") {
+        None => return None,
+        Some(Value::String(spelling)) => match Repeat::from_spelling(spelling) {
+            Some(repeat) => repeat,
+            None => {
+                problems.refuse(
+                    &here,
+                    format!("`{spelling}` is not per-task-group, the one way a stage repeats"),
+                );
+                return None;
+            }
+        },
+        Some(_) => {
+            problems.refuse(&here, "must be the string \"per-task-group\"");
+            return None;
+        }
+    };
+    if !end_read {
+        return None;
+    }
+    let delivers = match end {
+        End::Deliverable(Deliverable::Tasks) => return Some(repeat),
+        End::Deliverable(deliverable) => format!("delivers {deliverable}"),
+        End::Conversation => "is a conversation".to_owned(),
+    };
+    problems.refuse(
+        &here,
+        format!(
+            "is on a stage that {delivers}, and only a stage that delivers tasks repeats per task group"
+        ),
+    );
+    None
 }
 
 /// A stage's name or prompt: a non-empty string it must hold (57).

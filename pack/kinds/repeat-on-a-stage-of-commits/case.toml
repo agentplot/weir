@@ -1,0 +1,14 @@
+# Only a stage that delivers tasks ticked repeats per task group: a repeat
+# on a stage of commits is refused naming the field (57; C.4).
+satisfies = [53, 57]
+declaration = """
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+deliverables = ["commits"]
+repeat = "per-task-group"
+"""
+
+[[expect.refused]]
+field = "kinds.bump.stages[0].repeat"
+reason_holds = "only a stage that delivers tasks repeats per task group"

@@ -1,0 +1,32 @@
+# A repeat the format does not allow, one kind each (57, C.4): another
+# value, another shape, and the field on a stage that does not deliver
+# tasks.
+[[kinds.another-value.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["tasks"]
+repeat = "per-task"
+
+[[kinds.a-flag.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["tasks"]
+repeat = true
+
+[[kinds.a-list.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["tasks"]
+repeat = ["per-task-group"]
+
+[[kinds.commits.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+repeat = "per-task-group"
+
+[[kinds.conversation.stages]]
+name = "review"
+prompt = "prompts/review.md"
+conversation = true
+repeat = "per-task-group"

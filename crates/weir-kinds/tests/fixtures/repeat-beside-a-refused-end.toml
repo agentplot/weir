@@ -1,0 +1,7 @@
+# A repeat beside an end the read refuses: the end is named, and the repeat
+# is judged against no end (57).
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commit"]
+repeat = "per-task-group"

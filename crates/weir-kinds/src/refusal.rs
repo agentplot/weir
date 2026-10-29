@@ -53,6 +53,11 @@ impl Problems {
         });
     }
 
+    /// How many problems the read has gathered so far.
+    pub(crate) fn len(&self) -> usize {
+        self.0.len()
+    }
+
     /// The value read when no field failed, and otherwise the refusal and
     /// nothing of the value.
     pub(crate) fn finish<T>(self, value: T) -> Result<T, Refusal> {
