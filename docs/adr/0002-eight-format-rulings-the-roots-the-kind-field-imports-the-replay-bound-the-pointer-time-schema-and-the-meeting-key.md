@@ -9,7 +9,7 @@ decision-makers:
 
 # Eight format rulings: the roots, the kind field, imports, the replay bound, the pointer, time, the schema and the meeting key
 
-Status: accepted by the user on 2026-10-26, on their card ("Take my eight picks as they stand": approved; "Publish the design": approved).
+Status: accepted by the user on 2026-10-26, on their card ("Take my eight picks as they stand": approved; "Publish the design": approved). Amended 2026-11-02 to follow the statement as amended at blueprints d50535a and 9e537bb: clause 39 and S9 carry ruling 3, a move's note kept beside it, and C.6 says where ruling 8's meeting file states its start.
 
 Deciders: the user, 2026-10-26, on madswan-design's card of 2026-10-22.
 Sources: `agentplot/blueprints:design/weir/requirements.md` section 10 and clauses 4, 17, 44, 61, 62, C.1, C.2, C.5, C.6, at 955c25a; `design/millpond/requirements.md` 63, C.1, C.11; `design/capture/design.md`, the key rule.
@@ -36,4 +36,4 @@ For each question, the statement's alternatives as section 10 posed them; the re
 ### Consequences
 
 - Rules core.7, core.11, core.25, core.26, core.33 and core.34 rest on this record.
-- The statement carries each ruling under its question in section 10, and Part C is amended to match; millpond's statement and the capture design's key rule are amended with it (blueprints 955c25a).
+- The statement carries each ruling under its question in section 10, and Part C is amended to match; millpond's statement and the capture design's key rule are amended with it (blueprints 955c25a). Clause 39 and S9 carry ruling 3, 39 keeping a reason or note the body gave with any move as the move's note (blueprints d50535a and 9e537bb), and C.6 reads ruling 8's start from a `start` or `date` field of the file's front matter, else a date that opens its first line (d50535a).
