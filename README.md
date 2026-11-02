@@ -28,7 +28,7 @@ conformance pack do that for the family's captures.
 | `weir-signals` | The signal, move and item records, and the inbox's layout. |
 | `weir-adapters` | The folder drop, the meeting file and the signals-folder import. |
 | `weir-branch` | The one write protocol for a shared branch. |
-| `weir-kinds` | The one kind format, with an elaboration kind's section. |
+| `weir-kinds` | The one kind format, with an elaboration kind's section, a kind's packages, their content hash and locks. |
 | `weir-cadence` | Five-field cron, caught up once after a missed run. |
 | the conformance pack | Contract lines in, the records a host must write out. |
 
