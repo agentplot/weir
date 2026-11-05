@@ -177,7 +177,13 @@ C.4 writes them, then the entry's unread keys, each value spelled as
 TOML spells it (C.4 as amended). One lock always spells the same bytes,
 so `flume kinds lock` run twice leaves the same file (flume core.17).
 Keeping the order entries were read or added in was the other way, and
-would make the text depend on the history of the writes. The reader
+would make the text depend on the history of the writes. Each unread
+key is one line, `<key> = <value>`, a table among them inline: spelling
+a table under a `[header]` was the other way, and inside a `[[kinds]]`
+table that header would need `kinds.` before it, which TOML's spelling
+of a table alone does not give. A key the format names, put among the
+unread keys by a reader, is not spelled there, since its field is
+spelled in its place and TOML refuses a key given twice. The reader
 writes the file, beside the lock and renamed over it as flume's design
 has it, since weir writes no file of its own (core.1).
 
