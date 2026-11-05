@@ -1,24 +1,71 @@
-//! The pack's kinds cases, `pack/kinds/<case>/case.toml`, each a
-//! declaration and the kinds it reads into, each stage with its end and
-//! its repeat, or each field refused, read
-//! against the crate, held to "The pack holds the kind format's cases"
-//! (kinds; 51 to 58, 65, 67; C.4, C.7; core.36).
+//! The pack's kinds cases, `pack/kinds/<case>/case.toml`, each of one
+//! form: a declaration and the kinds it reads into, each stage with its
+//! end and its repeat; a package held at an identity, laid out in two
+//! folders, and the kind, identity and content hash it reads into, checked
+//! against a lock where the case names one; or a lock and the identities
+//! and hashes it records; or each field refused. Read against the crate,
+//! held to "The pack holds the kind format's cases" and "The pack holds
+//! package and lock cases" (kinds; 51 to 58, 65, 67, 87 to 93; C.4, C.7 as
+//! amended at blueprints 361a599; S17; core.35, core.36). Every folder a
+//! package is laid out in is a temporary one of the test's own.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
-use weir_kinds::{read_elaboration, read_kinds, Declaration, End, Problem};
+use weir_kinds::{
+    read_elaboration, read_kinds, read_lock, read_package_dir, Declaration, End, Identity, Kind,
+    Package, Problem,
+};
 
 /// A case as its `case.toml` writes it: a field the format does not name
-/// fails the read, naming it.
+/// fails the read, naming it, and so does a case of no form or of several.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
+struct Written {
+    satisfies: Vec<toml::Value>,
+    declaration: Option<String>,
+    package: Option<PackageCase>,
+    lock: Option<String>,
+    expect: toml::Table,
+}
+
+/// A case read: the clauses it cites, and its one form with what it
+/// expects.
+#[derive(Debug)]
 struct Case {
     satisfies: Vec<toml::Value>,
-    declaration: String,
-    expect: Expect,
+    form: Form,
+}
+
+#[derive(Debug)]
+enum Form {
+    /// A declaration's text.
+    Declaration { text: String, expect: Expect },
+    /// A package and the identity it is held at.
+    Package {
+        package: PackageCase,
+        held: Identity,
+        expect: ExpectPackage,
+    },
+    /// A lock's text.
+    Lock { text: String, expect: ExpectLock },
+}
+
+/// A package as its case writes it: the identity it is held at, its files
+/// by their paths within it with their text, its symbolic links by their
+/// paths with what each leads to, and a lock's text to check it against.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PackageCase {
+    held: String,
+    files: BTreeMap<String, String>,
+    #[serde(default)]
+    links: BTreeMap<String, String>,
+    lock: Option<String>,
 }
 
 /// What the declaration reads into: its kinds, the names of the kinds it
@@ -33,6 +80,37 @@ struct Expect {
     #[serde(default)]
     unread: Vec<String>,
     refused: Option<Vec<ExpectRefusal>>,
+}
+
+/// What the package reads into: the identity it is held at, its content
+/// hash, its kind as a declaration case's `kinds` entry is written, and
+/// the sections beside its kind returned unread; or each field refused, a
+/// lock's refusal of it named at `lock`.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ExpectPackage {
+    identity: Option<String>,
+    hash: Option<String>,
+    kind: Option<ExpectKind>,
+    #[serde(default)]
+    unread: Vec<String>,
+    refused: Option<Vec<ExpectRefusal>>,
+}
+
+/// What the lock records, each identity with its hash in identity order,
+/// or each field refused.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ExpectLock {
+    entries: Option<Vec<ExpectEntry>>,
+    refused: Option<Vec<ExpectRefusal>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ExpectEntry {
+    kind: String,
+    hash: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -62,23 +140,115 @@ struct ExpectRefusal {
     reason_holds: String,
 }
 
+/// The field a package's case names a lock's refusal of it at: the case's
+/// own `lock`, since a mismatch is the lock's and names no field of the
+/// package (91, S18).
+const LOCK: &str = "lock";
+
 fn folder() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../pack/kinds")
 }
 
 /// Reads the case `name` from `text`, or names the case and why not.
 fn read_case(name: &str, text: &str) -> Result<Case, String> {
-    let case: Case =
+    let written: Written =
         toml::from_str(text).map_err(|error| format!("{name}: {}", error.message()))?;
-    if case.satisfies.is_empty() {
+    if written.satisfies.is_empty() {
         return Err(format!("{name}: `satisfies` cites no clause"));
     }
-    if case.expect.kinds.is_some() == case.expect.refused.is_some() {
-        return Err(format!(
-            "{name}: `expect` names its kinds or what is refused, exactly one of them"
-        ));
+    let form = match (written.declaration, written.package, written.lock) {
+        (Some(text), None, None) => {
+            let expect: Expect = expected(name, written.expect)?;
+            if expect.kinds.is_some() == expect.refused.is_some() {
+                return Err(format!(
+                    "{name}: `expect` names its kinds or what is refused, exactly one of them"
+                ));
+            }
+            Form::Declaration { text, expect }
+        }
+        (None, Some(package), None) => {
+            let held = package
+                .held
+                .parse()
+                .map_err(|refusal| format!("{name}: `package.held`: {refusal}"))?;
+            lies_within(&package).map_err(|why| format!("{name}: {why}"))?;
+            let expect: ExpectPackage = expected(name, written.expect)?;
+            let reads = [
+                expect.identity.is_some(),
+                expect.hash.is_some(),
+                expect.kind.is_some(),
+            ];
+            let refuses = expect.refused.is_some();
+            if !(refuses && reads == [false; 3] && expect.unread.is_empty()
+                || !refuses && reads == [true; 3])
+            {
+                return Err(format!(
+                    "{name}: `expect` names the package's identity, hash and kind, or what is \
+                     refused, exactly one of them"
+                ));
+            }
+            Form::Package {
+                package,
+                held,
+                expect,
+            }
+        }
+        (None, None, Some(text)) => {
+            let expect: ExpectLock = expected(name, written.expect)?;
+            if expect.entries.is_some() == expect.refused.is_some() {
+                return Err(format!(
+                    "{name}: `expect` names the lock's entries or what is refused, exactly one of them"
+                ));
+            }
+            Form::Lock { text, expect }
+        }
+        _ => {
+            return Err(format!(
+                "{name}: a kinds case holds one of a declaration, a package and a lock, exactly \
+                 one of them"
+            ))
+        }
+    };
+    Ok(Case {
+        satisfies: written.satisfies,
+        form,
+    })
+}
+
+/// The case's `expect` read as its form writes it, or the case named with
+/// the field that fails it.
+fn expected<T: DeserializeOwned>(name: &str, expect: toml::Table) -> Result<T, String> {
+    toml::Value::Table(expect)
+        .try_into()
+        .map_err(|error: toml::de::Error| format!("{name}: `expect`: {}", error.message()))
+}
+
+/// Whether every path the case lays out lies within its package, none
+/// beneath a link, so laying it out writes nothing outside the folder it
+/// is given; or the path that does not.
+fn lies_within(package: &PackageCase) -> Result<(), String> {
+    let paths: Vec<&String> = package.files.keys().chain(package.links.keys()).collect();
+    for path in &paths {
+        let plain = path
+            .split('/')
+            .all(|segment| !segment.is_empty() && segment != "." && segment != "..");
+        if !plain {
+            return Err(format!(
+                "`{path}` is no path within a package, and a case lays its files out within one"
+            ));
+        }
     }
-    Ok(case)
+    for link in package.links.keys() {
+        if let Some(path) = paths.iter().find(|path| {
+            path.strip_prefix(link.as_str())
+                .is_some_and(|rest| rest.starts_with('/'))
+        }) {
+            return Err(format!(
+                "`{path}` lies beneath the link `{link}`, and a case writes nothing through a link"
+            ));
+        }
+    }
+    Ok(())
 }
 
 /// Every case of the pack, by its folder's name.
@@ -127,11 +297,23 @@ fn read(text: &str) -> Result<Declaration, Vec<Problem>> {
 /// How the crate's reading of the case differs from what it expects, each
 /// difference naming the case; none when they agree.
 fn differences(name: &str, case: &Case) -> Vec<String> {
-    let read = read(&case.declaration);
-    if read != self::read(&case.declaration) {
+    match &case.form {
+        Form::Declaration { text, expect } => declaration_differences(name, text, expect),
+        Form::Package {
+            package,
+            held,
+            expect,
+        } => package_differences(name, package, held, expect),
+        Form::Lock { text, expect } => lock_differences(name, text, expect),
+    }
+}
+
+fn declaration_differences(name: &str, text: &str, expect: &Expect) -> Vec<String> {
+    let read = read(text);
+    if read != self::read(text) {
         return vec![format!("{name}: the declaration read twice reads two ways")];
     }
-    match (read, &case.expect) {
+    match (read, expect) {
         (
             Ok(declaration),
             Expect {
@@ -162,38 +344,8 @@ fn differences(name: &str, case: &Case) -> Vec<String> {
                 ));
             }
             for (kind_name, expected) in kinds {
-                let Some(kind) = declaration.kinds.get(kind_name) else {
-                    continue;
-                };
-                let stages: Vec<(String, String, Option<String>)> = kind
-                    .stages
-                    .iter()
-                    .map(|stage| {
-                        (
-                            stage.name.clone(),
-                            spelled(&stage.end),
-                            stage.repeat.map(|repeat| repeat.to_string()),
-                        )
-                    })
-                    .collect();
-                let expected_stages: Vec<(String, String, Option<String>)> = expected
-                    .stages
-                    .iter()
-                    .map(|stage| (stage.name.clone(), stage.end.clone(), stage.repeat.clone()))
-                    .collect();
-                if kind.version != expected.version || stages != expected_stages {
-                    said.push(format!(
-                        "{name}: reads {kind_name}@{} with {stages:?}, and the case expects \
-                         {kind_name}@{} with {expected_stages:?}",
-                        kind.version, expected.version
-                    ));
-                }
-                let unread: Vec<&String> = kind.sections.keys().collect();
-                if unread != expected.unread.iter().collect::<Vec<_>>() {
-                    said.push(format!(
-                        "{name}: returns {unread:?} of {kind_name} unread, and the case expects {:?}",
-                        expected.unread
-                    ));
+                if let Some(kind) = declaration.kinds.get(kind_name) {
+                    said.extend(kind_differences(name, kind, expected));
                 }
             }
             said
@@ -204,29 +356,256 @@ fn differences(name: &str, case: &Case) -> Vec<String> {
                 refused: Some(refused),
                 ..
             },
-        ) => {
-            let agrees = problems.len() == refused.len()
-                && problems.iter().zip(refused).all(|(problem, expected)| {
-                    problem.field == expected.field
-                        && problem.reason.contains(&expected.reason_holds)
-                });
-            if agrees {
-                Vec::new()
-            } else {
-                vec![format!(
-                    "{name}: refuses {:?}, and the case expects {refused:?}",
-                    problems.iter().map(ToString::to_string).collect::<Vec<_>>()
-                )]
-            }
-        }
+        ) => refusal_differences(name, &problems, refused),
         (Ok(declaration), _) => vec![format!(
             "{name}: reads the kinds {:?}, and the case expects a refusal",
             declaration.kinds.keys().collect::<Vec<_>>()
         )],
         (Err(problems), _) => vec![format!(
             "{name}: refuses {:?}, and the case expects its kinds",
-            problems.iter().map(ToString::to_string).collect::<Vec<_>>()
+            spelled_problems(&problems)
         )],
+    }
+}
+
+/// How the package laid out at two paths and read at its identity, then
+/// checked against its lock, differs from what its case expects.
+fn package_differences(
+    name: &str,
+    package: &PackageCase,
+    held: &Identity,
+    expect: &ExpectPackage,
+) -> Vec<String> {
+    let (first, second) = match (
+        read_laid_out(package, held, &[]),
+        read_laid_out(package, held, &["deeper", "still"]),
+    ) {
+        (Ok(first), Ok(second)) => (first, second),
+        (Err(why), _) | (_, Err(why)) => return vec![format!("{name}: {why}")],
+    };
+    if first != second {
+        return vec![format!(
+            "{name}: the package laid out at two paths reads two ways, {first:?} and {second:?}"
+        )];
+    }
+    let read = match (first, &package.lock) {
+        (Ok(read), Some(lock)) => match read_lock(lock) {
+            Err(refusal) => return vec![format!("{name}: its lock is refused: {refusal}")],
+            Ok(lock) => match lock.check(&read.identity, &read.hash) {
+                Ok(_) => Ok(read),
+                Err(mismatch) => Err(vec![Problem {
+                    field: LOCK.to_owned(),
+                    reason: mismatch.to_string(),
+                }]),
+            },
+        },
+        (read, _) => read.map_err(|refusal| refusal.problems),
+    };
+    match (read, expect) {
+        (
+            Ok(read),
+            ExpectPackage {
+                identity: Some(identity),
+                hash: Some(hash),
+                kind: Some(kind),
+                unread,
+                ..
+            },
+        ) => {
+            let mut said = Vec::new();
+            if read.identity.to_string() != *identity {
+                said.push(format!(
+                    "{name}: reads at `{}`, and the case expects `{identity}`",
+                    read.identity
+                ));
+            }
+            if read.hash.to_string() != *hash {
+                said.push(format!(
+                    "{name}: hashes to `{}`, and the case expects `{hash}`",
+                    read.hash
+                ));
+            }
+            let beside: Vec<&String> = read.sections.keys().collect();
+            if beside != unread.iter().collect::<Vec<_>>() {
+                said.push(format!(
+                    "{name}: returns {beside:?} unread beside the kind, and the case expects {unread:?}"
+                ));
+            }
+            said.extend(kind_differences(name, &read.kind, kind));
+            said
+        }
+        (
+            Err(problems),
+            ExpectPackage {
+                refused: Some(refused),
+                ..
+            },
+        ) => refusal_differences(name, &problems, refused),
+        (Ok(read), _) => vec![format!(
+            "{name}: reads `{}` at `{}`, and the case expects a refusal",
+            read.identity, read.hash
+        )],
+        (Err(problems), _) => vec![format!(
+            "{name}: refuses {:?}, and the case expects its kind",
+            spelled_problems(&problems)
+        )],
+    }
+}
+
+/// The package laid out in a temporary folder of its own, `depth` folders
+/// below it, and read there at `held`; or why it could not be laid out.
+fn read_laid_out(
+    package: &PackageCase,
+    held: &Identity,
+    depth: &[&str],
+) -> Result<Result<Package, weir_kinds::Refusal>, String> {
+    let top = tempfile::tempdir().map_err(|error| format!("a temporary folder: {error}"))?;
+    let mut dir = top.path().to_path_buf();
+    dir.extend(depth);
+    dir.push("pkg");
+    lay_out(&dir, package)?;
+    Ok(read_package_dir(&dir, held))
+}
+
+/// Writes the case's files under `dir`, then makes its links, each with
+/// the folders it lies in; or why not, naming the path.
+fn lay_out(dir: &Path, package: &PackageCase) -> Result<(), String> {
+    for (path, text) in &package.files {
+        let at = dir.join(path);
+        fs::create_dir_all(at.parent().unwrap())
+            .and_then(|()| fs::write(&at, text))
+            .map_err(|error| format!("`{path}` could not be written: {error}"))?;
+    }
+    for (path, target) in &package.links {
+        let at = dir.join(path);
+        fs::create_dir_all(at.parent().unwrap())
+            .and_then(|()| symlink(target, &at))
+            .map_err(|error| format!("`{path}` could not be made a link: {error}"))?;
+    }
+    Ok(())
+}
+
+fn lock_differences(name: &str, text: &str, expect: &ExpectLock) -> Vec<String> {
+    let read = read_lock(text);
+    if read != read_lock(text) {
+        return vec![format!("{name}: the lock read twice reads two ways")];
+    }
+    match (read, expect) {
+        (
+            Ok(lock),
+            ExpectLock {
+                entries: Some(entries),
+                ..
+            },
+        ) => {
+            let recorded: Vec<(String, String)> = lock
+                .entries
+                .iter()
+                .map(|(identity, entry)| (identity.to_string(), entry.hash.to_string()))
+                .collect();
+            let expected: Vec<(String, String)> = entries
+                .iter()
+                .map(|entry| (entry.kind.clone(), entry.hash.clone()))
+                .collect();
+            if recorded == expected {
+                Vec::new()
+            } else {
+                vec![format!(
+                    "{name}: records {recorded:?}, and the case expects {expected:?}"
+                )]
+            }
+        }
+        (
+            Err(refusal),
+            ExpectLock {
+                refused: Some(refused),
+                ..
+            },
+        ) => refusal_differences(name, &refusal.problems, refused),
+        (Ok(lock), _) => vec![format!(
+            "{name}: records {:?}, and the case expects a refusal",
+            lock.entries
+                .keys()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+        )],
+        (Err(refusal), _) => vec![format!(
+            "{name}: refuses {:?}, and the case expects its entries",
+            spelled_problems(&refusal.problems)
+        )],
+    }
+}
+
+/// How a kind read differs from the kind its case writes.
+fn kind_differences(name: &str, kind: &Kind, expected: &ExpectKind) -> Vec<String> {
+    let mut said = Vec::new();
+    let kind_name = &kind.name;
+    let stages: Vec<(String, String, Option<String>)> = kind
+        .stages
+        .iter()
+        .map(|stage| {
+            (
+                stage.name.clone(),
+                spelled(&stage.end),
+                stage.repeat.map(|repeat| repeat.to_string()),
+            )
+        })
+        .collect();
+    let expected_stages: Vec<(String, String, Option<String>)> = expected
+        .stages
+        .iter()
+        .map(|stage| (stage.name.clone(), stage.end.clone(), stage.repeat.clone()))
+        .collect();
+    if kind.version != expected.version || stages != expected_stages {
+        said.push(format!(
+            "{name}: reads {kind_name}@{} with {stages:?}, and the case expects \
+             {kind_name}@{} with {expected_stages:?}",
+            kind.version, expected.version
+        ));
+    }
+    let unread: Vec<&String> = kind.sections.keys().collect();
+    if unread != expected.unread.iter().collect::<Vec<_>>() {
+        said.push(format!(
+            "{name}: returns {unread:?} of {kind_name} unread, and the case expects {:?}",
+            expected.unread
+        ));
+    }
+    said
+}
+
+/// How the problems given differ from the refusal the case expects: each
+/// field, in order, and a phrase of each reason.
+fn refusal_differences(name: &str, problems: &[Problem], refused: &[ExpectRefusal]) -> Vec<String> {
+    let agrees = problems.len() == refused.len()
+        && problems.iter().zip(refused).all(|(problem, expected)| {
+            problem.field == expected.field && problem.reason.contains(&expected.reason_holds)
+        });
+    if agrees {
+        Vec::new()
+    } else {
+        vec![format!(
+            "{name}: refuses {:?}, and the case expects {refused:?}",
+            spelled_problems(problems)
+        )]
+    }
+}
+
+fn spelled_problems(problems: &[Problem]) -> Vec<String> {
+    problems.iter().map(ToString::to_string).collect()
+}
+
+/// The case `name` of the pack.
+fn case(name: &str) -> Case {
+    cases()
+        .into_iter()
+        .find_map(|(found, case)| (found == name).then_some(case))
+        .unwrap_or_else(|| panic!("no kinds case {name}"))
+}
+
+fn declaration_expect(case: &Case) -> &Expect {
+    match &case.form {
+        Form::Declaration { expect, .. } => expect,
+        other => panic!("a declaration's case, not {other:?}"),
     }
 }
 
@@ -254,12 +633,11 @@ fn the_cases_cite_each_of_51_to_58() {
 
 #[test]
 fn the_cases_of_s10_s11_and_s12() {
-    let cases: BTreeMap<String, Case> = cases().into_iter().collect();
-    let flume = &cases["flumes-own-declaration-read-twice-the-same"];
-    let kinds = flume.expect.kinds.as_ref().unwrap();
+    let flume = case("flumes-own-declaration-read-twice-the-same");
+    let kinds = declaration_expect(&flume).kinds.as_ref().unwrap();
     assert_eq!(kinds.keys().collect::<Vec<_>>(), ["change", "fix"]);
-    let change_2 = &cases["flumes-change-2-read-twice-the-same"];
-    let change = &change_2.expect.kinds.as_ref().unwrap()["change"];
+    let change_2 = case("flumes-change-2-read-twice-the-same");
+    let change = &declaration_expect(&change_2).kinds.as_ref().unwrap()["change"];
     assert_eq!(change.version, 2);
     let repeats: Vec<_> = change
         .stages
@@ -274,14 +652,18 @@ fn the_cases_of_s10_s11_and_s12() {
             ("verify", None),
         ]
     );
-    let elaboration = &cases["an-elaboration-kind"];
+    let elaboration = case("an-elaboration-kind");
     assert_eq!(
-        elaboration.expect.kinds.as_ref().unwrap()["writeback"].unread,
+        declaration_expect(&elaboration).kinds.as_ref().unwrap()["writeback"].unread,
         ["elaboration"]
     );
     for name in ["a-stage-with-two-deliverables", "a-kind-with-no-stage"] {
         assert_eq!(
-            cases[name].expect.refused.as_ref().unwrap().len(),
+            declaration_expect(&case(name))
+                .refused
+                .as_ref()
+                .unwrap()
+                .len(),
             1,
             "{name}"
         );
@@ -290,16 +672,15 @@ fn the_cases_of_s10_s11_and_s12() {
 
 #[test]
 fn a_stage_with_two_deliverables() {
-    let (name, case) = cases()
-        .into_iter()
-        .find(|(name, _)| name == "a-stage-with-two-deliverables")
-        .unwrap();
-    assert!(case
-        .declaration
-        .contains(r#"deliverables = ["commits", "tasks"]"#));
-    let problems = read(&case.declaration).unwrap_err();
+    let name = "a-stage-with-two-deliverables";
+    let case = case(name);
+    let Form::Declaration { text, .. } = &case.form else {
+        panic!("a declaration's case");
+    };
+    assert!(text.contains(r#"deliverables = ["commits", "tasks"]"#));
+    let problems = read(text).unwrap_err();
     assert_eq!(problems[0].field, "kinds.bump.stages[0].deliverables");
-    assert_eq!(differences(&name, &case), Vec::<String>::new());
+    assert_eq!(differences(name, &case), Vec::<String>::new());
 }
 
 #[test]
@@ -311,4 +692,102 @@ fn a_misspelt_field_of_the_case() {
     .expect_err("a refusal");
     assert!(refused.starts_with("misspelt: "), "{refused}");
     assert!(refused.contains("`kind`"), "{refused}");
+
+    let package = "satisfies = [92]\n[package]\nheld = \"acme/review@1\"\n";
+    for (text, field) in [
+        (
+            format!("{package}file = {{ \"kind.toml\" = \"\" }}\n[expect]\n"),
+            "`file`",
+        ),
+        (
+            format!(
+                "{package}files = {{ \"kind.toml\" = \"\" }}\n[expect]\nidentity = \"acme/review@1\"\nhashes = \"\"\n"
+            ),
+            "`hashes`",
+        ),
+        (
+            "satisfies = [93]\nlock = \"\"\n[expect]\nentry = []\n".to_owned(),
+            "`entry`",
+        ),
+    ] {
+        let refused = read_case("misspelt", &text).expect_err("a refusal");
+        assert!(refused.starts_with("misspelt: "), "{refused}");
+        assert!(refused.contains(field), "{refused}");
+    }
+}
+
+#[test]
+fn a_case_of_more_than_one_form() {
+    for text in [
+        "satisfies = [91]\ndeclaration = \"\"\nlock = \"\"\n[expect]\n",
+        "satisfies = [91]\nlock = \"\"\n[package]\nheld = \"acme/review@1\"\nfiles = {}\n[expect]\nentries = []\n",
+        "satisfies = [91]\n[expect]\nentries = []\n",
+    ] {
+        let refused = read_case("both", text).expect_err("a refusal");
+        assert!(refused.starts_with("both: "), "{refused}");
+        assert!(
+            refused.contains("holds one of a declaration, a package and a lock"),
+            "{refused}"
+        );
+    }
+}
+
+#[test]
+fn a_case_lays_out_nothing_outside_its_package() {
+    let head = "satisfies = [89]\n[package]\nheld = \"acme/review@1\"\n";
+    for (paths, says) in [
+        (
+            "files = { \"../kind.toml\" = \"\" }\n",
+            "`../kind.toml` is no path",
+        ),
+        (
+            "files = { \"/kind.toml\" = \"\" }\n",
+            "`/kind.toml` is no path",
+        ),
+        ("files = { \"a//b.md\" = \"\" }\n", "`a//b.md` is no path"),
+        (
+            "files = {}\nlinks = { \"./a\" = \"b\" }\n",
+            "`./a` is no path",
+        ),
+        (
+            "files = { \"out/kind.toml\" = \"\" }\nlinks = { out = \"/tmp\" }\n",
+            "`out/kind.toml` lies beneath the link `out`",
+        ),
+    ] {
+        let text = format!("{head}{paths}[expect]\nrefused = []\n");
+        let refused = read_case("outside", &text).expect_err("a refusal");
+        assert!(refused.starts_with("outside: "), "{refused}");
+        assert!(refused.contains(says), "{refused}");
+    }
+}
+
+#[test]
+fn a_package_case_that_differs_is_named() {
+    let text = r#"
+satisfies = [92]
+
+[package]
+held = "acme/review@1"
+files = { "kind.toml" = """
+[[kinds.review.stages]]
+name = "review"
+prompt = "review.md"
+deliverables = ["commits"]
+""", "review.md" = "Review.\n" }
+
+[expect]
+identity = "acme/review@1"
+hash = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+[expect.kind]
+version = 1
+stages = [{ name = "review", end = "commits" }]
+"#;
+    let case = read_case("wrong-hash", text).unwrap();
+    let said = differences("wrong-hash", &case);
+    assert_eq!(said.len(), 1, "{said:?}");
+    assert!(
+        said[0].starts_with("wrong-hash: hashes to `sha256:"),
+        "{said:?}"
+    );
 }
