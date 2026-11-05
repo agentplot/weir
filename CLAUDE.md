@@ -4,7 +4,7 @@ The shared code of the agentplot tool family, one Rust workspace. It
 defines, once, the capture contract, the record formats, the
 shared-branch write protocol, the kind format, cadence, the built-in
 adapters and the conformance pack. millpond, headwater, eddy, sounding
-and flume build on it, and Flywheel later. Designed, not built.
+and flume build on it, and Boomdrive later. Designed, not built.
 
 The design is in agentplot/blueprints: the capture design,
 `design/capture/design.md`, and its plan, `plan.md` beside it. weir's

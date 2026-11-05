@@ -20,7 +20,7 @@ exceptions:
   - sluice
   - pinout
   - testledger
-  - flywheel
+  - boomdrive
   - millpond
   - weir
   - sounding
@@ -29,7 +29,7 @@ exceptions:
   - eddy
   - crew
   - herdr
-  - Flywheel
+  - Boomdrive
   - Claude
   - Claude Code
   - MCP
