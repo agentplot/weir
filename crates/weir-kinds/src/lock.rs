@@ -1,5 +1,6 @@
 //! A lock of kinds: every identity it records with the content hash of
-//! its package, read by identity (91, 93, C.4; core.30, core.45).
+//! its package, read by identity and spelled in identity order (91, 93,
+//! C.4; core.30, core.45).
 
 use std::collections::BTreeMap;
 
@@ -8,6 +9,7 @@ use toml::{Table, Value};
 use crate::fields::{field, unnamed};
 use crate::hash::ContentHash;
 use crate::identity::Identity;
+use crate::name::fault;
 use crate::refusal::{not_toml, Problems, Refusal};
 
 /// The fields of a lock's entry the format names; every other key is
@@ -97,6 +99,61 @@ pub fn read_lock(text: &str) -> Result<Lock, Refusal> {
         entries,
         sections: unnamed(&root, &["kinds"]),
     })
+}
+
+/// A lock's TOML in C.4's form, which [`read_lock`] reads back as `lock`:
+/// its own unread keys, then one `[[kinds]]` table per entry in identity
+/// order, `kind` then `hash`, then the entry's unread keys (C.4 as amended
+/// at blueprints 361a599; core.30). Each key is a line of its own, its
+/// value as TOML spells one, a table inline; a key the format names, put
+/// among the unread keys, is not spelled there, since the field it names
+/// is spelled in its place.
+///
+/// One lock always spells the same text, whatever order its entries were
+/// read or added in. Writing the file is the reader's (91; core.1).
+pub fn spell_lock(lock: &Lock) -> String {
+    let mut tables = Vec::with_capacity(lock.entries.len() + 1);
+    let own = lines(&lock.sections, &["kinds"]);
+    if !own.is_empty() {
+        tables.push(own);
+    }
+    for (identity, entry) in &lock.entries {
+        tables.push(format!(
+            "[[kinds]]\nkind = {}\nhash = {}\n{}",
+            Value::from(identity.to_string()),
+            Value::from(entry.hash.to_string()),
+            lines(&entry.sections, &ENTRY_FIELDS),
+        ));
+    }
+    tables.join("\n")
+}
+
+/// Every key of `table` but those `named`, one line each, `<key> =
+/// <value>`.
+fn lines(table: &Table, named: &[&str]) -> String {
+    unnamed(table, named)
+        .iter()
+        .map(|(name, value)| format!("{} = {value}\n", spelled_key(name)))
+        .collect()
+}
+
+/// A key as TOML spells it: bare where it is a name, else a basic string
+/// with every `"`, `\` and control character escaped.
+fn spelled_key(name: &str) -> String {
+    if fault(name).is_none() {
+        return name.to_owned();
+    }
+    let mut spelled = String::from('"');
+    for c in name.chars() {
+        match c {
+            '"' => spelled.push_str("\\\""),
+            '\\' => spelled.push_str("\\\\"),
+            c if c.is_control() => spelled.push_str(&format!("\\u{:04X}", u32::from(c))),
+            c => spelled.push(c),
+        }
+    }
+    spelled.push('"');
+    spelled
 }
 
 /// An entry's `kind`, a whole identity, or `None` where it is refused.

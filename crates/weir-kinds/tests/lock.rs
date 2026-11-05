@@ -1,9 +1,10 @@
 //! A lock reads into every identity it records with its hash, by
-//! identity, or is refused whole, naming every field that fails it (91,
-//! 93, C.4; core.30, core.45).
+//! identity, or is refused whole, naming every field that fails it, and
+//! spells in identity order as C.4 writes it, reading back as it was (91,
+//! 93, C.4 as amended at blueprints 361a599; core.30, core.45).
 
-use weir_kinds::toml::Value;
-use weir_kinds::{read_lock, ContentHash, Identity, Lock, Problem};
+use weir_kinds::toml::{Table, Value};
+use weir_kinds::{read_lock, spell_lock, ContentHash, Identity, Lock, LockEntry, Problem};
 
 const AN_IDENTITY_IS: &str = "an identity is `<source>/<name>@<version>`";
 
@@ -276,4 +277,135 @@ fn a_lock_with_no_array_of_tables() {
             "must be an array of tables, one per identity recorded"
         );
     }
+}
+
+// weir-kinds spells a lock that read-lock reads back.
+
+/// A lock recording `acme/review@2`, then `acme/lint@1`, as a reader adds
+/// them, with a top-level key the format does not name.
+fn review_then_lint() -> Lock {
+    let mut lock = Lock::default();
+    lock.sections
+        .insert("note".to_owned(), Value::from("pinned by hand"));
+    for (kind, digit) in [("acme/review@2", '2'), ("acme/lint@1", '1')] {
+        lock.entries.insert(
+            identity(kind),
+            LockEntry {
+                hash: hash(digit).parse().unwrap(),
+                sections: Table::new(),
+            },
+        );
+    }
+    lock
+}
+
+#[test]
+fn a_lock_spelled_and_read_back() {
+    let lock = review_then_lint();
+    let text = spell_lock(&lock);
+    assert_eq!(
+        text,
+        format!(
+            "note = \"pinned by hand\"\n\n[[kinds]]\nkind = \"acme/lint@1\"\nhash = \"{}\"\n\n[[kinds]]\nkind = \"acme/review@2\"\nhash = \"{}\"\n",
+            hash('1'),
+            hash('2')
+        )
+    );
+    let lint = text.find("acme/lint@1").unwrap();
+    let review = text.find("acme/review@2").unwrap();
+    assert!(lint < review, "{text}");
+    assert_eq!(read(&text), lock);
+}
+
+#[test]
+fn a_lock_read_in_any_order_spells_in_identity_order() {
+    let text = lock_of(&[
+        ("acme/review@10", &hash('1')),
+        ("acme/review@9", &hash('2')),
+    ]);
+    let spelled = spell_lock(&read(&text));
+    assert_eq!(
+        spelled,
+        lock_of(&[
+            ("acme/review@9", &hash('2')),
+            ("acme/review@10", &hash('1')),
+        ])
+    );
+}
+
+#[test]
+fn the_same_lock_spells_the_same() {
+    let lock = review_then_lint();
+    let once = spell_lock(&lock);
+    let twice = spell_lock(&lock);
+    let again = spell_lock(&read(&once));
+    assert_eq!(once.as_bytes(), twice.as_bytes());
+    assert_eq!(once.as_bytes(), again.as_bytes());
+}
+
+#[test]
+fn an_empty_lock_spells_as_no_text() {
+    assert_eq!(spell_lock(&Lock::default()), "");
+    assert_eq!(read(&spell_lock(&Lock::default())), Lock::default());
+}
+
+#[test]
+fn keys_the_format_does_not_name_spell_where_they_stood_and_read_back() {
+    let text = format!(
+        concat!(
+            "note = \"pinned by hand\"\n",
+            "pinned = 1979-05-27T07:32:00Z\n",
+            "\"a key.with dots\" = [1, 2.5, \"three\"]\n",
+            "\"\\\"quoted\\\\\\n\" = true\n",
+            "\n",
+            "[meta]\n",
+            "by = \"hand\"\n",
+            "deeper = {{ many = [{{ lines = \"one\\ntwo\" }}] }}\n",
+            "\n",
+            "[[kinds]]\n",
+            "source_url = \"https://example.com/review\"\n",
+            "hash = {:?}\n",
+            "kind = \"acme/review@1\"\n",
+            "\n",
+            "[kinds.origin]\n",
+            "at = \"acme\"\n",
+        ),
+        hash('1')
+    );
+    let lock = read(&text);
+    assert_eq!(lock.sections.len(), 5, "{lock:?}");
+    let entry = &lock.entries[&identity("acme/review@1")];
+    assert_eq!(entry.sections.len(), 2, "{entry:?}");
+
+    let spelled = spell_lock(&lock);
+    assert_eq!(read(&spelled), lock, "{spelled}");
+    assert_eq!(spell_lock(&read(&spelled)), spelled);
+    // The lock's own keys come before its first entry, and an entry's
+    // after its `kind` and `hash`.
+    let first_entry = spelled.find("[[kinds]]").unwrap();
+    for key in ["note", "pinned", "meta"] {
+        assert!(spelled.find(key).unwrap() < first_entry, "{key}: {spelled}");
+    }
+    let tail = &spelled[first_entry..];
+    assert!(
+        tail.starts_with(&format!(
+            "[[kinds]]\nkind = \"acme/review@1\"\nhash = \"{}\"\n",
+            hash('1')
+        )),
+        "{spelled}"
+    );
+    assert!(tail.contains("source_url = "), "{spelled}");
+    assert!(tail.contains("origin = "), "{spelled}");
+}
+
+#[test]
+fn a_key_the_format_names_among_the_unread_keys_is_not_spelled_there() {
+    let mut lock = review_then_lint();
+    lock.sections.insert("kinds".to_owned(), Value::from(1));
+    let entry = lock.entries.get_mut(&identity("acme/lint@1")).unwrap();
+    entry
+        .sections
+        .insert("hash".to_owned(), Value::from("sha256:00"));
+    entry.sections.insert("kind".to_owned(), Value::from(2));
+    assert_eq!(spell_lock(&lock), spell_lock(&review_then_lint()));
 }
