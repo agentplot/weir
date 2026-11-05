@@ -211,6 +211,17 @@ checks against one. Its `expect` holds the kind, as a declaration case's
 A lock's case gives the lock's text, and its `expect` holds `entries`,
 each `kind` and `hash`, or `refused`.
 
+A package's kind is written under `expect.kind`, beside `identity`,
+`hash` and `unread`, the declaration's sections beside its kind. A
+lock's mismatch names no field of the package, so a case names it at
+`lock`, its own field, the reason holding the kind and both hashes;
+naming it at the identity was the other way, a field that is no field.
+A lock that records no entry for the package refuses nothing, and the
+case reads as it would with no lock (91). A path of a case's files or
+links that is not plain within the package, or that lies beneath one of
+its links, fails the case, so laying a case out writes nothing outside
+its folder.
+
 The files are written in the case, so the pack gains no file type for
 treefmt to claim and no tracked link, which the pack's `build.rs`
 would follow. The kinds crate's test lays each package out twice, in
