@@ -1,8 +1,9 @@
 //! A lock of kinds: every identity it records with the content hash of
-//! its package, read by identity and spelled in identity order (91, 93,
-//! C.4; core.30, core.45).
+//! its package, read by identity, spelled in identity order, and a
+//! package checked against it (91, 93, C.4; S18; core.30, core.45).
 
 use std::collections::BTreeMap;
+use std::fmt;
 
 use toml::{Table, Value};
 
@@ -37,6 +38,59 @@ pub struct LockEntry {
     /// written (C.4).
     pub sections: Table,
 }
+
+impl Lock {
+    /// What the lock says of a package held at `identity` with the content
+    /// hash `hash`: recorded at that hash, or not recorded, or refused, where
+    /// the lock records the identity at another hash, naming the kind and
+    /// both hashes (91, S18; core.45). Whether a kind not recorded runs,
+    /// and which locks are checked, are the reader's (91; core.32).
+    pub fn check(&self, identity: &Identity, hash: &ContentHash) -> Result<Checked, Mismatch> {
+        match self.entries.get(identity) {
+            None => Ok(Checked::NotRecorded),
+            Some(entry) if entry.hash == *hash => Ok(Checked::Recorded),
+            Some(entry) => Err(Mismatch {
+                identity: identity.clone(),
+                locked: entry.hash.clone(),
+                given: hash.clone(),
+            }),
+        }
+    }
+}
+
+/// What a lock says of a package it does not refuse (91).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Checked {
+    /// The lock records the package's identity at its content hash.
+    Recorded,
+    /// The lock records no entry for the package's identity.
+    NotRecorded,
+}
+
+/// A package a lock refuses: the lock records its identity at a content
+/// hash other than the package's (91, S18; core.45). Its
+/// [`Display`](fmt::Display) names the kind and both hashes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Mismatch {
+    /// The identity the package is held at.
+    pub identity: Identity,
+    /// The content hash the lock records for it.
+    pub locked: ContentHash,
+    /// The package's own content hash.
+    pub given: ContentHash,
+}
+
+impl fmt::Display for Mismatch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "the lock records `{}` at `{}`, but its package's content hash is `{}`",
+            self.identity, self.locked, self.given
+        )
+    }
+}
+
+impl std::error::Error for Mismatch {}
 
 /// `read-lock` (93): every identity a lock's text records with its hash,
 /// or the lock refused whole, naming every field that fails it (91).

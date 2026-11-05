@@ -58,7 +58,7 @@ pub use elaboration::{read_elaboration, Elaboration, Ending};
 pub use hash::{ContentHash, HashRefusal};
 pub use identity::{Identity, NamedKind, LAUNCH, REPO};
 pub use kinds::{read_kinds, Declaration, Kind, KindAgents, KindSettings, Stage};
-pub use lock::{read_lock, spell_lock, Lock, LockEntry};
+pub use lock::{read_lock, spell_lock, Checked, Lock, LockEntry, Mismatch};
 pub use name::{check_name, NameRefusal};
 pub use package::{read_package, read_package_dir, Package};
 pub use refusal::{Problem, Refusal};

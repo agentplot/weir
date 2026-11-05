@@ -1,10 +1,14 @@
 //! A lock reads into every identity it records with its hash, by
 //! identity, or is refused whole, naming every field that fails it, and
-//! spells in identity order as C.4 writes it, reading back as it was (91,
-//! 93, C.4 as amended at blueprints 361a599; core.30, core.45).
+//! spells in identity order as C.4 writes it, reading back as it was; a
+//! package is checked against it (91, 93, C.4 as amended at blueprints
+//! 361a599; S18; core.30, core.45).
 
 use weir_kinds::toml::{Table, Value};
-use weir_kinds::{read_lock, spell_lock, ContentHash, Identity, Lock, LockEntry, Problem};
+use weir_kinds::{
+    read_lock, read_package, spell_lock, Checked, ContentHash, Identity, Lock, LockEntry, Mismatch,
+    Package, Problem,
+};
 
 const AN_IDENTITY_IS: &str = "an identity is `<source>/<name>@<version>`";
 
@@ -408,4 +412,73 @@ fn a_key_the_format_names_among_the_unread_keys_is_not_spelled_there() {
         .insert("hash".to_owned(), Value::from("sha256:00"));
     entry.sections.insert("kind".to_owned(), Value::from(2));
     assert_eq!(spell_lock(&lock), spell_lock(&review_then_lint()));
+}
+
+// A package is checked against a lock.
+
+const REVIEW: &str = r#"
+[kinds.review]
+version = 1
+
+[[kinds.review.stages]]
+name = "review"
+prompt = "prompts/review.md"
+deliverables = ["commits"]
+"#;
+
+/// `acme/review@1`'s package, its prompt `prompt`.
+fn review(prompt: &str) -> Package {
+    let files = [("kind.toml", REVIEW), ("prompts/review.md", prompt)];
+    read_package(files, &identity("acme/review@1")).unwrap()
+}
+
+/// A lock recording `package` at its hash, and nothing else.
+fn locking(package: &Package) -> Lock {
+    read(&lock_of(&[(
+        &package.identity.to_string(),
+        &package.hash.to_string(),
+    )]))
+}
+
+#[test]
+fn a_package_changed_by_a_byte_s18() {
+    let package = review("Review the change.\n");
+    let lock = locking(&package);
+    let changed = review("Review the changes\n");
+    assert_ne!(changed.hash, package.hash);
+
+    let mismatch = lock.check(&changed.identity, &changed.hash).unwrap_err();
+    assert_eq!(
+        mismatch,
+        Mismatch {
+            identity: identity("acme/review@1"),
+            locked: package.hash.clone(),
+            given: changed.hash.clone(),
+        }
+    );
+    assert_eq!(
+        mismatch.to_string(),
+        format!(
+            "the lock records `acme/review@1` at `{}`, but its package's content hash is `{}`",
+            package.hash, changed.hash
+        )
+    );
+}
+
+#[test]
+fn recorded_and_not_recorded() {
+    let package = review("Review the change.\n");
+    assert_eq!(
+        locking(&package).check(&package.identity, &package.hash),
+        Ok(Checked::Recorded)
+    );
+    let other = read(&lock_of(&[("acme/review@2", &package.hash.to_string())]));
+    assert_eq!(
+        other.check(&package.identity, &package.hash),
+        Ok(Checked::NotRecorded)
+    );
+    assert_eq!(
+        Lock::default().check(&package.identity, &package.hash),
+        Ok(Checked::NotRecorded)
+    );
 }
