@@ -33,9 +33,10 @@ const DECLARING_FIELDS: [&str; 6] = [
 ];
 
 /// The fields of a stage the format names; every other key is a section.
-const STAGE_FIELDS: [&str; 11] = [
+const STAGE_FIELDS: [&str; 12] = [
     "name",
     "prompt",
+    "standing",
     "deliverables",
     "conversation",
     "agents",
@@ -101,6 +102,10 @@ pub struct Stage {
     /// Its prompt as written; resolving it against the declaration's file
     /// is the reader's (53, C.4).
     pub prompt: String,
+    /// The path of its standing instructions as written; `None` when left
+    /// out. Resolving it is the reader's, as a prompt's is, and how the
+    /// text is sent is its own (53, 58, C.4; core.32).
+    pub standing: Option<String>,
     /// Its one deliverable, or that it is a conversation (51, 54).
     pub end: End,
     /// Its agents, each a table of its settings as written, since an
@@ -352,6 +357,14 @@ fn read_stages(kind: &Table, at: &str, problems: &mut Problems) -> Vec<Stage> {
 fn read_stage(stage: &Table, at: &str, problems: &mut Problems) -> Stage {
     let name = required(stage, "name", at, problems);
     let prompt = required(stage, "prompt", at, problems);
+    let standing = match stage.get("standing") {
+        None => None,
+        Some(Value::String(path)) if !path.is_empty() => Some(path.clone()),
+        Some(_) => {
+            problems.refuse(&field(at, "standing"), "must be a non-empty string");
+            None
+        }
+    };
     let before = problems.len();
     let end = read_end(stage, at, problems);
     let end_read = problems.len() == before;
@@ -424,6 +437,7 @@ fn read_stage(stage: &Table, at: &str, problems: &mut Problems) -> Stage {
     Stage {
         name,
         prompt,
+        standing,
         end,
         agents,
         makes,

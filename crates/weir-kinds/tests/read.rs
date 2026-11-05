@@ -102,6 +102,21 @@ fn a_stage_that_names_nothing_it_makes_makes_nothing() {
     assert!(code.makes.is_empty());
 }
 
+// A stage reads its standing instructions' path as written.
+
+#[test]
+fn a_stage_reads_its_standing_instructions() {
+    let bump = &read("bump.toml").unwrap().kinds["bump"];
+    assert_eq!(
+        bump.stages[0].standing.as_deref(),
+        Some("prompts/bump-code-standing.md")
+    );
+    assert!(bump.stages[0].sections.is_empty());
+    assert_eq!(bump.stages[1].standing, None);
+    let code = &read("stages-only.toml").unwrap().kinds["tidy"].stages[0];
+    assert_eq!(code.standing, None);
+}
+
 // A stage's quiet time is one whole number of s, m or h.
 
 #[test]

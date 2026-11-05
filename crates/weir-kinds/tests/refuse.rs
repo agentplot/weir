@@ -125,6 +125,24 @@ fn every_other_shape_the_format_names_is_checked() {
 }
 
 #[test]
+fn standing_instructions_of_the_wrong_shape() {
+    let refusal = read("standing-shapes.toml").unwrap_err();
+    assert_eq!(
+        refusal.problems,
+        [
+            Problem {
+                field: "kinds.bump.stages[0].standing".to_owned(),
+                reason: "must be a non-empty string".to_owned(),
+            },
+            Problem {
+                field: "kinds.bump.stages[1].standing".to_owned(),
+                reason: "must be a non-empty string".to_owned(),
+            },
+        ]
+    );
+}
+
+#[test]
 fn a_send_back_naming_no_stage_of_its_kind_is_refused() {
     let refusal = read("send-back-to-nowhere.toml").unwrap_err();
     assert_eq!(

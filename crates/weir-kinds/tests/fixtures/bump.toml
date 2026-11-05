@@ -8,6 +8,7 @@ lands = true
 [[kinds.bump.stages]]
 name = "code"
 prompt = "prompts/bump-code.md"
+standing = "prompts/bump-code-standing.md"
 deliverables = ["commits"]
 agents = [{ program = "claude", model = "opus" }]
 quiet = "45m"
