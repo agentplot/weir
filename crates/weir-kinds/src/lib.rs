@@ -24,6 +24,7 @@
 mod deliverable;
 mod elaboration;
 mod fields;
+mod hash;
 mod identity;
 mod kinds;
 mod name;
@@ -33,6 +34,7 @@ mod repeat;
 
 pub use deliverable::{Deliverable, End};
 pub use elaboration::{read_elaboration, Elaboration, Ending};
+pub use hash::{ContentHash, HashRefusal};
 pub use identity::{Identity, NamedKind, LAUNCH, REPO};
 pub use kinds::{read_kinds, Declaration, Kind, KindAgents, KindSettings, Stage};
 pub use name::{check_name, NameRefusal};
