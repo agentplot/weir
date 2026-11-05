@@ -9,10 +9,10 @@ decision-makers:
 
 # Record architecture decisions
 
-Status: accepted by the user on 2026-10-26, on their card.
+Status: accepted by the user on 2026-10-26, on their card. Its names follow record 0003 since 2026-11-04.
 
 Deciders: the user, in weir's statement (plan step F1, ruled through 2026-10-26).
-Sources: `agentplot/blueprints:design/weir/requirements.md` at 955c25a; `agentplot/blueprints:design/capture/design.md` and `plan.md`; `agentplot/blueprints:design/requirements-style.md`; sluice's, tailrace's and flume's `docs/adr/0001` as the model.
+Sources: `agentplot/blueprints:design/weir/requirements.md` at 955c25a; `agentplot/blueprints:design/capture/design.md` and `plan.md`; `agentplot/blueprints:design/requirements-style.md`; sluice's, timber's and flume's `docs/adr/0001` as the model.
 
 ## Context and problem statement
 
@@ -26,7 +26,7 @@ weir starts with a statement of invariants and no code. Seven crates will be bui
 
 ## Decision outcome
 
-Option 2, as sluice, tailrace and flume keep theirs. The statement is the narrative and is never restated here; `docs/architecture/core.md` holds the rules a reviewer points at, each with the clause it enforces and what it rules out; `docs/adr/` holds one record per decision a rule rests on, proposed until the user's yes and named by the rules that rest on it. A change that bears on a clause cites it by number, and a clause that no longer holds is changed in the statement first (core.37). Nothing commercial appears in this repository (core.38).
+Option 2, as sluice, timber and flume keep theirs. The statement is the narrative and is never restated here; `docs/architecture/core.md` holds the rules a reviewer points at, each with the clause it enforces and what it rules out; `docs/adr/` holds one record per decision a rule rests on, proposed until the user's yes and named by the rules that rest on it. A change that bears on a clause cites it by number, and a clause that no longer holds is changed in the statement first (core.37). Nothing commercial appears in this repository (core.38).
 
 ### Consequences
 
