@@ -1,0 +1,27 @@
+# The same package with its prompt moved inside it (S17): it reads, and its
+# content hash is the same laid out in two folders at different paths
+# (89, 90, 92).
+satisfies = [89, 90, 92]
+
+[package]
+held = "acme/review@1"
+
+[package.files]
+"kind.toml" = """
+[kinds.review]
+version = 1
+
+[[kinds.review.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+"""
+"prompts/code.md" = "Make the change the brief asks for.\n"
+
+[expect]
+identity = "acme/review@1"
+hash = "sha256:65ae37d7b60f685c6fd73a25de6d879d21db73083e19e84de8aeff3f634294ab"
+
+[expect.kind]
+version = 1
+stages = [{ name = "code", end = "commits" }]

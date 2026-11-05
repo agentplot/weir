@@ -10,6 +10,10 @@ fn the_statements_sections() -> Vec<(&'static str, Vec<Clause>)> {
     let range = |from: u32, to: u32| (from..=to).map(Clause::number).collect::<Vec<_>>();
     let mut b2 = vec![Clause::number(75), Clause::parse("75a").unwrap()];
     b2.extend(range(76, 77));
+    let mut a8 = range(51, 58);
+    a8.extend(range(88, 91));
+    let mut b4 = range(81, 82);
+    b4.extend(range(92, 93));
     vec![
         ("A.1", range(1, 12)),
         ("A.2", range(13, 24)),
@@ -18,7 +22,7 @@ fn the_statements_sections() -> Vec<(&'static str, Vec<Clause>)> {
         ("A.5", range(34, 36)),
         ("A.6", range(37, 43)),
         ("A.7", range(44, 50)),
-        ("A.8", range(51, 58)),
+        ("A.8", a8),
         ("A.9", range(59, 60)),
         ("A.10", range(61, 64)),
         ("A.11", range(65, 68)),
@@ -26,7 +30,7 @@ fn the_statements_sections() -> Vec<(&'static str, Vec<Clause>)> {
         ("B.1", range(72, 74)),
         ("B.2", b2),
         ("B.3", range(78, 80)),
-        ("B.4", range(81, 82)),
+        ("B.4", b4),
         ("B.5", range(83, 85)),
         ("B.6", range(86, 87)),
     ]
@@ -57,7 +61,7 @@ fn the_index_holds_every_clause_under_its_section() {
         .iter()
         .flat_map(|section| section.clauses.clone())
         .collect();
-    assert_eq!(all.len(), 88, "1 to 87 and 75a, each once");
+    assert_eq!(all.len(), 94, "1 to 93 and 75a, each once");
 }
 
 #[test]
@@ -65,6 +69,7 @@ fn the_check_counts_a1_to_a10_and_71() {
     let counted = the_packs_index().counted().unwrap();
     let mut expected: Vec<Clause> = (1..=64).map(Clause::number).collect();
     expected.push(Clause::number(71));
+    expected.extend((88..=91).map(Clause::number));
     assert_eq!(counted.into_iter().collect::<Vec<_>>(), expected);
 }
 

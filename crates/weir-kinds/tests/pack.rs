@@ -609,6 +609,13 @@ fn declaration_expect(case: &Case) -> &Expect {
     }
 }
 
+fn package_expect(case: &Case) -> &ExpectPackage {
+    match &case.form {
+        Form::Package { expect, .. } => expect,
+        other => panic!("a package's case, not {other:?}"),
+    }
+}
+
 #[test]
 fn every_kinds_case_is_answered_as_it_says() {
     let cases = cases();
@@ -621,12 +628,12 @@ fn every_kinds_case_is_answered_as_it_says() {
 }
 
 #[test]
-fn the_cases_cite_each_of_51_to_58() {
+fn the_cases_cite_each_of_51_to_58_and_88_to_93() {
     let cited: BTreeSet<i64> = cases()
         .iter()
         .flat_map(|(_, case)| case.satisfies.iter().filter_map(toml::Value::as_integer))
         .collect();
-    for clause in 51..=58 {
+    for clause in (51..=58).chain(88..=93) {
         assert!(cited.contains(&clause), "no kinds case cites {clause}");
     }
 }
@@ -668,6 +675,63 @@ fn the_cases_of_s10_s11_and_s12() {
             "{name}"
         );
     }
+}
+
+#[test]
+fn flumes_change_1_and_2_each_a_package_of_its_own() {
+    let one = case("flumes-change-1-as-a-package");
+    let two = case("flumes-change-2-as-a-package");
+    let (one, two) = (package_expect(&one), package_expect(&two));
+    assert_eq!(one.identity.as_deref(), Some("flume/change@1"));
+    assert_eq!(two.identity.as_deref(), Some("flume/change@2"));
+    assert_ne!(one.hash, two.hash);
+    let repeats = |expect: &ExpectPackage| -> Vec<Option<String>> {
+        let kind = expect.kind.as_ref().unwrap();
+        kind.stages
+            .iter()
+            .map(|stage| stage.repeat.clone())
+            .collect()
+    };
+    assert_eq!(repeats(one), [None, None, None]);
+    assert_eq!(
+        repeats(two),
+        [None, Some("per-task-group".to_owned()), None]
+    );
+}
+
+#[test]
+fn the_cases_of_s17_and_s18() {
+    let outside = case("a-prompt-outside-its-package");
+    let refused = package_expect(&outside).refused.as_ref().unwrap();
+    assert_eq!(refused.len(), 1);
+    assert_eq!(refused[0].field, "kinds.review.stages[0].prompt");
+
+    let inside = case("the-prompt-inside-its-package");
+    let hash = package_expect(&inside).hash.clone().unwrap();
+
+    let linked = case("a-prompt-that-is-a-link");
+    let Form::Package { package, .. } = &linked.form else {
+        panic!("a package's case");
+    };
+    assert_eq!(
+        package.links.keys().collect::<Vec<_>>(),
+        ["prompts/code.md"]
+    );
+    let refused = package_expect(&linked).refused.as_ref().unwrap();
+    assert_eq!(refused[0].field, "prompts/code.md");
+
+    let changed = case("a-package-changed-by-a-byte");
+    let Form::Package { package, .. } = &changed.form else {
+        panic!("a package's case");
+    };
+    assert!(package.lock.as_deref().unwrap().contains(&hash));
+    let refused = package_expect(&changed).refused.as_ref().unwrap();
+    assert_eq!(refused.len(), 1);
+    assert_eq!(refused[0].field, LOCK);
+    let reason = &refused[0].reason_holds;
+    assert!(reason.contains("`acme/review@1`"), "{reason}");
+    assert!(reason.contains(&hash), "{reason}");
+    assert_eq!(reason.matches("sha256:").count(), 2, "{reason}");
 }
 
 #[test]

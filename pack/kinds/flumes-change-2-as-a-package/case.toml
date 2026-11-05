@@ -1,0 +1,45 @@
+# flume reads its own kinds, one package per version (S10): change@2 beside
+# change@1, its code stage repeating per task group, read as a package of
+# its own held at flume/change@2, with a content hash of its own (88, 89,
+# 90, 92).
+satisfies = [88, 89, 90, 92]
+
+[package]
+held = "flume/change@2"
+
+[package.files]
+"kind.toml" = """
+[kinds.change]
+version = 2
+
+[[kinds.change.stages]]
+name = "construct"
+prompt = "prompts/change-construct.md"
+deliverables = ["change"]
+
+[[kinds.change.stages]]
+name = "code"
+prompt = "prompts/change-code.md"
+deliverables = ["tasks"]
+repeat = "per-task-group"
+
+[[kinds.change.stages]]
+name = "verify"
+prompt = "prompts/change-verify.md"
+deliverables = ["archived"]
+"""
+"prompts/change-construct.md" = "Write the change the brief asks for.\n"
+"prompts/change-code.md" = "Build the one task group you are given and tick its tasks.\n"
+"prompts/change-verify.md" = "Verify the change and archive it.\n"
+
+[expect]
+identity = "flume/change@2"
+hash = "sha256:03a56a241c4db9adb5ca357d190dd049a361d453f89915503e1c411fc08c0ce3"
+
+[expect.kind]
+version = 2
+stages = [
+  { name = "construct", end = "change" },
+  { name = "code", end = "tasks", repeat = "per-task-group" },
+  { name = "verify", end = "archived" },
+]

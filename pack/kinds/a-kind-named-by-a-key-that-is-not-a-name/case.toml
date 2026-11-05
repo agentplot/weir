@@ -1,0 +1,14 @@
+# A kind's name is one or more ASCII letters, digits, _ and -, so every
+# kind read has an identity: a kind under the key "a/b" is refused naming
+# it (57, 88; record 0004).
+satisfies = [57, 88]
+declaration = """
+[[kinds."a/b".stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+"""
+
+[[expect.refused]]
+field = 'kinds."a/b"'
+reason_holds = "a kind's name is one or more ASCII letters, digits, `_` and `-`"

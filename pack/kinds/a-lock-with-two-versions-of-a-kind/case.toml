@@ -1,0 +1,19 @@
+# One source holds two versions of a name, each in a package of its own,
+# and a lock records both, each with its content hash: read-lock gives
+# both identities in order (88, 91, 93).
+satisfies = [88, 91, 93]
+lock = """
+[[kinds]]
+kind = "acme/review@2"
+hash = "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+
+[[kinds]]
+kind = "acme/review@1"
+hash = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+"""
+
+[expect]
+entries = [
+  { kind = "acme/review@1", hash = "sha256:1111111111111111111111111111111111111111111111111111111111111111" },
+  { kind = "acme/review@2", hash = "sha256:2222222222222222222222222222222222222222222222222222222222222222" },
+]
