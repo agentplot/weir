@@ -1,0 +1,21 @@
+# A lock holds an identity at most once: one that records acme/review@1 in
+# its first and its third entry is refused naming the third, with the
+# first (91, 93).
+satisfies = [91, 93]
+lock = """
+[[kinds]]
+kind = "acme/review@1"
+hash = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+
+[[kinds]]
+kind = "acme/lint@1"
+hash = "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+
+[[kinds]]
+kind = "acme/review@1"
+hash = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+"""
+
+[[expect.refused]]
+field = "kinds[2].kind"
+reason_holds = "is recorded at kinds[0] too, and a lock records an identity at most once"

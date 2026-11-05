@@ -1,0 +1,13 @@
+# Standing instructions of the wrong shape: an empty path, and a number
+# (53, 57, C.4).
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/bump-code.md"
+standing = ""
+deliverables = ["commits"]
+
+[[kinds.bump.stages]]
+name = "review"
+prompt = "prompts/bump-review.md"
+standing = 3
+conversation = true

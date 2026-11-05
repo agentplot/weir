@@ -1,0 +1,26 @@
+# The same package with its prompt made a symbolic link to another file
+# inside it (S17): refused naming the link's file, and the prompt it is
+# not named again (89, 92; record 0004).
+satisfies = [89, 92]
+
+[package]
+held = "acme/review@1"
+
+[package.files]
+"kind.toml" = """
+[kinds.review]
+version = 1
+
+[[kinds.review.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+"""
+"prompts/other.md" = "Make the change the brief asks for.\n"
+
+[package.links]
+"prompts/code.md" = "other.md"
+
+[[expect.refused]]
+field = "prompts/code.md"
+reason_holds = "is a symbolic link, and a package holds none"

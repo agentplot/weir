@@ -4,7 +4,7 @@
 # and a clause it adds, removes or renumbers is changed here in the change
 # that follows it.
 statement = "agentplot/blueprints:design/weir/requirements.md"
-commit = "9e537bb"
+commit = "a11f6d5"
 
 [[section]]
 name = "A.1"
@@ -36,7 +36,7 @@ clauses = [44, 45, 46, 47, 48, 49, 50]
 
 [[section]]
 name = "A.8"
-clauses = [51, 52, 53, 54, 55, 56, 57, 58]
+clauses = [51, 52, 53, 54, 55, 56, 57, 58, 88, 89, 90, 91]
 
 [[section]]
 name = "A.9"
@@ -68,7 +68,7 @@ clauses = [78, 79, 80]
 
 [[section]]
 name = "B.4"
-clauses = [81, 82]
+clauses = [81, 82, 92, 93]
 
 [[section]]
 name = "B.5"

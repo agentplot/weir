@@ -125,6 +125,24 @@ fn every_other_shape_the_format_names_is_checked() {
 }
 
 #[test]
+fn standing_instructions_of_the_wrong_shape() {
+    let refusal = read("standing-shapes.toml").unwrap_err();
+    assert_eq!(
+        refusal.problems,
+        [
+            Problem {
+                field: "kinds.bump.stages[0].standing".to_owned(),
+                reason: "must be a non-empty string".to_owned(),
+            },
+            Problem {
+                field: "kinds.bump.stages[1].standing".to_owned(),
+                reason: "must be a non-empty string".to_owned(),
+            },
+        ]
+    );
+}
+
+#[test]
 fn a_send_back_naming_no_stage_of_its_kind_is_refused() {
     let refusal = read("send-back-to-nowhere.toml").unwrap_err();
     assert_eq!(
@@ -168,9 +186,11 @@ fn text_that_is_not_toml_is_refused() {
 
 #[test]
 fn a_key_a_path_cannot_hold_bare_is_quoted() {
-    let refusal = read_kinds("[kinds.\"a.b\"]\nversion = 0\n").unwrap_err();
+    // A kind's key is a name (core.42); a stage's key under its kind's
+    // `agents` need not be.
+    let refusal = read_kinds("[kinds.bump.agents.stages]\n\"a.b\" = 3\n").unwrap_err();
     let fields: Vec<_> = refusal.problems.iter().map(|p| p.field.as_str()).collect();
-    assert_eq!(fields, ["kinds.\"a.b\".version", "kinds.\"a.b\".stages"]);
+    assert_eq!(fields, ["kinds.bump.agents.stages.\"a.b\""]);
 }
 
 #[test]

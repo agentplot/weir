@@ -1,0 +1,29 @@
+# A lock records acme/review@1 at the hash of the-prompt-inside-its-package,
+# and the package held at that identity has its prompt changed by a byte
+# (S18): its content hash differs, and the lock refuses it naming the kind
+# and both hashes (90, 91, 92).
+satisfies = [90, 91, 92]
+
+[package]
+held = "acme/review@1"
+lock = """
+[[kinds]]
+kind = "acme/review@1"
+hash = "sha256:65ae37d7b60f685c6fd73a25de6d879d21db73083e19e84de8aeff3f634294ab"
+"""
+
+[package.files]
+"kind.toml" = """
+[kinds.review]
+version = 1
+
+[[kinds.review.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+"""
+"prompts/code.md" = "Make the change the brief asks for!\n"
+
+[[expect.refused]]
+field = "lock"
+reason_holds = "the lock records `acme/review@1` at `sha256:65ae37d7b60f685c6fd73a25de6d879d21db73083e19e84de8aeff3f634294ab`, but its package's content hash is `sha256:6eda503964caec810e670a3454bf210b3cb6831d5d157ab48541cca7ab4d0587`"

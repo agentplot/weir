@@ -1,0 +1,23 @@
+# A package declaring review at version 1, held at acme/review@2: refused
+# naming the kind's version, with both the identity it was held at and its
+# declaration's (88, 89, 92).
+satisfies = [88, 89, 92]
+
+[package]
+held = "acme/review@2"
+
+[package.files]
+"kind.toml" = """
+[kinds.review]
+version = 1
+
+[[kinds.review.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+"""
+"prompts/code.md" = "Make the change the brief asks for.\n"
+
+[[expect.refused]]
+field = "kinds.review.version"
+reason_holds = "makes the package `acme/review@1`, but it is held at `acme/review@2`"

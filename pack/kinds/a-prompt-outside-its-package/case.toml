@@ -1,0 +1,21 @@
+# A package's kind.toml names its prompt ../prompts/code.md (S17): a part
+# outside the package, refused naming the stage's prompt (89, 92).
+satisfies = [89, 92]
+
+[package]
+held = "acme/review@1"
+
+[package.files]
+"kind.toml" = """
+[kinds.review]
+version = 1
+
+[[kinds.review.stages]]
+name = "code"
+prompt = "../prompts/code.md"
+deliverables = ["commits"]
+"""
+
+[[expect.refused]]
+field = "kinds.review.stages[0].prompt"
+reason_holds = "`../prompts/code.md` holds a `..` segment, and nothing a package names lies outside it"

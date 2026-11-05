@@ -3,13 +3,17 @@ name = "weir-kinds"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "The kind format, read and checked: a declaration's kinds, their stages and deliverables, and an elaboration kind's section."
+description = "The kind format, read and checked: a declaration's kinds, their stages and deliverables, and an elaboration kind's section; a kind's identity, its package and content hash, and a lock of kinds."
 
 [dependencies]
 toml.workspace = true
+# weir's one sha256, through which a package's content hash is computed
+# (90, C.4; core.44).
+weir-capture = { path = "../weir-capture" }
 
 [dev-dependencies]
 serde.workspace = true
+tempfile.workspace = true
 
 [lib]
 doctest = false

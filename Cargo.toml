@@ -10,7 +10,8 @@
 #   crates/weir-branch     the shared-branch write protocol, its lock and
 #                          the pack's protocol cases: landed
 #   crates/weir-kinds      the kind format, with an elaboration kind's
-#                          section: landed
+#                          section, a kind's identity, its package and
+#                          content hash, and a lock of kinds: landed
 #   crates/weir-cadence    five-field cron, caught up once: landed
 #   crates/weir-pack       the conformance pack: its cases built in, its
 #                          check, the adapter and meeting checks and the

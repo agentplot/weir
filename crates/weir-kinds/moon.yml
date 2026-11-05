@@ -1,15 +1,18 @@
 $schema: 'https://moonrepo.dev/schemas/project.json'
 
 # The kind format's reader: its format, lint, typecheck and test, one task
-# per check (core.39). Each names every file it reads, the toolchain's
-# and the pack's kinds cases among them, so a replayed pass stands for a
-# run on the same inputs (kit:testing.3).
+# per check (core.39). It builds on weir-capture, whose sha256 a
+# package's content hash is computed through (core.44). Each task names
+# every file it reads, weir-capture's, the toolchain's and the pack's
+# kinds cases among them, so a replayed pass stands for a run on the same
+# inputs (kit:testing.3).
 language: 'rust'
+dependsOn: [capture]
 
 tasks:
   format:
     command: 'cargo fmt -p weir-kinds --check'
-    inputs: &inputs ['/crates/weir-kinds/**/*', '/pack/kinds/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    inputs: &inputs ['/crates/weir-kinds/**/*', '/crates/weir-capture/**/*', '/pack/kinds/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
   lint:

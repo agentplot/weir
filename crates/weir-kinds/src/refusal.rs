@@ -6,7 +6,9 @@ use std::fmt;
 pub struct Problem {
     /// The field's path, stages indexed from 0:
     /// `kinds.bump.stages[1].prompt`. For text that is not TOML, the line
-    /// and column it fails at: `line 3, column 7`.
+    /// and column it fails at: `line 3, column 7`. For a package, a file
+    /// of it is named by its path within the package, `prompts/code.md`,
+    /// and a folder that could not be read by its path as given (92).
     pub field: String,
     /// Why the field fails.
     pub reason: String,
@@ -51,6 +53,12 @@ impl Problems {
             field: field.to_owned(),
             reason: reason.into(),
         });
+    }
+
+    /// Every problem of a refusal made by another read, as this read's
+    /// own, a package's `kind.toml` refused by `read-kinds` among them.
+    pub(crate) fn absorb(&mut self, refusal: Refusal) {
+        self.0.extend(refusal.problems);
     }
 
     /// How many problems the read has gathered so far.
