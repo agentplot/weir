@@ -12,7 +12,7 @@ const TOOLS: [&str; 8] = [
     "crew",
     "headwater",
     "eddy",
-    "flywheel",
+    "boomdrive",
     "swancloud",
 ];
 
@@ -55,6 +55,6 @@ fn only_the_signals_folder_import_names_a_tool() {
 #[test]
 fn a_tool_is_named_as_a_whole_word() {
     assert_eq!(named("the reader of crew's folders"), ["crew"]);
-    assert_eq!(named("Flywheel later"), ["flywheel"]);
+    assert_eq!(named("Boomdrive later"), ["boomdrive"]);
     assert!(named("a screw, a crewel and soundings").is_empty());
 }

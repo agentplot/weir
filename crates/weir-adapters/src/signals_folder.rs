@@ -4,14 +4,14 @@
 //! host's import operation writes its lines (64, 75a). This is the one
 //! module of the crate that names crew (core.2).
 //!
-//! A body is a root holding `signals/`: a partition's flywheel branch, or a
+//! A body is a root holding `signals/`: a partition's drive branch, or a
 //! blueprints repository's meeting corpus. Each folder under `signals/`
 //! holding a `capture.md` is one capture, read in the order of the folders'
 //! names; anything else there is passed over. Its moves are those of one
-//! `moves.rec`: the file the caller names, the flywheel branch's for a
-//! blueprints corpus, or else the one at the root, where a flywheel branch
+//! `moves.rec`: the file the caller names, the drive branch's for a
+//! blueprints corpus, or else the one at the root, where a drive branch
 //! keeps them; a `signals/moves.rec` is never read, crew having carried its
-//! moves onto the flywheel branch (C.6). The reading is a function of
+//! moves onto the drive branch (C.6). The reading is a function of
 //! the body's files alone, sorted at every step, so one body read twice
 //! gives the same lines (38; S8; core.14), and no file a pointer names is
 //! ever opened (37; core.11, core.25).
@@ -39,7 +39,7 @@ pub const BODY: &str = "crew-folders";
 pub const HELP: &str = "print one import line per capture of crew's signals folders under \
                         <root>/signals/, with its pointer, signals and moves, for a host's \
                         import operation to write; the moves are those of <root>/moves.rec, \
-                        or of the moves.rec <file> names, a flywheel branch's for a \
+                        or of the moves.rec <file> names, a drive branch's for a \
                         blueprints corpus";
 
 /// What a body's reading gives: one line per capture read whole, each
@@ -576,7 +576,7 @@ Claude Code does not fetch the tools again.
 ";
 
     const MOVES_DESCRIPTOR: &str = "\
-# The flywheel's curation moves: one per signal, appended through crew and
+# The drive's curation moves: one per signal, appended through crew and
 # never merged.
 
 %rec: Move
@@ -621,9 +621,9 @@ Claude Code does not fetch the tools again.
             self
         }
 
-        /// A flywheel branch's tree: the release and the session capture,
+        /// A drive branch's tree: the release and the session capture,
         /// crew's README beside them and the moves at the root.
-        fn flywheel() -> Body {
+        fn drive() -> Body {
             let body = Body::new();
             body.capture(
                 RELEASE,
@@ -668,8 +668,8 @@ Claude Code does not fetch the tools again.
     }
 
     #[test]
-    fn a_flywheel_branchs_tree() {
-        let reading = Body::flywheel().read();
+    fn a_drive_branchs_tree() {
+        let reading = Body::drive().read();
         assert_eq!(
             keys(&reading),
             ["release/pendingyou/0.32.0", SESSION],
@@ -702,7 +702,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn a_folder_with_no_capture_md_beside_one_that_has_one() {
-        let body = Body::flywheel();
+        let body = Body::drive();
         body.file("signals/2026-10-07-half-written/01-a.md", SESSION_SIGNAL)
             .file("signals/loose.md", "not a capture\n");
         let reading = body.read();
@@ -719,7 +719,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn one_capture_of_three_not_read() {
-        let body = Body::flywheel();
+        let body = Body::drive();
         let no_source = RELEASE_CAPTURE
             .replace("source: release\n", "")
             .replace(RELEASE, "2026-10-08-x");
@@ -742,7 +742,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn a_release_capture() {
-        let reading = Body::flywheel().read();
+        let reading = Body::drive().read();
         let release = &reading.lines[0].capture;
         assert_eq!(release.key.as_str(), "release/pendingyou/0.32.0");
         assert_eq!(release.source, "release");
@@ -750,7 +750,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn a_sessions_capture() {
-        let reading = Body::flywheel().read();
+        let reading = Body::drive().read();
         let session = &reading.lines[1].capture;
         assert_eq!(session.key.as_str(), SESSION);
         assert_eq!(session.source, "crew-session");
@@ -783,7 +783,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn a_release_captures_fields() {
-        let reading = Body::flywheel().read();
+        let reading = Body::drive().read();
         let release = &reading.lines[0].capture;
         assert_eq!(release.event_at, "2026-10-08T18:53:39Z");
         assert_eq!(
@@ -843,7 +843,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn a_pointer_kept() {
-        let body = Body::flywheel();
+        let body = Body::drive();
         // A pointer at a file here that cannot be read: the reading never
         // opens it.
         let raw = body.root().join("raw.jsonl");
@@ -934,7 +934,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn a_signal_of_no_nature() {
-        let body = Body::flywheel();
+        let body = Body::drive();
         body.file(
             &format!("signals/{SESSION}/02-finding.md"),
             &signal("finding", "", SAID),
@@ -982,7 +982,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn a_sessions_signal() {
-        let reading = Body::flywheel().read();
+        let reading = Body::drive().read();
         assert_eq!(
             reading.lines[1].signals,
             [ImportLineSignal {
@@ -1000,7 +1000,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn a_releases_signal() {
-        let reading = Body::flywheel().read();
+        let reading = Body::drive().read();
         assert_eq!(
             reading.lines[0].signals,
             [ImportLineSignal {
@@ -1061,7 +1061,7 @@ Claude Code does not fetch the tools again.
 
     /// A capture of two signals, `01-a` and `02-b`, beside the release.
     fn two_signals() -> Body {
-        let body = Body::flywheel();
+        let body = Body::drive();
         body.capture(
             "2026-10-05-planner-0a1b2c3d",
             &SESSION_CAPTURE.replace(SESSION, "2026-10-05-planner-0a1b2c3d"),
@@ -1452,7 +1452,7 @@ Claude Code does not fetch the tools again.
         body
     }
 
-    /// A flywheel branch's `moves.rec`, holding `records`, in a folder of
+    /// A drive branch's `moves.rec`, holding `records`, in a folder of
     /// its own.
     fn branch_moves(records: &[String]) -> (tempfile::TempDir, PathBuf) {
         let dir = tempfile::tempdir().unwrap();
@@ -1462,7 +1462,7 @@ Claude Code does not fetch the tools again.
     }
 
     #[test]
-    fn a_blueprints_repositorys_corpus_with_the_flywheel_branchs_moves() {
+    fn a_blueprints_repositorys_corpus_with_the_drive_branchs_moves() {
         let body = corpus();
         let (_branch, moves) = branch_moves(&[move_record(
             &format!("{STANDUP}/01-a"),
@@ -1508,7 +1508,7 @@ Claude Code does not fetch the tools again.
     }
 
     #[test]
-    fn the_flywheel_branchs_own_moves_read_with_a_corpus() {
+    fn the_drive_branchs_own_moves_read_with_a_corpus() {
         let body = corpus();
         let (_branch, moves) = branch_moves(&[
             move_record(
@@ -1542,7 +1542,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn a_moves_file_named_that_cannot_be_read() {
-        let body = Body::flywheel();
+        let body = Body::drive();
         let dir = tempfile::tempdir().unwrap();
         let missing = dir.path().join("moves.rec");
         let why = read(&body.root(), Some(&missing)).unwrap_err();
@@ -1564,7 +1564,7 @@ Claude Code does not fetch the tools again.
 
     #[test]
     fn a_moves_file_that_cannot_be_read() {
-        let body = Body::flywheel();
+        let body = Body::drive();
         body.file("moves.rec", "not a record\n");
         let why = read(&body.root(), None).unwrap_err();
         assert!(why.starts_with("moves.rec cannot be read"), "{why}");

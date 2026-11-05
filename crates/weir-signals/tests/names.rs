@@ -13,7 +13,7 @@ const RULED_OUT: [&str; 8] = [
     "crew",
     "headwater",
     "eddy",
-    "flywheel",
+    "boomdrive",
     "swancloud",
 ];
 

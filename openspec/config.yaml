@@ -5,7 +5,7 @@ context: |
   workspace of public crates: the capture contract, the record formats,
   the shared-branch write protocol, the kind format, cadence, the
   built-in adapters and the conformance pack. millpond, headwater, eddy,
-  sounding and flume build on it, and Flywheel later. No crate keeps
+  sounding and flume build on it, and Boomdrive later. No crate keeps
   state or knows which tool or host uses it. Cargo.toml lists the
   planned crates; each joins `members` as it lands.
 

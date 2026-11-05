@@ -183,7 +183,7 @@ fn corpus() -> tempfile::TempDir {
 }
 
 #[test]
-fn a_corpus_imported_with_the_flywheel_branchs_moves() {
+fn a_corpus_imported_with_the_drive_branchs_moves() {
     let root = corpus();
     let branch = tempfile::tempdir().unwrap();
     write(

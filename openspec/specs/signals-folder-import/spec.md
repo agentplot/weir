@@ -1,7 +1,7 @@
 # signals-folder-import Specification
 
 ## Purpose
-The signals-folder import: reads crew's folders, the captures a partition's flywheel branch holds and the meeting corpus a blueprints repository holds, into import lines, one per capture, with the pointer, signals and moves each was read with, a corpus's moves read from the flywheel branch's `moves.rec`. It is no adapter, and writes nothing: a host's import operation writes its lines (37 to 39, 63, 64; C.6; S8, S9).
+The signals-folder import: reads crew's folders, the captures a partition's drive branch holds and the meeting corpus a blueprints repository holds, into import lines, one per capture, with the pointer, signals and moves each was read with, a corpus's moves read from the drive branch's `moves.rec`. It is no adapter, and writes nothing: a host's import operation writes its lines (37 to 39, 63, 64; C.6; S8, S9).
 
 ## Requirements
 
@@ -9,13 +9,13 @@ The signals-folder import: reads crew's folders, the captures a partition's flyw
 
 `read_signals_folder` SHALL read a body's root: each folder under its `signals/` holding a `capture.md` is one capture, read in the order of the folders' names, and its moves are those of one `moves.rec`, the file the caller names or else the one at the root, a `signals/moves.rec` never read (63; C.6). It SHALL give one import line per capture it reads whole, `came_in` `import:crew-folders`. Anything under `signals/` that is not such a folder SHALL be passed over, and a root with no `signals/` folder SHALL be refused, naming it.
 
-#### Scenario: A flywheel branch's tree
+#### Scenario: A drive branch's tree
 - **WHEN** a root holds `signals/2026-10-08-release-pendingyou-0-32-0/` and `signals/2026-10-09-swancloud-design-6d65f646/`, each with its `capture.md` and signals, `signals/README.md`, and `moves.rec`
 - **THEN** two import lines are given, the release capture's first, and `README.md` is passed over
 
-#### Scenario: A blueprints repository's corpus with the flywheel branch's moves
-- **WHEN** a blueprints repository's root holds `signals/2026-10-02-standup/` with `capture.md`, `01-a.md` and `02-b.md`, and a `signals/moves.rec` moving `2026-10-02-standup/02-b`, and it is read naming a flywheel branch's `moves.rec` that moves `2026-10-02-standup/01-a`
-- **THEN** one import line is given, carrying the move of signal 1 from the flywheel branch's file, signal 2 carrying no move, so it arrives unmoved
+#### Scenario: A blueprints repository's corpus with the drive branch's moves
+- **WHEN** a blueprints repository's root holds `signals/2026-10-02-standup/` with `capture.md`, `01-a.md` and `02-b.md`, and a `signals/moves.rec` moving `2026-10-02-standup/02-b`, and it is read naming a drive branch's `moves.rec` that moves `2026-10-02-standup/01-a`
+- **THEN** one import line is given, carrying the move of signal 1 from the drive branch's file, signal 2 carrying no move, so it arrives unmoved
 
 #### Scenario: A blueprints repository's corpus read alone
 - **WHEN** the same root is read naming no moves file
@@ -146,11 +146,11 @@ crew's `new-territory` SHALL be carried as a `join`, its target the name of a pr
 A record of `moves.rec` naming a signal of no capture read SHALL be named as not carried, with why, and SHALL not stop the rest (15).
 
 #### Scenario: A move of a signal in another body
-- **WHEN** a flywheel branch's `moves.rec` moves a signal whose capture lies in a blueprints repository
+- **WHEN** a drive branch's `moves.rec` moves a signal whose capture lies in a blueprints repository
 - **THEN** it is named as not carried, and every line is given
 
-#### Scenario: The flywheel branch's own moves, read with a corpus
-- **WHEN** a blueprints repository is read naming a flywheel branch's `moves.rec` that also moves a signal of the branch's own release capture
+#### Scenario: The drive branch's own moves, read with a corpus
+- **WHEN** a blueprints repository is read naming a drive branch's `moves.rec` that also moves a signal of the branch's own release capture
 - **THEN** that move is named as not carried, and the corpus's lines are given
 
 ### Requirement: Reading one body twice gives the same lines

@@ -8,7 +8,7 @@ weir is the shared code of the agentplot tool family. It defines, once,
 what every open tool shares: the capture contract, the record formats,
 the shared-branch write protocol, the kind format, cadence and the
 built-in adapters. millpond, headwater, eddy, sounding and flume build on
-its crates, and Flywheel builds on the same crates later. A conformance
+its crates, and Boomdrive builds on the same crates later. A conformance
 pack holds each host to the contract: contract lines go in, and the
 records a host must write from them come out.
 
