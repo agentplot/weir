@@ -28,6 +28,7 @@ mod hash;
 mod identity;
 mod kinds;
 mod name;
+mod package;
 mod quiet;
 mod refusal;
 mod repeat;
@@ -38,6 +39,7 @@ pub use hash::{ContentHash, HashRefusal};
 pub use identity::{Identity, NamedKind, LAUNCH, REPO};
 pub use kinds::{read_kinds, Declaration, Kind, KindAgents, KindSettings, Stage};
 pub use name::{check_name, NameRefusal};
+pub use package::{read_package, read_package_dir, Package};
 pub use refusal::{Problem, Refusal};
 pub use repeat::Repeat;
 /// The TOML crate whose values a section the format does not name holds

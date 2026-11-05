@@ -106,6 +106,14 @@ the reader's and may pass through links (C.4 as amended), so a package
 under a linked `$XDG_DATA_HOME` or a nix profile reads as it does
 through its own path. Given paths must be relative, with no segment
 empty, `.` or `..`; the reader that gives one otherwise is told which.
+A path given twice, or one beneath another file's, is refused naming
+it, since no folder holds such files; taking the last of two, or
+hashing both, was the other way, and would answer for files no folder
+on disk can hold. An entry the walk cannot read is refused naming its
+path within the package, and a folder that cannot be read is refused
+naming it as given. An entry named once, a link or one not read, is
+not named again where `kind.toml` or a stage's part is that entry or
+lies beneath it.
 
 ### 4. A package is checked whole, as a declaration is
 
