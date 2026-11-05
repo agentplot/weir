@@ -38,4 +38,4 @@ own.
 
 ## 5. The projects this change touches
 
-- [ ] 5.1 Run the checks of the projects this change touches. True when `devenv shell -- moon run kinds:format kinds:lint kinds:typecheck kinds:test pack:format pack:lint pack:typecheck pack:test weir:test root:format` passes.
+- [x] 5.1 Run the checks of the projects this change touches. True when `devenv shell -- moon run kinds:format kinds:lint kinds:typecheck kinds:test pack:format pack:lint pack:typecheck pack:test weir:test root:format` passes.
