@@ -5,6 +5,7 @@ use toml::{Table, Value};
 
 use crate::deliverable::{Deliverable, End};
 use crate::fields::{boolean, field, key, strings, unnamed};
+use crate::name::not_a_kinds_name;
 use crate::quiet;
 use crate::refusal::{not_toml, Problems, Refusal};
 use crate::repeat::Repeat;
@@ -67,7 +68,7 @@ pub struct Declaration {
 /// run (51, 52, C.4).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Kind {
-    /// The kind's name, its key under `kinds`.
+    /// The kind's name, its key under `kinds`, a name (88, C.4; core.42).
     pub name: String,
     /// Its version, at least 1; 1 when left out (51, 57).
     pub version: u64,
@@ -158,7 +159,7 @@ impl KindAgents {
 #[derive(Debug, Clone, PartialEq)]
 pub struct KindSettings {
     /// The name of the kind the settings are given to, its key under
-    /// `kinds`.
+    /// `kinds`, a name (88, C.4; core.42).
     pub name: String,
     /// The settings for its agents, for every stage and for the stages
     /// named (52).
@@ -184,6 +185,13 @@ pub fn read_kinds(text: &str) -> Result<Declaration, Refusal> {
         Some(Value::Table(table)) => {
             for (name, kind) in table {
                 let at = format!("kinds.{}", key(name));
+                // Every kind read has an identity, so a key that is no
+                // name is refused once and nothing under it is read (57,
+                // 88, C.4; core.42).
+                if let Some(reason) = not_a_kinds_name(name) {
+                    problems.refuse(&at, reason);
+                    continue;
+                }
                 match kind {
                     Value::Table(kind) if gives_settings(kind) => {
                         settings.insert(

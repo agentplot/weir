@@ -25,6 +25,7 @@ mod deliverable;
 mod elaboration;
 mod fields;
 mod kinds;
+mod name;
 mod quiet;
 mod refusal;
 mod repeat;
@@ -32,6 +33,7 @@ mod repeat;
 pub use deliverable::{Deliverable, End};
 pub use elaboration::{read_elaboration, Elaboration, Ending};
 pub use kinds::{read_kinds, Declaration, Kind, KindAgents, KindSettings, Stage};
+pub use name::{check_name, NameRefusal};
 pub use refusal::{Problem, Refusal};
 pub use repeat::Repeat;
 /// The TOML crate whose values a section the format does not name holds

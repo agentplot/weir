@@ -3,16 +3,14 @@
 
 use toml::{Table, Value};
 
+use crate::name::fault;
 use crate::refusal::Problems;
 
 /// A key as a field's path writes it: bare where TOML allows a bare key,
-/// quoted otherwise, so that `kinds."a.b"` is never read as `kinds.a.b`.
+/// which is where the key is a name, quoted otherwise, so that
+/// `kinds."a.b"` is never read as `kinds.a.b`.
 pub(crate) fn key(name: &str) -> String {
-    let bare = !name.is_empty()
-        && name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
-    if bare {
+    if fault(name).is_none() {
         name.to_owned()
     } else {
         Value::String(name.to_owned()).to_string()

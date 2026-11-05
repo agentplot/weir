@@ -168,9 +168,11 @@ fn text_that_is_not_toml_is_refused() {
 
 #[test]
 fn a_key_a_path_cannot_hold_bare_is_quoted() {
-    let refusal = read_kinds("[kinds.\"a.b\"]\nversion = 0\n").unwrap_err();
+    // A kind's key is a name (core.42); a stage's key under its kind's
+    // `agents` need not be.
+    let refusal = read_kinds("[kinds.bump.agents.stages]\n\"a.b\" = 3\n").unwrap_err();
     let fields: Vec<_> = refusal.problems.iter().map(|p| p.field.as_str()).collect();
-    assert_eq!(fields, ["kinds.\"a.b\".version", "kinds.\"a.b\".stages"]);
+    assert_eq!(fields, ["kinds.bump.agents.stages.\"a.b\""]);
 }
 
 #[test]
