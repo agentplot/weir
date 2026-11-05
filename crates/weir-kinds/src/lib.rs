@@ -24,6 +24,7 @@
 mod deliverable;
 mod elaboration;
 mod fields;
+mod identity;
 mod kinds;
 mod name;
 mod quiet;
@@ -32,6 +33,7 @@ mod repeat;
 
 pub use deliverable::{Deliverable, End};
 pub use elaboration::{read_elaboration, Elaboration, Ending};
+pub use identity::{Identity, NamedKind, LAUNCH, REPO};
 pub use kinds::{read_kinds, Declaration, Kind, KindAgents, KindSettings, Stage};
 pub use name::{check_name, NameRefusal};
 pub use refusal::{Problem, Refusal};
