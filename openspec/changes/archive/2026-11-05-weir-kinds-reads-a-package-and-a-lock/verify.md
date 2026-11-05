@@ -14,6 +14,14 @@ the tasks name passes uncached. The change is archived with this report.
 - `devenv shell -- check-fast`: 36 tasks completed, none failed (core.39).
 - `devenv shell -- openspec validate weir-kinds-reads-a-package-and-a-lock
   --strict`: valid.
+- After the archive, `openspec validate --type spec --strict` passes
+  `kind-identity`, `kind-locks` and `kind-packages`. It fails `kinds` on
+  warnings alone, that a requirement's text runs past 500 characters:
+  the spec failed this way at main already, on its requirements 4 and 9.
+  Adding `standing` takes *A stage reads with its name, prompt and end*
+  from 461 to 594 characters, so it is warned too. No error comes of it,
+  and splitting the requirement would be a change to the spec of its
+  own, so it does not hold the archive.
 
 ## Tasks
 
