@@ -61,9 +61,29 @@ fn a_conversation_with_a_deliverable() {
 
 #[test]
 fn a_kind_with_no_stage_is_refused() {
+    // A kind that does not land, its `lands` left out or false, has at
+    // least one stage (S12; 51, 57 as amended at blueprints 51b6316).
+    let reason = "is empty, and a kind that does not land has at least one stage";
     assert_eq!(
-        fields("no-stages.toml"),
-        ["kinds.bare.stages", "kinds.empty.stages"]
+        read("no-stages.toml"),
+        Err(Refusal {
+            problems: ["kinds.empty.stages", "kinds.not-landing.stages"]
+                .map(|field| Problem {
+                    field: field.to_owned(),
+                    reason: reason.to_owned(),
+                })
+                .to_vec(),
+        })
+    );
+}
+
+#[test]
+fn empty_stages_beside_a_lands_of_the_wrong_shape() {
+    // The stages are judged against no `lands`, as a repeat is against a
+    // refused end (57).
+    assert_eq!(
+        fields("no-stages-beside-a-refused-lands.toml"),
+        ["kinds.train.lands"]
     );
 }
 

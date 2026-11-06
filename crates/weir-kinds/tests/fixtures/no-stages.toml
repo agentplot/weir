@@ -1,7 +1,9 @@
-# Two kinds with no stage: one declares none, the other an empty list
-# (S12).
-[kinds.bare]
-version = 1
-
+# Two kinds that do not land declaring no stage, one with `lands` left out
+# and the other `lands = false` (S12; 51, 57 as amended at blueprints
+# 51b6316).
 [kinds.empty]
+stages = []
+
+[kinds.not-landing]
+lands = false
 stages = []

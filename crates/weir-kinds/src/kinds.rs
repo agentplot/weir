@@ -290,19 +290,31 @@ fn read_kind(name: &str, kind: &Table, at: &str, problems: &mut Problems) -> Kin
             name.to_owned()
         }
     };
+    let starts_unready = boolean(kind, "starts_unready", at, problems);
+    let before = problems.len();
+    let lands = boolean(kind, "lands", at, problems);
+    let lands_read = (problems.len() == before).then_some(lands);
     Kind {
         name: name.to_owned(),
         version,
         branch,
-        starts_unready: boolean(kind, "starts_unready", at, problems),
-        lands: boolean(kind, "lands", at, problems),
+        starts_unready,
+        lands,
         agents: read_agents(kind, at, problems),
-        stages: read_stages(kind, at, problems),
+        stages: read_stages(kind, lands_read, at, problems),
         sections: unnamed(kind, &KIND_FIELDS),
     }
 }
 
-fn read_stages(kind: &Table, at: &str, problems: &mut Problems) -> Vec<Stage> {
+/// A kind's stages, in the order written: one or more, or none declared as
+/// `stages = []` on a kind that lands (51, 57). `lands` is what the kind's
+/// `lands` read as, false when left out, or `None` where the read refused
+/// it.
+///
+/// `stages = []` is refused naming it on a kind that does not land (S12).
+/// Beside a `lands` the read refused, `lands` is named once, by its own
+/// field, and `stages = []` is judged against no `lands` and not refused.
+fn read_stages(kind: &Table, lands: Option<bool>, at: &str, problems: &mut Problems) -> Vec<Stage> {
     let here = field(at, "stages");
     let tables = match kind.get("stages") {
         None => {
@@ -310,7 +322,12 @@ fn read_stages(kind: &Table, at: &str, problems: &mut Problems) -> Vec<Stage> {
             return Vec::new();
         }
         Some(Value::Array(items)) if items.is_empty() => {
-            problems.refuse(&here, "is empty, and a kind has at least one stage");
+            if lands == Some(false) {
+                problems.refuse(
+                    &here,
+                    "is empty, and a kind that does not land has at least one stage",
+                );
+            }
             return Vec::new();
         }
         Some(Value::Array(items)) => items

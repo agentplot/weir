@@ -52,6 +52,21 @@ fn a_declaration_with_no_kinds() {
     assert!(declaration.sections.is_empty());
 }
 
+#[test]
+fn a_kind_that_lands_with_no_stages() {
+    // 51 and 57 as amended at blueprints 51b6316.
+    let declaration = read("lands-with-no-stages.toml").unwrap();
+    assert_eq!(declaration.kinds.keys().collect::<Vec<_>>(), ["train"]);
+    assert!(declaration.settings.is_empty());
+    let train = &declaration.kinds["train"];
+    assert_eq!(train.name, "train");
+    assert_eq!(train.version, 1);
+    assert_eq!(train.branch, "train");
+    assert!(train.lands);
+    assert!(train.stages.is_empty());
+    assert!(train.sections.is_empty());
+}
+
 // A stage reads with its name, prompt and end.
 
 #[test]
