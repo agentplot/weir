@@ -10,7 +10,9 @@ use std::os::unix::fs::{symlink, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-use weir_kinds::{read_package, read_package_dir, Identity, Package, Problem, Refusal};
+use weir_kinds::{
+    read_package, read_package_dir, ContentHash, Identity, Package, Problem, Refusal,
+};
 
 const REVIEW: &str = r#"
 [kinds.review]
@@ -133,6 +135,25 @@ fn the_same_files_on_disk_and_in_memory() {
     let in_memory = read_package(files, &held).unwrap();
     assert_eq!(on_disk, in_memory);
     assert_eq!(on_disk.identity, held);
+}
+
+#[test]
+fn a_package_of_a_kind_that_lands_with_no_stages() {
+    // Its kind names no part, so `kind.toml` is the one file it holds (51,
+    // 57 as amended at blueprints 51b6316; 89, 92).
+    let train = "[kinds.train]\nlands = true\nstages = []\n";
+    let files = [("kind.toml", train)];
+    let top = tempfile::tempdir().unwrap();
+    lay_out(top.path(), &files);
+    let held = identity("acme/train@1");
+    let on_disk = read_package_dir(top.path(), &held).unwrap();
+    let in_memory = read_package(files, &held).unwrap();
+    assert_eq!(on_disk, in_memory);
+    assert_eq!(on_disk.identity, held);
+    assert_eq!(on_disk.kind.name, "train");
+    assert!(on_disk.kind.lands);
+    assert!(on_disk.kind.stages.is_empty());
+    assert_eq!(on_disk.hash, ContentHash::of(files));
 }
 
 #[test]
