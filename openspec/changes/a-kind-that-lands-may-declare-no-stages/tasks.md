@@ -30,4 +30,4 @@ stages (core.2).
 
 ## 4. The projects this change touches
 
-- [ ] 4.1 Run the checks of the projects this change touches. True when `devenv shell -- moon run kinds:format kinds:lint kinds:typecheck kinds:test weir:format weir:lint weir:typecheck weir:test pack:test root:format` passes.
+- [x] 4.1 Run the checks of the projects this change touches. True when `devenv shell -- moon run kinds:format kinds:lint kinds:typecheck kinds:test weir:format weir:lint weir:typecheck weir:test pack:test root:format` passes.
