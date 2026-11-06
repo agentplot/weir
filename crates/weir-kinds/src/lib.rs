@@ -7,7 +7,8 @@
 //! with its stages, whether each repeats, its agents' settings and the sections the format does
 //! not name, and apart from them the settings given to kinds the
 //! declaration does not declare, or refuses the declaration whole, naming
-//! every field that fails it (52, 57, C.4). An
+//! every field that fails it (52, 57, C.4). A kind's stages are one or
+//! more, or none where it lands, declared as `stages = []` (51, 57). An
 //! elaboration kind's section is one of those sections: whoever runs
 //! places never looks inside it, and whoever runs elaborations reads it
 //! with [`read_elaboration`] (55, 56).

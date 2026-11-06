@@ -86,7 +86,9 @@ pub struct Kind {
     /// stages it names, which a stage's own `agents` come before; empty
     /// when left out (52, C.4).
     pub agents: KindAgents,
-    /// Its stages, at least one, in the order written (51).
+    /// Its stages in the order written: at least one, or none where the
+    /// kind lands, declared as `stages = []`, and then it runs no agent (51,
+    /// 57).
     pub stages: Vec<Stage>,
     /// Every key of the kind the format does not name, unread and as
     /// written, an elaboration kind's `elaboration` section among them
@@ -176,6 +178,13 @@ pub struct KindSettings {
 /// `read-kinds` (81): every kind a declaration's text declares, each with
 /// its stages and its sections, or the declaration refused whole, naming
 /// every field that fails it (57).
+///
+/// A kind declares its stages: one or more, or none as `stages = []` where
+/// it lands (51, 57). A kind's table that declares a kind and leaves
+/// `stages` out is refused naming its `stages`, whether it lands or not,
+/// and so is `stages = []` on a kind that does not land (S12); a table that
+/// holds `agents` and nothing else the format names gives settings and is
+/// never refused for its stages (57, C.4).
 ///
 /// A table or field the format does not name is returned unread and never
 /// fails the read (56). The same text always gives the same result, and
