@@ -1,0 +1,9 @@
+# An agents table beside stages declared as none: a table that holds
+# `stages` is a kind, never settings (57 as amended at blueprints 51b6316;
+# C.4).
+[kinds.train]
+lands = true
+stages = []
+
+[kinds.train.agents]
+model = "opus"

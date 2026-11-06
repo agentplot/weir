@@ -109,6 +109,29 @@ fn a_table_with_neither_agents_nor_stages_is_still_a_kind_with_no_stage() {
     let refusal = weir_kinds::read_kinds("[kinds.tidy]\nowner = \"docs\"\n").unwrap_err();
     let fields: Vec<_> = refusal.problems.iter().map(|p| p.field.as_str()).collect();
     assert_eq!(fields, ["kinds.tidy.stages"]);
+    assert!(refusal.problems[0]
+        .reason
+        .contains("a kind declares its stages"));
+}
+
+#[test]
+fn agents_beside_stages_declared_as_none() {
+    // A table that holds `stages`, `stages = []` among them, is a kind and
+    // never settings (57 as amended at blueprints 51b6316; core.41).
+    let declaration = read("agents-beside-no-stages.toml").unwrap();
+    assert!(declaration.settings.is_empty());
+    assert_eq!(declaration.kinds.keys().collect::<Vec<_>>(), ["train"]);
+    let train = &declaration.kinds["train"];
+    assert!(train.lands);
+    assert!(train.stages.is_empty());
+    assert_eq!(
+        train.agents,
+        KindAgents {
+            every_stage: table(r#"model = "opus""#),
+            stages: BTreeMap::new(),
+        }
+    );
+    assert!(train.sections.is_empty());
 }
 
 // Each table of the wrong shape is refused naming the field.

@@ -78,6 +78,25 @@ fn a_kind_with_no_stage_is_refused() {
 }
 
 #[test]
+fn a_kinds_stages_left_out_are_refused_whether_it_lands_or_not() {
+    // A kind declares its stages, none as `stages = []` where it lands (57
+    // as amended at blueprints 51b6316; C.4).
+    let reason = "is missing, and a kind declares its stages: one or more, \
+                  or none as `stages = []` where it lands";
+    assert_eq!(
+        read("stages-left-out.toml"),
+        Err(Refusal {
+            problems: ["kinds.bare.stages", "kinds.landing.stages"]
+                .map(|field| Problem {
+                    field: field.to_owned(),
+                    reason: reason.to_owned(),
+                })
+                .to_vec(),
+        })
+    );
+}
+
+#[test]
 fn empty_stages_beside_a_lands_of_the_wrong_shape() {
     // The stages are judged against no `lands`, as a repeat is against a
     // refused end (57).
@@ -218,7 +237,8 @@ fn a_refusal_reads_one_problem_a_line() {
     let refusal = read("two-faults.toml").unwrap_err();
     assert_eq!(
         refusal.to_string(),
-        "kinds.bare.stages: is missing, and a kind has at least one stage\n\
+        "kinds.bare.stages: is missing, and a kind declares its stages: \
+         one or more, or none as `stages = []` where it lands\n\
          kinds.bump.stages[1].prompt: is missing, and every stage has a prompt"
     );
 }

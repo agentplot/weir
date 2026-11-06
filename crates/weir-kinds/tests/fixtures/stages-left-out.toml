@@ -1,0 +1,8 @@
+# Two kinds that leave their stages out, one that does not land and one
+# that does: a kind declares its stages, none as `stages = []` where it
+# lands (57 as amended at blueprints 51b6316; C.4).
+[kinds.bare]
+version = 1
+
+[kinds.landing]
+lands = true

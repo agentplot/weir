@@ -311,14 +311,20 @@ fn read_kind(name: &str, kind: &Table, at: &str, problems: &mut Problems) -> Kin
 /// `lands` read as, false when left out, or `None` where the read refused
 /// it.
 ///
-/// `stages = []` is refused naming it on a kind that does not land (S12).
-/// Beside a `lands` the read refused, `lands` is named once, by its own
-/// field, and `stages = []` is judged against no `lands` and not refused.
+/// `stages` left out is refused naming it, whatever the kind's `lands`,
+/// since a kind declares its stages, none among them (57, C.4); a table that
+/// gives settings is no kind and never reaches here (core.41). `stages = []`
+/// is refused naming it on a kind that does not land (S12). Beside a
+/// `lands` the read refused, `lands` is named once, by its own field, and
+/// `stages = []` is judged against no `lands` and not refused.
 fn read_stages(kind: &Table, lands: Option<bool>, at: &str, problems: &mut Problems) -> Vec<Stage> {
     let here = field(at, "stages");
     let tables = match kind.get("stages") {
         None => {
-            problems.refuse(&here, "is missing, and a kind has at least one stage");
+            problems.refuse(
+                &here,
+                "is missing, and a kind declares its stages: one or more, or none as `stages = []` where it lands",
+            );
             return Vec::new();
         }
         Some(Value::Array(items)) if items.is_empty() => {
