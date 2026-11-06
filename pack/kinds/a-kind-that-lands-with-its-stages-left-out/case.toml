@@ -1,5 +1,6 @@
-# A declaration whose kind has no stage (S12): refused the same way,
-# naming the field.
+# A kind that lands with its stages left out: refused naming its stages,
+# since a kind declares them, none as `stages = []` (51, 57 as amended at
+# blueprints 51b6316).
 satisfies = [51, 57]
 declaration = """
 [kinds.bump]

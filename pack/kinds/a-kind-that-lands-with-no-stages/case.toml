@@ -1,0 +1,13 @@
+# A kind that lands declaring no stages, as C.4's example does: read as a
+# kind with none (51, 52, 57 as amended at blueprints 51b6316).
+satisfies = [51, 52, 57]
+declaration = """
+[kinds.train]
+branch = "train"
+lands = true
+stages = []
+"""
+
+[expect.kinds.train]
+version = 1
+stages = []

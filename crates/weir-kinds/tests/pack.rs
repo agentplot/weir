@@ -664,7 +664,10 @@ fn the_cases_of_s10_s11_and_s12() {
         declaration_expect(&elaboration).kinds.as_ref().unwrap()["writeback"].unread,
         ["elaboration"]
     );
-    for name in ["a-stage-with-two-deliverables", "a-kind-with-no-stage"] {
+    for name in [
+        "a-stage-with-two-deliverables",
+        "a-kind-that-does-not-land-with-no-stages",
+    ] {
         assert_eq!(
             declaration_expect(&case(name))
                 .refused
