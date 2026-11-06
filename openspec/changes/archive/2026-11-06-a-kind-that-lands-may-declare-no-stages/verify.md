@@ -23,6 +23,19 @@ archived with this report.
   as a list item, *any kind has no stage* split into its two amended
   refusals. *The pack holds the kind format's cases* keeps each case the
   base lists and adds the two of 51 and 57.
+- `openspec archive` applies 5 modified requirements to `kinds` and 1
+  to `kind-packages`, adding, removing and renaming none. After it,
+  `openspec validate --type spec --strict` gives no error for either
+  spec. It gives warnings alone, each that a requirement's text runs
+  past 500 characters. `kinds` was warned so at main on *A stage reads
+  with its name, prompt and end*, *A declaration is checked whole* and
+  *The pack holds the kind format's cases*. The amended text takes *A
+  declaration reads into its kinds* to 620, *weir check reads a
+  declaration* to 516 and *A kind's table holding agents and no stages
+  gives settings* to 607. In `kind-packages`, *read-package reads a
+  package at the identity it is held at* goes to 556. No error comes of
+  any of them, and splitting a requirement would be a change of the
+  spec's own, so none holds the archive.
 
 ## Tasks
 
