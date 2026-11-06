@@ -1,0 +1,12 @@
+# A kind that lands with no stages holds what any kind holds, none of it
+# refused for its having no stages (51, 52, 57 as amended at blueprints
+# 51b6316; 56, 58).
+[kinds.train]
+version = 2
+starts_unready = true
+lands = true
+stages = []
+owner = "release"
+
+[kinds.train.agents]
+model = "opus"
