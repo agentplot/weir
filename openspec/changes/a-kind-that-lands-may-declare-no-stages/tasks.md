@@ -20,7 +20,7 @@ stages (core.2).
 
 ## 2. weir check
 
-- [ ] 2.1 Have `weir check` list a kind that lands with no stages as `<name>@<version>` followed by the line `  lands with no stages`, and have `listing`'s doc comment say so (design 6; 51). True when `devenv shell -- moon run weir:test` passes two tests in `crates/weir/tests/check.rs`. One, over a fixture, holds the kinds spec's *A kind that lands with no stages is listed*. The other is `every_problem_of_the_kinds_is_named`, expecting `kinds.bare.stages` with the reason of task 1.2.
+- [x] 2.1 Have `weir check` list a kind that lands with no stages as `<name>@<version>` followed by the line `  lands with no stages`, and have `listing`'s doc comment say so (design 6; 51). True when `devenv shell -- moon run weir:test` passes two tests in `crates/weir/tests/check.rs`. One, over a fixture, holds the kinds spec's *A kind that lands with no stages is listed*. The other is `every_problem_of_the_kinds_is_named`, expecting `kinds.bare.stages` with the reason of task 1.2.
 - [ ] 2.2 Run the checks of the project this group touched. True when `devenv shell -- moon run weir:format weir:lint weir:typecheck weir:test` passes.
 
 ## 3. The pack
