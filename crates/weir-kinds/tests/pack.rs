@@ -680,6 +680,53 @@ fn the_cases_of_s10_s11_and_s12() {
     }
 }
 
+/// A kind that lands with `stages = []` reads with none, and its two
+/// neighbours are refused naming their kind's `stages`: one with `stages =
+/// []` that does not land, one that lands with `stages` left out (51, 57
+/// as amended at blueprints 51b6316; S12).
+#[test]
+fn a_kind_that_lands_with_no_stages_and_its_two_neighbours() {
+    let name = "a-kind-that-lands-with-no-stages";
+    let landing = case(name);
+    let Form::Declaration { text, expect } = &landing.form else {
+        panic!("a declaration's case");
+    };
+    assert!(text.contains("lands = true"), "{text}");
+    assert!(text.contains("stages = []"), "{text}");
+    let kinds = expect.kinds.as_ref().unwrap();
+    assert_eq!(kinds.keys().collect::<Vec<_>>(), ["train"]);
+    assert_eq!(kinds["train"].version, 1);
+    assert!(kinds["train"].stages.is_empty());
+    assert_eq!(differences(name, &landing), Vec::<String>::new());
+
+    for (name, lands, stages, reason) in [
+        (
+            "a-kind-that-does-not-land-with-no-stages",
+            false,
+            true,
+            "a kind that does not land has at least one stage",
+        ),
+        (
+            "a-kind-that-lands-with-its-stages-left-out",
+            true,
+            false,
+            "a kind declares its stages",
+        ),
+    ] {
+        let neighbour = case(name);
+        let Form::Declaration { text, expect } = &neighbour.form else {
+            panic!("{name}: a declaration's case");
+        };
+        assert_eq!(text.contains("lands = true"), lands, "{name}: {text}");
+        assert_eq!(text.contains("stages = []"), stages, "{name}: {text}");
+        let refused = expect.refused.as_ref().unwrap();
+        assert_eq!(refused.len(), 1, "{name}");
+        assert_eq!(refused[0].field, "kinds.bump.stages", "{name}");
+        assert_eq!(refused[0].reason_holds, reason, "{name}");
+        assert_eq!(differences(name, &neighbour), Vec::<String>::new());
+    }
+}
+
 #[test]
 fn flumes_change_1_and_2_each_a_package_of_its_own() {
     let one = case("flumes-change-1-as-a-package");
