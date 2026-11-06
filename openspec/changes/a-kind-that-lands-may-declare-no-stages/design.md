@@ -10,7 +10,7 @@ settings (`gives_settings`). Any other table is a kind, read by
 out ("is missing, and a kind has at least one stage") or empty ("is
 empty, and a kind has at least one stage"), whatever its `lands`. The
 pack's case `a-kind-with-no-stage` declares `lands = true` with `stages`
-left out and expects the second phrase. `weir check` lists each kind as
+left out and expects a reason holding `a kind has at least one stage`. `weir check` lists each kind as
 `<name>@<version>` with a line per stage.
 
 The statement as this design reads it is at blueprints 51b6316, the
