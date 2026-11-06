@@ -86,7 +86,9 @@ pub struct Kind {
     /// stages it names, which a stage's own `agents` come before; empty
     /// when left out (52, C.4).
     pub agents: KindAgents,
-    /// Its stages, at least one, in the order written (51).
+    /// Its stages in the order written: at least one, or none where the
+    /// kind lands, declared as `stages = []`, and then it runs no agent (51,
+    /// 57).
     pub stages: Vec<Stage>,
     /// Every key of the kind the format does not name, unread and as
     /// written, an elaboration kind's `elaboration` section among them
@@ -176,6 +178,13 @@ pub struct KindSettings {
 /// `read-kinds` (81): every kind a declaration's text declares, each with
 /// its stages and its sections, or the declaration refused whole, naming
 /// every field that fails it (57).
+///
+/// A kind declares its stages: one or more, or none as `stages = []` where
+/// it lands (51, 57). A kind's table that declares a kind and leaves
+/// `stages` out is refused naming its `stages`, whether it lands or not,
+/// and so is `stages = []` on a kind that does not land (S12); a table that
+/// holds `agents` and nothing else the format names gives settings and is
+/// never refused for its stages (57, C.4).
 ///
 /// A table or field the format does not name is returned unread and never
 /// fails the read (56). The same text always gives the same result, and
@@ -290,27 +299,50 @@ fn read_kind(name: &str, kind: &Table, at: &str, problems: &mut Problems) -> Kin
             name.to_owned()
         }
     };
+    let starts_unready = boolean(kind, "starts_unready", at, problems);
+    let before = problems.len();
+    let lands = boolean(kind, "lands", at, problems);
+    let lands_read = (problems.len() == before).then_some(lands);
     Kind {
         name: name.to_owned(),
         version,
         branch,
-        starts_unready: boolean(kind, "starts_unready", at, problems),
-        lands: boolean(kind, "lands", at, problems),
+        starts_unready,
+        lands,
         agents: read_agents(kind, at, problems),
-        stages: read_stages(kind, at, problems),
+        stages: read_stages(kind, lands_read, at, problems),
         sections: unnamed(kind, &KIND_FIELDS),
     }
 }
 
-fn read_stages(kind: &Table, at: &str, problems: &mut Problems) -> Vec<Stage> {
+/// A kind's stages, in the order written: one or more, or none declared as
+/// `stages = []` on a kind that lands (51, 57). `lands` is what the kind's
+/// `lands` read as, false when left out, or `None` where the read refused
+/// it.
+///
+/// `stages` left out is refused naming it, whatever the kind's `lands`,
+/// since a kind declares its stages, none among them (57, C.4); a table that
+/// gives settings is no kind and never reaches here (core.41). `stages = []`
+/// is refused naming it on a kind that does not land (S12). Beside a
+/// `lands` the read refused, `lands` is named once, by its own field, and
+/// `stages = []` is judged against no `lands` and not refused.
+fn read_stages(kind: &Table, lands: Option<bool>, at: &str, problems: &mut Problems) -> Vec<Stage> {
     let here = field(at, "stages");
     let tables = match kind.get("stages") {
         None => {
-            problems.refuse(&here, "is missing, and a kind has at least one stage");
+            problems.refuse(
+                &here,
+                "is missing, and a kind declares its stages: one or more, or none as `stages = []` where it lands",
+            );
             return Vec::new();
         }
         Some(Value::Array(items)) if items.is_empty() => {
-            problems.refuse(&here, "is empty, and a kind has at least one stage");
+            if lands == Some(false) {
+                problems.refuse(
+                    &here,
+                    "is empty, and a kind that does not land has at least one stage",
+                );
+            }
             return Vec::new();
         }
         Some(Value::Array(items)) => items

@@ -1,0 +1,13 @@
+# A kind that lands with its stages left out: refused naming its stages,
+# since a kind declares them, none as `stages = []` (51, 57 as amended at
+# blueprints 51b6316).
+satisfies = [51, 57]
+declaration = """
+[kinds.bump]
+version = 2
+lands = true
+"""
+
+[[expect.refused]]
+field = "kinds.bump.stages"
+reason_holds = "a kind declares its stages"

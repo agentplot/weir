@@ -52,6 +52,38 @@ fn a_declaration_with_no_kinds() {
     assert!(declaration.sections.is_empty());
 }
 
+#[test]
+fn a_kind_that_lands_with_no_stages() {
+    // 51 and 57 as amended at blueprints 51b6316.
+    let declaration = read("lands-with-no-stages.toml").unwrap();
+    assert_eq!(declaration.kinds.keys().collect::<Vec<_>>(), ["train"]);
+    assert!(declaration.settings.is_empty());
+    let train = &declaration.kinds["train"];
+    assert_eq!(train.name, "train");
+    assert_eq!(train.version, 1);
+    assert_eq!(train.branch, "train");
+    assert!(train.lands);
+    assert!(train.stages.is_empty());
+    assert!(train.sections.is_empty());
+}
+
+#[test]
+fn a_kind_with_no_stages_holds_what_any_kind_holds() {
+    // What its version, `starts_unready` and `agents` mean for a kind that
+    // runs no agent is its reader's (51, 58; core.32).
+    let declaration = read("no-stages-holds-the-rest.toml").unwrap();
+    assert!(declaration.settings.is_empty());
+    let train = &declaration.kinds["train"];
+    assert_eq!(train.version, 2);
+    assert_eq!(train.branch, "train");
+    assert!(train.starts_unready);
+    assert!(train.lands);
+    assert!(train.stages.is_empty());
+    assert_eq!(train.agents.every_stage, table(r#"model = "opus""#));
+    assert!(train.agents.stages.is_empty());
+    assert_eq!(train.sections, table(r#"owner = "release""#));
+}
+
 // A stage reads with its name, prompt and end.
 
 #[test]

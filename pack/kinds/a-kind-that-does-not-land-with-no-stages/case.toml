@@ -1,0 +1,13 @@
+# A kind with its lands left out declaring no stages (S12): refused
+# naming its stages, since a kind that does not land has at least one
+# (51, 57 as amended at blueprints 51b6316).
+satisfies = [51, 57]
+declaration = """
+[kinds.bump]
+version = 2
+stages = []
+"""
+
+[[expect.refused]]
+field = "kinds.bump.stages"
+reason_holds = "a kind that does not land has at least one stage"

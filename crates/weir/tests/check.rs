@@ -61,6 +61,14 @@ fn a_conversation_and_an_elaboration_kind_are_listed() {
 }
 
 #[test]
+fn a_kind_that_lands_with_no_stages_is_listed() {
+    let output = check(&fixture("lands-with-no-stages.toml"));
+    assert_eq!(text(&output.stdout), "train@1\n  lands with no stages\n");
+    assert_eq!(text(&output.stderr), "");
+    assert_eq!(output.status.code(), Some(0));
+}
+
+#[test]
 fn a_declaration_that_is_refused() {
     let output = check(&fixture("two-deliverables.toml"));
     assert_eq!(text(&output.stdout), "");
@@ -77,7 +85,8 @@ fn every_problem_of_the_kinds_is_named() {
     assert_eq!(text(&output.stdout), "");
     assert_eq!(
         text(&output.stderr),
-        "kinds.bare.stages: is missing, and a kind has at least one stage\n\
+        "kinds.bare.stages: is missing, and a kind declares its stages: one or more, \
+         or none as `stages = []` where it lands\n\
          kinds.bump.stages[1].prompt: is missing, and every stage has a prompt\n"
     );
     assert_eq!(output.status.code(), Some(1));

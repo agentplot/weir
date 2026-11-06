@@ -1,0 +1,6 @@
+# No stages beside a `lands` the read refuses: `lands` is named, and the
+# stages are judged against no `lands` (57 as amended at blueprints
+# 51b6316).
+[kinds.train]
+lands = "yes"
+stages = []

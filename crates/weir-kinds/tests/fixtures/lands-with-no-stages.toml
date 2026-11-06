@@ -1,0 +1,6 @@
+# A kind that lands declaring no stages, as C.4's example does: none,
+# declared so (51, 57 as amended at blueprints 51b6316).
+[kinds.train]
+branch = "train"
+lands = true
+stages = []

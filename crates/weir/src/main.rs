@@ -123,15 +123,19 @@ fn check(path: &Path) -> ExitCode {
 }
 
 /// A declaration's kinds in name order, each `<name>@<version>` with a line
-/// per stage and one for an elaboration kind's ending; or every problem of
-/// the kinds and of their elaboration sections, gathered into one refusal
-/// (57, 81).
+/// per stage, or the line `  lands with no stages` for a kind that lands
+/// declaring none (51), and one for an elaboration kind's ending; or every
+/// problem of the kinds and of their elaboration sections, gathered into
+/// one refusal (57, 81).
 fn listing(text: &str) -> Result<Vec<String>, Vec<Problem>> {
     let declaration = read_kinds(text).map_err(|refusal| refusal.problems)?;
     let mut lines = Vec::new();
     let mut problems = Vec::new();
     for kind in declaration.kinds.values() {
         lines.push(format!("{}@{}", kind.name, kind.version));
+        if kind.stages.is_empty() {
+            lines.push("  lands with no stages".to_owned());
+        }
         for stage in &kind.stages {
             lines.push(match &stage.end {
                 End::Deliverable(deliverable) => format!("  {}: {deliverable}", stage.name),
