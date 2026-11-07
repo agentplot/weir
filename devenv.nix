@@ -90,6 +90,39 @@ let
     installPhase = "install -Dm755 vale $out/bin/vale";
   };
 
+  # OpenSpec, which writes and validates the changes and specs, and writes
+  # the Claude Code skills and commands the tree tracks: the release flume,
+  # boomdrive and sluice pin, built as nixpkgs builds its older one. Bump
+  # the version, then each hash from the mismatch the build reports, then
+  # write the skills and commands under .claude/ again with it, `sh
+  # check-openspec-claude.sh --write` in the shell, since root:openspec-claude
+  # holds them to this release (record 0005).
+  openspecVersion = "1.14.3";
+  openspec = pkgs.openspec.overrideAttrs (
+    finalAttrs: _: {
+      version = openspecVersion;
+      src = pkgs.fetchFromGitHub {
+        owner = "Fission-AI";
+        repo = "OpenSpec";
+        tag = "v${finalAttrs.version}";
+        hash = "sha256-tdTX0nkDe/aNZgLckh6/B6BtoSb40w0Y5qzg+d1LjHU=";
+      };
+      pnpmDeps = pkgs.fetchPnpmDeps {
+        inherit (finalAttrs) pname version src;
+        pnpm = pkgs.pnpm_10;
+        fetcherVersion = 3;
+        hash = "sha256-fKm4sBdTDeQfIiE0k301jtRbiuJrBE7YIEBu8RZxuXI=";
+      };
+    }
+  );
+
+  # devenv's own script that makes the files it declares, Claude Code's
+  # among them, run from the repository's root.
+  writeFiles = ''
+    cd ${lib.escapeShellArg config.devenv.root} || exit
+    ${config.tasks."devenv:files".exec}
+  '';
+
   # treefmt's rustfmt: the pinned toolchain's.
   rustfmt = pkgs.writeShellApplication {
     name = "rustfmt";
@@ -108,6 +141,7 @@ in
     pkgs.jq
     proto
     vale
+    openspec
     # GNU recutils: the crates' tests hold every record they write to
     # `recfix`, as a write is held before it lands (core.24).
     pkgs.recutils
@@ -126,7 +160,17 @@ in
   # moon's task archives (.moon/cache/outputs) are a link into the git common
   # dir, so every worktree shares them. The rest of .moon/cache records the
   # checkout's absolute paths and stays its own.
+  #
+  # devenv's files, Claude Code's below, are made here as well as by devenv's
+  # own task: a place's readiness is sluice's equip, which sources the
+  # script `devenv print-dev-env` prints and runs no task, and the agent
+  # started after it reads them as it starts (record 0005).
+  # Their words go to no output a caller reads the environment from, and a
+  # working copy where they cannot be written still gets its shell.
   enterShell = ''
+    if ! (${writeFiles}) >/dev/null; then
+      echo "devenv.nix: Claude Code's files were not written in ${config.devenv.root}" >&2
+    fi
     if _hooks_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
       _hooks_config="$_hooks_root/${config.git-hooks.configPath}"
       if [ -L "$_hooks_config" ] || [ ! -e "$_hooks_config" ]; then
@@ -163,6 +207,30 @@ in
     '';
     before = [ "devenv:enterShell" ];
   };
+
+  # Claude Code's project files (agentplot/boomdrive's record 0022; record
+  # 0005): .mcp.json from the servers below and .claude/settings.json from
+  # the rest, each a link devenv makes into the store and git ignores. The
+  # repository's one server is devenv's hosted one, which searches packages
+  # and devenv's options and starts no process on the host; it is named
+  # here because a list of the repository's own replaces devenv's default.
+  # Every server named is approved by name in the settings, so a session in
+  # a trusted folder, a place among them, starts them and asks nothing.
+  claude.code = {
+    enable = true;
+    mcpServers."mcp.devenv.sh" = {
+      type = "http";
+      url = "https://mcp.devenv.sh";
+    };
+    # devenv's own hook, on wherever git-hooks are, runs prek after every
+    # edit. An agent here runs each tool through `devenv shell --`, so prek
+    # is not on its session's PATH and the hook would fail at each edit;
+    # the pre-commit hook runs treefmt on what a commit holds, and the gate
+    # on what lands.
+    hooks.git-hooks-run.enable = false;
+  };
+  files.${config.claude.code.settingsPath}.json.enabledMcpjsonServers =
+    lib.attrNames config.claude.code.mcpServers;
 
   treefmt.enable = true;
   treefmt.config = {
