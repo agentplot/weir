@@ -6,7 +6,9 @@ _: {
   # What no formatter owns, each with its reason.
   settings.excludes = [
     # Prose: the README is Vale's (`prose`), and no formatter here rewraps
-    # prose.
+    # prose. OpenSpec's Claude Code skills and commands under .claude are
+    # kept as the pinned openspec writes them (`openspec-claude`, record
+    # 0005).
     "*.md"
     # Written by cargo and devenv in their own layouts.
     "*.lock"
