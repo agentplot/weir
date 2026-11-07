@@ -1,8 +1,9 @@
 # moon runs weir's checks. Each check is tagged with its layer, which a
 # branch's policy will require by tag:
 #   check-fast    format, the README's prose, a new place's first commit
-#                 through the hooks, the Rust toolchain's pin, and each
-#                 crate's format, lint, typecheck and tests: seconds
+#                 through the hooks, the Rust toolchain's pin, OpenSpec's
+#                 Claude Code files, and each crate's format, lint,
+#                 typecheck and tests: seconds
 # Each crate is a project of its own, holding its own checks (core.39); the
 # root holds what spans the tree. A task whose inputs are identical to a run
 # that passed on this host, in any worktree, replays from .moon/cache/outputs
