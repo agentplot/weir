@@ -157,6 +157,38 @@ fn a_package_of_a_kind_that_lands_with_no_stages() {
 }
 
 #[test]
+fn a_package_of_a_kind_that_names_its_fix() {
+    // Its fix kind is a name and no part of it, so `kind.toml` is still the
+    // one file it holds, and its hash covers the name as that file's bytes
+    // alone (52 and 89 as amended at blueprints 31f9f1c; 90, 92; core.43,
+    // core.44).
+    let train = "[kinds.train]\nlands = true\nstages = []\nfix = \"fix\"\nmax_fixes = 2\n";
+    let files = [("kind.toml", train)];
+    let top = tempfile::tempdir().unwrap();
+    lay_out(top.path(), &files);
+    let held = identity("acme/train@1");
+    let on_disk = read_package_dir(top.path(), &held).unwrap();
+    let in_memory = read_package(files, &held).unwrap();
+    assert_eq!(on_disk, in_memory);
+    assert_eq!(on_disk.identity, held);
+    assert_eq!(on_disk.kind.name, "train");
+    assert!(on_disk.kind.lands);
+    assert!(on_disk.kind.stages.is_empty());
+    assert_eq!(
+        on_disk
+            .kind
+            .fix
+            .as_ref()
+            .map(ToString::to_string)
+            .as_deref(),
+        Some("fix")
+    );
+    assert_eq!(on_disk.kind.max_fixes, Some(2));
+    assert!(on_disk.kind.sections.is_empty());
+    assert_eq!(on_disk.hash, ContentHash::of(files));
+}
+
+#[test]
 fn a_folder_reached_through_a_link() {
     let top = tempfile::tempdir().unwrap();
     let real = top.path().join("real");
