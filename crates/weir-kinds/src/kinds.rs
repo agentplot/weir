@@ -25,13 +25,16 @@ const KIND_FIELDS: [&str; 8] = [
 
 /// The fields of a kind's table that declare a kind: a table holding
 /// `agents` and none of these gives settings and declares no kind (57,
-/// C.4). An elaboration kind's section is the format's own (55).
-const DECLARING_FIELDS: [&str; 6] = [
+/// C.4). An elaboration kind's section is the format's own (55), and a
+/// fix kind and its bound are fields the format names on a kind (52).
+const DECLARING_FIELDS: [&str; 8] = [
     "version",
     "branch",
     "starts_unready",
     "lands",
     "stages",
+    "fix",
+    "max_fixes",
     "elaboration",
 ];
 
