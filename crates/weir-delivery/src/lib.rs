@@ -15,7 +15,11 @@
 #![deny(missing_docs)]
 
 mod calls;
+mod record;
 mod text;
 
 pub use calls::Refusal;
+pub use record::{
+    Confirmation, Delivery, Handover, Known, Record, CONFIRMATION, DELIVERY, HANDOVER, KNOWN,
+};
 pub use text::{Key, Message, Reader, Span, Time, Way};
