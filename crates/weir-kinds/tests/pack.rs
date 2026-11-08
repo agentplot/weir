@@ -46,11 +46,12 @@ struct Case {
 enum Form {
     /// A declaration's text.
     Declaration { text: String, expect: Expect },
-    /// A package and the identity it is held at.
+    /// A package and the identity it is held at, what it expects boxed so
+    /// the variant stays near the others' size.
     Package {
         package: PackageCase,
         held: Identity,
-        expect: ExpectPackage,
+        expect: Box<ExpectPackage>,
     },
     /// A lock's text.
     Lock { text: String, expect: ExpectLock },
@@ -197,7 +198,7 @@ fn read_case(name: &str, text: &str) -> Result<Case, String> {
             Form::Package {
                 package,
                 held,
-                expect,
+                expect: Box::new(expect),
             }
         }
         (None, None, Some(text)) => {
