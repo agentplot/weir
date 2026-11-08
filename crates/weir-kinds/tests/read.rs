@@ -84,6 +84,74 @@ fn a_kind_with_no_stages_holds_what_any_kind_holds() {
     assert_eq!(train.sections, table(r#"owner = "release""#));
 }
 
+// A kind that lands with no stages may name its fix kind and its bound.
+
+#[test]
+fn a_kind_that_lands_with_no_stages_names_its_fix() {
+    // 52, 57 and C.4 as amended at blueprints 31f9f1c.
+    let declaration = read("names-its-fix.toml").unwrap();
+    assert_eq!(declaration.kinds.keys().collect::<Vec<_>>(), ["train"]);
+    assert!(declaration.settings.is_empty());
+    let train = &declaration.kinds["train"];
+    assert_eq!(train.version, 1);
+    assert!(train.lands);
+    assert!(train.stages.is_empty());
+    assert_eq!(
+        train.fix.as_ref().map(ToString::to_string).as_deref(),
+        Some("fix")
+    );
+    assert_eq!(train.max_fixes, Some(2));
+    assert!(train.sections.is_empty());
+}
+
+#[test]
+fn a_fix_and_its_bound_left_out_are_returned_left_out() {
+    // The format gives neither a default (58, C.4).
+    let train = &read("lands-with-no-stages.toml").unwrap().kinds["train"];
+    assert!(train.stages.is_empty());
+    assert_eq!(train.fix, None);
+    assert_eq!(train.max_fixes, None);
+}
+
+#[test]
+fn a_bound_without_a_fix() {
+    let train = &read("a-bound-without-a-fix.toml").unwrap().kinds["train"];
+    assert_eq!(train.max_fixes, Some(0));
+    assert_eq!(train.fix, None);
+    assert!(train.sections.is_empty());
+}
+
+// A kind's fix is a kind's name, spelt back as written.
+
+#[test]
+fn a_fix_in_every_form_of_a_kinds_name() {
+    // C.4; core.42.
+    let declaration = read("fix-forms.toml").unwrap();
+    let forms: Vec<_> = ["bare", "versioned", "sourced", "whole"]
+        .iter()
+        .map(|name| {
+            let kind = &declaration.kinds[*name];
+            assert!(kind.sections.is_empty());
+            let fix = kind.fix.as_ref().unwrap();
+            assert_eq!(fix.name(), "fix");
+            (
+                fix.to_string(),
+                fix.source().map(str::to_owned),
+                fix.version(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        forms,
+        [
+            ("fix".to_owned(), None, None),
+            ("fix@2".to_owned(), None, Some(2)),
+            ("acme/fix".to_owned(), Some("acme".to_owned()), None),
+            ("acme/fix@1".to_owned(), Some("acme".to_owned()), Some(1)),
+        ]
+    );
+}
+
 // A stage reads with its name, prompt and end.
 
 #[test]

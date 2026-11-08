@@ -5,19 +5,22 @@ use toml::{Table, Value};
 
 use crate::deliverable::{Deliverable, End};
 use crate::fields::{boolean, field, key, strings, unnamed};
+use crate::identity::NamedKind;
 use crate::name::not_a_kinds_name;
 use crate::quiet;
 use crate::refusal::{not_toml, Problems, Refusal};
 use crate::repeat::Repeat;
 
 /// The fields of a kind the format names; every other key is a section.
-const KIND_FIELDS: [&str; 6] = [
+const KIND_FIELDS: [&str; 8] = [
     "version",
     "branch",
     "starts_unready",
     "lands",
     "agents",
     "stages",
+    "fix",
+    "max_fixes",
 ];
 
 /// The fields of a kind's table that declare a kind: a table holding
@@ -90,6 +93,17 @@ pub struct Kind {
     /// kind lands, declared as `stages = []`, and then it runs no agent (51,
     /// 57).
     pub stages: Vec<Stage>,
+    /// The kind its fixes run as, a kind's name in any of its four forms,
+    /// returned as written; `None` when left out, since the format gives no
+    /// default (52, 57, 58, C.4). Only a kind that lands with no stages
+    /// names it. Which kind the name resolves to, and what that kind holds,
+    /// are the reader's (58; core.32).
+    pub fix: Option<NamedKind>,
+    /// How many fixes it runs before its place waits on its caller, at
+    /// least 0; `None` when left out, its meaning then its reader's (52,
+    /// 57, 58, C.4). Only a kind that lands with no stages names it, and it
+    /// reads with or without `fix`.
+    pub max_fixes: Option<u64>,
     /// Every key of the kind the format does not name, unread and as
     /// written, an elaboration kind's `elaboration` section among them
     /// (55, 56).
@@ -303,15 +317,37 @@ fn read_kind(name: &str, kind: &Table, at: &str, problems: &mut Problems) -> Kin
     let before = problems.len();
     let lands = boolean(kind, "lands", at, problems);
     let lands_read = (problems.len() == before).then_some(lands);
+    let agents = read_agents(kind, at, problems);
+    let stages = read_stages(kind, lands_read, at, problems);
+    let fix = read_fix(kind);
+    let max_fixes = read_max_fixes(kind);
     Kind {
         name: name.to_owned(),
         version,
         branch,
         starts_unready,
         lands,
-        agents: read_agents(kind, at, problems),
-        stages: read_stages(kind, lands_read, at, problems),
+        agents,
+        stages,
+        fix,
+        max_fixes,
         sections: unnamed(kind, &KIND_FIELDS),
+    }
+}
+
+/// A kind's `fix`, the kind its fixes run as: a kind's name in any of its
+/// four forms, returned as written; `None` when left out (52, C.4). Which
+/// kind it names is the reader's (58; core.32).
+fn read_fix(kind: &Table) -> Option<NamedKind> {
+    kind.get("fix")?.as_str().and_then(|text| text.parse().ok())
+}
+
+/// A kind's `max_fixes`, how many fixes it runs: an integer of at least 0;
+/// `None` when left out (52, C.4), its meaning then its reader's (58).
+fn read_max_fixes(kind: &Table) -> Option<u64> {
+    match kind.get("max_fixes")? {
+        Value::Integer(times) if *times >= 0 => Some(times.unsigned_abs()),
+        _ => None,
     }
 }
 
