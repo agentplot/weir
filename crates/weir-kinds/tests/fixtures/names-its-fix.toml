@@ -1,9 +1,10 @@
-# A kind that lands with no stages naming the kind its fixes run as and
-# how many it runs, as C.4's `[kinds.train]` writes them (52, 57 and C.4
-# as amended at blueprints 31f9f1c).
+# A kind that lands with no stages naming its landing fix, by the fix
+# kind's identity with its version, and how many landing fixes it runs, as
+# C.4's `[kinds.train]` writes them (52, 57 and C.4 as amended at
+# blueprints 8eec6dd; record 0005).
 [kinds.train]
 branch = "train"
 lands = true
 stages = []
-fix = "fix"
-max_fixes = 2
+landing_fix = "acme/fix@1"
+max_landing_fixes = 2

@@ -1,6 +1,6 @@
 //! The pack's kinds cases, `pack/kinds/<case>/case.toml`, each of one
-//! form: a declaration and the kinds it reads into, each with its fix kind
-//! and its bound where it names them, and each stage with its end and its
+//! form: a declaration and the kinds it reads into, each with its landing
+//! fix and its bound where it names them, and each stage with its end and its
 //! repeat; a package held at an identity, laid out in two
 //! folders, and the kind, identity and content hash it reads into, checked
 //! against a lock where the case names one; or a lock and the identities
@@ -120,12 +120,12 @@ struct ExpectEntry {
 struct ExpectKind {
     version: u64,
     stages: Vec<ExpectStage>,
-    /// The kind its fixes run as, the name as spelled; left out where the
-    /// kind names none (52, C.4).
-    fix: Option<String>,
-    /// How many fixes it runs; left out where the kind names none (52,
-    /// C.4).
-    max_fixes: Option<u64>,
+    /// Its landing fix, the identity as spelled; left out where the kind
+    /// names none (52, C.4; record 0005).
+    landing_fix: Option<String>,
+    /// How many landing fixes it runs; left out where the kind names none
+    /// (52, C.4; record 0005).
+    max_landing_fixes: Option<u64>,
     /// The kind's sections the format does not name, returned unread.
     #[serde(default)]
     unread: Vec<String>,
@@ -571,17 +571,17 @@ fn kind_differences(name: &str, kind: &Kind, expected: &ExpectKind) -> Vec<Strin
             kind.version, expected.version
         ));
     }
-    let fix = kind.fix.as_ref().map(ToString::to_string);
-    if fix != expected.fix {
+    let landing_fix = kind.landing_fix.as_ref().map(ToString::to_string);
+    if landing_fix != expected.landing_fix {
         said.push(format!(
-            "{name}: reads {kind_name} with fix {fix:?}, and the case expects fix {:?}",
-            expected.fix
+            "{name}: reads {kind_name} with landing_fix {landing_fix:?}, and the case expects landing_fix {:?}",
+            expected.landing_fix
         ));
     }
-    if kind.max_fixes != expected.max_fixes {
+    if kind.max_landing_fixes != expected.max_landing_fixes {
         said.push(format!(
-            "{name}: reads {kind_name} with max_fixes {:?}, and the case expects max_fixes {:?}",
-            kind.max_fixes, expected.max_fixes
+            "{name}: reads {kind_name} with max_landing_fixes {:?}, and the case expects max_landing_fixes {:?}",
+            kind.max_landing_fixes, expected.max_landing_fixes
         ));
     }
     let unread: Vec<&String> = kind.sections.keys().collect();
@@ -929,37 +929,37 @@ stages = [{ name = "review", end = "commits" }]
 
 #[test]
 fn a_case_whose_kind_differs_in_its_fix_is_named() {
-    // A kind's fix and its bound are held against the kind read (52, C.4
-    // as amended at blueprints 31f9f1c; C.7).
+    // A kind's landing fix and its bound are held against the kind read
+    // (52, C.4 as amended at blueprints 8eec6dd; C.7).
     let text = r#"
 satisfies = [52]
 declaration = """
 [kinds.train]
 lands = true
 stages = []
-fix = "other"
-max_fixes = 2
+landing_fix = "acme/other@1"
+max_landing_fixes = 2
 """
 
 [expect.kinds.train]
 version = 1
 stages = []
-fix = "fix"
+landing_fix = "acme/fix@1"
 "#;
     let case = read_case("wrong-fix", text).unwrap();
     assert_eq!(
         differences("wrong-fix", &case),
         [
-            r#"wrong-fix: reads train with fix Some("other"), and the case expects fix Some("fix")"#,
-            "wrong-fix: reads train with max_fixes Some(2), and the case expects max_fixes None",
+            r#"wrong-fix: reads train with landing_fix Some("acme/other@1"), and the case expects landing_fix Some("acme/fix@1")"#,
+            "wrong-fix: reads train with max_landing_fixes Some(2), and the case expects max_landing_fixes None",
         ]
     );
 }
 
-/// A kind that lands with no stages names its fix kind and its bound, read
-/// with both as a declaration and as a package, and a kind with stages
-/// naming both is refused naming each (52, 57 and 89 as amended at
-/// blueprints 31f9f1c; 92).
+/// A kind that lands with no stages names its landing fix and its bound,
+/// read with both as a declaration and as a package, and a kind with
+/// stages naming both is refused naming each (52, 57 and 89 as amended at
+/// blueprints 8eec6dd; 92).
 #[test]
 fn a_kind_that_names_its_fix_and_one_with_stages_that_may_not() {
     let cites = |case: &Case| -> Vec<i64> {
@@ -981,8 +981,8 @@ fn a_kind_that_names_its_fix_and_one_with_stages_that_may_not() {
     for line in [
         "lands = true",
         "stages = []",
-        r#"fix = "fix""#,
-        "max_fixes = 2",
+        r#"landing_fix = "acme/fix@1""#,
+        "max_landing_fixes = 2",
     ] {
         assert!(train.contains(line), "{name}: {train}");
     }
@@ -991,8 +991,8 @@ fn a_kind_that_names_its_fix_and_one_with_stages_that_may_not() {
     let expected = &kinds["train"];
     assert_eq!(expected.version, 1);
     assert!(expected.stages.is_empty());
-    assert_eq!(expected.fix.as_deref(), Some("fix"));
-    assert_eq!(expected.max_fixes, Some(2));
+    assert_eq!(expected.landing_fix.as_deref(), Some("acme/fix@1"));
+    assert_eq!(expected.max_landing_fixes, Some(2));
     assert_eq!(differences(name, &naming), Vec::<String>::new());
 
     let name = "a-kind-with-stages-that-names-its-fix";
@@ -1001,7 +1001,11 @@ fn a_kind_that_names_its_fix_and_one_with_stages_that_may_not() {
     let Form::Declaration { text, expect } = &with_stages.form else {
         panic!("{name}: a declaration's case");
     };
-    for line in ["lands = true", r#"fix = "fix""#, "max_fixes = 2"] {
+    for line in [
+        "lands = true",
+        r#"landing_fix = "acme/fix@1""#,
+        "max_landing_fixes = 2",
+    ] {
         assert!(text.contains(line), "{name}: {text}");
     }
     assert_eq!(
@@ -1011,7 +1015,11 @@ fn a_kind_that_names_its_fix_and_one_with_stages_that_may_not() {
     );
     let refused = expect.refused.as_ref().unwrap();
     let fields: Vec<_> = refused.iter().map(|r| r.field.as_str()).collect();
-    assert_eq!(fields, ["kinds.bump.fix", "kinds.bump.max_fixes"], "{name}");
+    assert_eq!(
+        fields,
+        ["kinds.bump.landing_fix", "kinds.bump.max_landing_fixes"],
+        "{name}"
+    );
     for refusal in refused {
         assert_eq!(
             refusal.reason_holds, "only a kind that lands with no stages names",
@@ -1041,7 +1049,39 @@ fn a_kind_that_names_its_fix_and_one_with_stages_that_may_not() {
     let kind = expect.kind.as_ref().unwrap();
     assert_eq!(kind.version, 1);
     assert!(kind.stages.is_empty());
-    assert_eq!(kind.fix.as_deref(), Some("fix"));
-    assert_eq!(kind.max_fixes, Some(2));
+    assert_eq!(kind.landing_fix.as_deref(), Some("acme/fix@1"));
+    assert_eq!(kind.max_landing_fixes, Some(2));
     assert_eq!(differences(name, &packaged), Vec::<String>::new());
+}
+
+/// A landing fix named by a bare name is a case of its own, refused naming
+/// the field, since a landing fix is an identity with its version (52, 57
+/// as amended at blueprints 8eec6dd; record 0005).
+#[test]
+fn a_landing_fix_that_is_no_identity_is_a_case_of_its_own() {
+    let name = "a-landing-fix-that-is-no-identity";
+    let bare = case(name);
+    let cites: Vec<i64> = bare
+        .satisfies
+        .iter()
+        .filter_map(toml::Value::as_integer)
+        .collect();
+    assert_eq!(cites, [52, 57]);
+    let Form::Declaration { text, expect } = &bare.form else {
+        panic!("{name}: a declaration's case");
+    };
+    for line in ["lands = true", "stages = []", r#"landing_fix = "fix""#] {
+        assert!(text.contains(line), "{name}: {text}");
+    }
+    let refused = expect.refused.as_ref().unwrap();
+    let named: Vec<_> = refused
+        .iter()
+        .map(|r| (r.field.as_str(), r.reason_holds.as_str()))
+        .collect();
+    assert_eq!(
+        named,
+        [("kinds.train.landing_fix", "is no identity")],
+        "{name}"
+    );
+    assert_eq!(differences(name, &bare), Vec::<String>::new());
 }

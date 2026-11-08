@@ -1,21 +1,23 @@
-# A kind's fix in each of a kind's name's four forms, each spelt back as
-# written (52, C.4 as amended at blueprints 31f9f1c; core.42).
+# A kind's landing fix in each of a kind's name's four forms: only the
+# identity with its version is one, and each other form is refused naming
+# its kind's `landing_fix` (57, C.4 as amended at blueprints 8eec6dd;
+# core.42; record 0005).
 [kinds.bare]
 lands = true
 stages = []
-fix = "fix"
+landing_fix = "fix"
 
 [kinds.versioned]
 lands = true
 stages = []
-fix = "fix@2"
+landing_fix = "fix@2"
 
 [kinds.sourced]
 lands = true
 stages = []
-fix = "acme/fix"
+landing_fix = "acme/fix"
 
 [kinds.whole]
 lands = true
 stages = []
-fix = "acme/fix@1"
+landing_fix = "acme/fix@1"

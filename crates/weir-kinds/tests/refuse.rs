@@ -108,18 +108,18 @@ fn empty_stages_beside_a_lands_of_the_wrong_shape() {
 
 #[test]
 fn a_kind_with_stages_that_names_its_fix_is_refused() {
-    // Only a kind that lands with no stages names its fix kind and its
+    // Only a kind that lands with no stages names its landing fix and its
     // bound, and a kind with stages is refused naming each, whether it
-    // lands or not (57 as amended at blueprints 31f9f1c).
+    // lands or not (57 as amended at blueprints 8eec6dd).
     let refusal = read("stages-and-a-fix.toml").unwrap_err();
     let fields: Vec<_> = refusal.problems.iter().map(|p| p.field.as_str()).collect();
     assert_eq!(
         fields,
         [
-            "kinds.bump.fix",
-            "kinds.bump.max_fixes",
-            "kinds.tidy.fix",
-            "kinds.tidy.max_fixes",
+            "kinds.bump.landing_fix",
+            "kinds.bump.max_landing_fixes",
+            "kinds.tidy.landing_fix",
+            "kinds.tidy.max_landing_fixes",
         ]
     );
     for problem in &refusal.problems {
@@ -139,10 +139,9 @@ fn a_fix_of_the_wrong_shape_beside_stages() {
         read("a-fix-of-the-wrong-shape-beside-stages.toml"),
         Err(Refusal {
             problems: vec![Problem {
-                field: "kinds.bump.fix".to_owned(),
-                reason:
-                    "must be a kind's name written as a string, such as \"fix\" or \"acme/fix@1\""
-                        .to_owned(),
+                field: "kinds.bump.landing_fix".to_owned(),
+                reason: "must be a kind's identity with its version written as a string, such as \"acme/fix@1\""
+                    .to_owned(),
             }],
         })
     );
@@ -177,32 +176,66 @@ fn a_field_of_the_wrong_shape_is_refused() {
     );
 }
 
+// A kind's landing fix is an identity with its version and its bound a
+// count. A test named for a scenario keeps its name, the fix in it the
+// landing fix.
+
+#[test]
+fn a_fix_in_every_form_of_a_kinds_name() {
+    // Only the identity with its version is a landing fix; a bare name, a
+    // name with a version and a source with a name are each refused naming
+    // the field (57, C.4 as amended at blueprints 8eec6dd; core.42; record
+    // 0005).
+    let refusal = read("fix-forms.toml").unwrap_err();
+    let named: Vec<_> = refusal
+        .problems
+        .iter()
+        .map(|p| (p.field.as_str(), p.reason.as_str()))
+        .collect();
+    assert_eq!(
+        named,
+        [
+            (
+                "kinds.bare.landing_fix",
+                "`fix` is no identity: it names no source, and an identity is `<source>/<name>@<version>`"
+            ),
+            (
+                "kinds.sourced.landing_fix",
+                "`acme/fix` is no identity: it names no version, and an identity is `<source>/<name>@<version>`"
+            ),
+            (
+                "kinds.versioned.landing_fix",
+                "`fix@2` is no identity: it names no source, and an identity is `<source>/<name>@<version>`"
+            ),
+        ]
+    );
+}
+
 #[test]
 fn a_fix_or_a_bound_of_the_wrong_shape_is_refused() {
-    // A kind's fix is a kind's name and its bound a count (57 and C.4 as
-    // amended at blueprints 31f9f1c; core.42).
+    // 57 and C.4 as amended at blueprints 8eec6dd; core.42.
     let refusal = read("fix-shapes.toml").unwrap_err();
     let fields: Vec<_> = refusal.problems.iter().map(|p| p.field.as_str()).collect();
     assert_eq!(
         fields,
         [
-            "kinds.bound-fraction.max_fixes",
-            "kinds.bound-negative.max_fixes",
-            "kinds.bound-string.max_fixes",
-            "kinds.fix-empty.fix",
-            "kinds.fix-number.fix",
-            "kinds.fix-path.fix",
-            "kinds.fix-space.fix",
-            "kinds.fix-version-zero.fix",
+            "kinds.bound-fraction.max_landing_fixes",
+            "kinds.bound-negative.max_landing_fixes",
+            "kinds.bound-string.max_landing_fixes",
+            "kinds.fix-empty.landing_fix",
+            "kinds.fix-number.landing_fix",
+            "kinds.fix-path.landing_fix",
+            "kinds.fix-space.landing_fix",
+            "kinds.fix-version-zero.landing_fix",
         ]
     );
     for problem in &refusal.problems {
         let expected = match problem.field.as_str() {
-            "kinds.fix-number.fix" => {
-                "must be a kind's name written as a string, such as \"fix\" or \"acme/fix@1\""
+            "kinds.fix-number.landing_fix" => {
+                "must be a kind's identity with its version written as a string, such as \"acme/fix@1\""
             }
-            field if field.ends_with(".max_fixes") => "must be an integer of at least 0",
-            _ => "names no kind",
+            field if field.ends_with(".max_landing_fixes") => "must be an integer of at least 0",
+            _ => "is no identity",
         };
         assert!(problem.reason.contains(expected), "{problem}");
     }

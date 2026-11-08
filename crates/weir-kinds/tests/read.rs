@@ -84,11 +84,12 @@ fn a_kind_with_no_stages_holds_what_any_kind_holds() {
     assert_eq!(train.sections, table(r#"owner = "release""#));
 }
 
-// A kind that lands with no stages may name its fix kind and its bound.
+// A kind that lands with no stages may name its landing fix and its bound.
+// A test named for a scenario keeps its name, the fix in it the landing fix.
 
 #[test]
 fn a_kind_that_lands_with_no_stages_names_its_fix() {
-    // 52, 57 and C.4 as amended at blueprints 31f9f1c.
+    // 52, 57 and C.4 as amended at blueprints 8eec6dd; core.42; record 0005.
     let declaration = read("names-its-fix.toml").unwrap();
     assert_eq!(declaration.kinds.keys().collect::<Vec<_>>(), ["train"]);
     assert!(declaration.settings.is_empty());
@@ -96,11 +97,17 @@ fn a_kind_that_lands_with_no_stages_names_its_fix() {
     assert_eq!(train.version, 1);
     assert!(train.lands);
     assert!(train.stages.is_empty());
+    let landing_fix = train.landing_fix.as_ref().unwrap();
     assert_eq!(
-        train.fix.as_ref().map(ToString::to_string).as_deref(),
-        Some("fix")
+        (
+            landing_fix.to_string(),
+            landing_fix.source(),
+            landing_fix.name(),
+            landing_fix.version(),
+        ),
+        ("acme/fix@1".to_owned(), "acme", "fix", 1)
     );
-    assert_eq!(train.max_fixes, Some(2));
+    assert_eq!(train.max_landing_fixes, Some(2));
     assert!(train.sections.is_empty());
 }
 
@@ -109,47 +116,28 @@ fn a_fix_and_its_bound_left_out_are_returned_left_out() {
     // The format gives neither a default (58, C.4).
     let train = &read("lands-with-no-stages.toml").unwrap().kinds["train"];
     assert!(train.stages.is_empty());
-    assert_eq!(train.fix, None);
-    assert_eq!(train.max_fixes, None);
+    assert_eq!(train.landing_fix, None);
+    assert_eq!(train.max_landing_fixes, None);
 }
 
 #[test]
 fn a_bound_without_a_fix() {
     let train = &read("a-bound-without-a-fix.toml").unwrap().kinds["train"];
-    assert_eq!(train.max_fixes, Some(0));
-    assert_eq!(train.fix, None);
+    assert_eq!(train.max_landing_fixes, Some(0));
+    assert_eq!(train.landing_fix, None);
     assert!(train.sections.is_empty());
 }
 
-// A kind's fix is a kind's name, spelt back as written.
-
 #[test]
-fn a_fix_in_every_form_of_a_kinds_name() {
-    // C.4; core.42.
-    let declaration = read("fix-forms.toml").unwrap();
-    let forms: Vec<_> = ["bare", "versioned", "sourced", "whole"]
-        .iter()
-        .map(|name| {
-            let kind = &declaration.kinds[*name];
-            assert!(kind.sections.is_empty());
-            let fix = kind.fix.as_ref().unwrap();
-            assert_eq!(fix.name(), "fix");
-            (
-                fix.to_string(),
-                fix.source().map(str::to_owned),
-                fix.version(),
-            )
-        })
-        .collect();
-    assert_eq!(
-        forms,
-        [
-            ("fix".to_owned(), None, None),
-            ("fix@2".to_owned(), None, Some(2)),
-            ("acme/fix".to_owned(), Some("acme".to_owned()), None),
-            ("acme/fix@1".to_owned(), Some("acme".to_owned()), Some(1)),
-        ]
-    );
+fn the_fields_old_spellings_are_sections() {
+    // `fix` and `max_fixes` are no fields the format names, so each is a
+    // section, unread and unrefused (56; C.4 as amended at blueprints
+    // 8eec6dd; core.30).
+    let train = &read("the-fields-old-spellings.toml").unwrap().kinds["train"];
+    assert!(train.stages.is_empty());
+    assert_eq!(train.landing_fix, None);
+    assert_eq!(train.max_landing_fixes, None);
+    assert_eq!(train.sections, table("fix = \"fix\"\nmax_fixes = 2"));
 }
 
 // A stage reads with its name, prompt and end.

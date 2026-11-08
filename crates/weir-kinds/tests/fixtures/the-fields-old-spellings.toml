@@ -1,0 +1,9 @@
+# A kind that lands with no stages naming `fix` and `max_fixes`, which the
+# format does not name: each is a section, returned unread, and the kind
+# names no landing fix and no bound (52 and C.4 as amended at blueprints
+# 8eec6dd; 56; core.30).
+[kinds.train]
+lands = true
+stages = []
+fix = "fix"
+max_fixes = 2

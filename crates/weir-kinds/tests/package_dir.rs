@@ -158,11 +158,11 @@ fn a_package_of_a_kind_that_lands_with_no_stages() {
 
 #[test]
 fn a_package_of_a_kind_that_names_its_fix() {
-    // Its fix kind is a name and no part of it, so `kind.toml` is still the
-    // one file it holds, and its hash covers the name as that file's bytes
-    // alone (52 and 89 as amended at blueprints 31f9f1c; 90, 92; core.43,
-    // core.44).
-    let train = "[kinds.train]\nlands = true\nstages = []\nfix = \"fix\"\nmax_fixes = 2\n";
+    // Its landing fix is an identity and no part of it, so `kind.toml` is
+    // still the one file it holds, and its hash covers the identity as that
+    // file's bytes alone (52 and 89 as amended at blueprints 8eec6dd; 90,
+    // 92; core.43, core.44; record 0005).
+    let train = "[kinds.train]\nlands = true\nstages = []\nlanding_fix = \"acme/fix@1\"\nmax_landing_fixes = 2\n";
     let files = [("kind.toml", train)];
     let top = tempfile::tempdir().unwrap();
     lay_out(top.path(), &files);
@@ -174,16 +174,12 @@ fn a_package_of_a_kind_that_names_its_fix() {
     assert_eq!(on_disk.kind.name, "train");
     assert!(on_disk.kind.lands);
     assert!(on_disk.kind.stages.is_empty());
+    assert_eq!(on_disk.kind.landing_fix, Some(identity("acme/fix@1")));
     assert_eq!(
-        on_disk
-            .kind
-            .fix
-            .as_ref()
-            .map(ToString::to_string)
-            .as_deref(),
-        Some("fix")
+        on_disk.kind.landing_fix.as_ref().map(ToString::to_string),
+        Some("acme/fix@1".to_owned())
     );
-    assert_eq!(on_disk.kind.max_fixes, Some(2));
+    assert_eq!(on_disk.kind.max_landing_fixes, Some(2));
     assert!(on_disk.kind.sections.is_empty());
     assert_eq!(on_disk.hash, ContentHash::of(files));
 }
