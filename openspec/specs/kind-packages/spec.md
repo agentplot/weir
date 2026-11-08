@@ -61,12 +61,12 @@ table names a kind outside the package (89, 57). A package with no
 `kind.toml`, a `kind.toml` that is not a file or that `read-kinds`
 refuses, one declaring no kind or several, or one giving settings to
 another kind SHALL be refused naming the field. A kind that lands with
-no stages and names by `fix` the kind its fixes run as names that kind
-by a name and no part of the package. The package SHALL read with its
-`fix` as written, whether or not it holds the kind named. Its content
-hash SHALL be C.4's over its files, `kind.toml` with the name in it
-among them, and no file of the kind named (89 and C.4 as amended at
-blueprints 31f9f1c; 90).
+no stages and names its landing fix by `landing_fix` names that kind by
+an identity and no part of the package. The package SHALL read with its
+`landing_fix` as written, whether or not it holds the kind named. Its
+content hash SHALL be C.4's over its files, `kind.toml` with the
+identity in it among them, and no file of the kind named (89 and C.4 as
+amended at blueprints 8eec6dd; 90; record 0005).
 
 #### Scenario: No kind.toml
 - **WHEN** a folder holds `prompts/review.md` and no `kind.toml`
@@ -85,8 +85,8 @@ blueprints 31f9f1c; 90).
 - **THEN** the package is refused naming that stage's `deliverables`, as `read-kinds` names it
 
 #### Scenario: A package of a kind that names its fix
-- **WHEN** a folder holds only `kind.toml`, declaring `train` with `lands = true`, `stages = []`, `fix = "fix"` and `max_fixes = 2`, and is read held at `acme/train@1`, and the same file is given as a path and its bytes
-- **THEN** both give `train` landing with no stages, its `fix` spelling `fix` and its `max_fixes` 2, the identity `acme/train@1`, and one content hash, the hash of that one file
+- **WHEN** a folder holds only `kind.toml`, declaring `train` with `lands = true`, `stages = []`, `landing_fix = "acme/fix@1"` and `max_landing_fixes = 2`, and is read held at `acme/train@1`, and the same file is given as a path and its bytes
+- **THEN** both give `train` landing with no stages, its `landing_fix` spelling `acme/fix@1` and its `max_landing_fixes` 2, the identity `acme/train@1`, and one content hash, the hash of that one file
 
 ### Requirement: Every part a package names is a regular file inside it
 Every `prompt` and `standing` path a package's `kind.toml` gives SHALL

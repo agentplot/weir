@@ -70,11 +70,12 @@ fn a_kind_that_lands_with_no_stages_is_listed() {
 
 #[test]
 fn a_kind_that_names_its_fix_is_listed() {
-    // 52 and C.4 as amended at blueprints 31f9f1c.
+    // The fix is the landing fix: 52 and C.4 as amended at blueprints
+    // 8eec6dd; record 0005.
     let output = check(&fixture("names-its-fix.toml"));
     assert_eq!(
         text(&output.stdout),
-        "train@1\n  lands with no stages\n  fixes run as fix\n  fixes at most 2\n"
+        "train@1\n  lands with no stages\n  landing fix acme/fix@1\n  landing fixes at most 2\n"
     );
     assert_eq!(text(&output.stderr), "");
     assert_eq!(output.status.code(), Some(0));

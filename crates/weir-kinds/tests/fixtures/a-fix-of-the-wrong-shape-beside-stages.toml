@@ -1,8 +1,8 @@
-# A fix of the wrong shape on a kind with stages: named once, by its
-# shape (57 as amended at blueprints 31f9f1c).
+# A landing fix of the wrong shape on a kind with stages: named once, by
+# its shape (57 as amended at blueprints 8eec6dd).
 [kinds.bump]
 lands = true
-fix = 3
+landing_fix = 3
 
 [[kinds.bump.stages]]
 name = "code"

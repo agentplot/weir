@@ -157,9 +157,9 @@ fn agents_tables_of_the_wrong_shape_are_refused() {
 
 #[test]
 fn agents_beside_a_fix_with_no_stages() {
-    // A table that holds `fix` or `max_fixes` is a kind and never settings,
-    // and a kind declares its stages (57 and C.4 as amended at blueprints
-    // 31f9f1c; core.41).
+    // A table that holds `landing_fix` or `max_landing_fixes` is a kind and
+    // never settings, and a kind declares its stages (57 and C.4 as amended
+    // at blueprints 8eec6dd; core.41).
     let refusal = read("agents-beside-a-fix.toml").unwrap_err();
     let fields: Vec<_> = refusal.problems.iter().map(|p| p.field.as_str()).collect();
     assert_eq!(fields, ["kinds.train.stages", "kinds.yard.stages"]);

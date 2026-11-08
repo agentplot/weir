@@ -1,0 +1,14 @@
+# A kind that lands with no stages naming its landing fix by a bare name:
+# refused naming the field, since a landing fix is an identity with its
+# version (52, 57 as amended at blueprints 8eec6dd; record 0005).
+satisfies = [52, 57]
+declaration = """
+[kinds.train]
+lands = true
+stages = []
+landing_fix = "fix"
+"""
+
+[[expect.refused]]
+field = "kinds.train.landing_fix"
+reason_holds = "is no identity"
