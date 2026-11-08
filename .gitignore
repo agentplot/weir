@@ -6,3 +6,9 @@ devenv.local.nix
 .moon/cache/
 /result
 .DS_Store
+
+# Claude Code's project files, which devenv writes from devenv.nix at each
+# entry to the shell and at a place's readiness (agentplot/boomdrive's
+# record 0022; record 0005)
+/.mcp.json
+/.claude/settings.json

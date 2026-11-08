@@ -55,12 +55,26 @@ Every tool runs through the shell, one command at a time:
 
 | layer | what | how long |
 |---|---|---|
-| `check-fast` | format (treefmt), the README's prose (Vale), and a new place's first commit through the hooks | seconds |
+| `check-fast` | format (treefmt), the README's prose (Vale), a new place's first commit through the hooks, and OpenSpec's Claude Code files | seconds |
 
 `devenv shell -- check-fast` runs them (`moon run :#check-fast`);
-`devenv shell -- moon run root:format`, `prose` and `hooks` run one each. Each
-crate brings its cargo tests and lint as a moon project of its own when
-it lands.
+`devenv shell -- moon run root:format`, `prose`, `hooks` and
+`openspec-claude` run one each. Each crate brings its cargo tests and
+lint as a moon project of its own when it lands.
+
+## Claude Code
+
+**Claude Code.** The MCP servers are `devenv.nix`'s
+(`claude.code.mcpServers`), devenv's hosted `mcp.devenv.sh` among them,
+each approved by name, so a session in a trusted folder starts them
+unasked. devenv writes `.mcp.json` and `.claude/settings.json` on
+entering the shell, and as a place's readiness sources it, and git
+ignores both (agentplot/boomdrive's record 0022; record 0005): a Claude
+Code setting of the repository's goes into devenv's options, never into
+those files. OpenSpec's skills and commands under `.claude/` are tracked
+as the OpenSpec `devenv.nix` pins writes them; when the pin moves,
+`devenv shell -- sh check-openspec-claude.sh --write` writes them again,
+and `root:openspec-claude` fails until it has.
 
 ## Commits
 
