@@ -1,7 +1,7 @@
 ---
 number: 3
 title: Flywheel is renamed Boomdrive
-status: proposed
+status: accepted
 date: 2026-11-04
 decision-makers:
 - Chuck Swanberg
@@ -9,7 +9,7 @@ decision-makers:
 
 # Flywheel is renamed Boomdrive
 
-Status: proposed, the user's decision in their own words, until they have seen it as a record.
+Status: accepted by the user on 2026-11-08, on their card.
 
 Deciders: the user, 2026-11-04, for every repository at once: "the ecosystem, the org, the branding, the cloud and the opensource runner tool are all boomdrive. There is also a "boom" open source tool that does the claim reconciliation."
 Sources: the brief of the chore flywheel-is-renamed-boomdrive, which carries the user's words and the names below.

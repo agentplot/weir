@@ -1,7 +1,7 @@
 ---
 number: 4
 title: A kind's name is letters, digits, _ and -, and a package holds no symbolic link
-status: proposed
+status: accepted
 date: 2026-11-05
 decision-makers:
 - Chuck Swanberg
@@ -9,7 +9,7 @@ decision-makers:
 
 # A kind's name is letters, digits, _ and -, and a package holds no symbolic link
 
-Status: proposed, the user's decision in their own words, until they have seen it as a record.
+Status: accepted by the user on 2026-11-08, on their card.
 
 Deciders: the user, 2026-11-05, answering the two questions the construct stage of the change weir-kinds-reads-a-package-and-a-lock asked through `flume needs`: for a kind's name and its source's name, "Letters, digits, _ and - only; anything else is refused, naming it"; for links, "Refuse them, naming the file". With the second they noted, as the orchestrator relayed it, that a kind is a folder like a skill's, whose files may reference each other by Markdown relative links, and those stay allowed, since every file is inside the package and its hash.
 Sources: `agentplot/blueprints:design/weir/requirements.md` 88 to 93, C.4, C.7 and S17, at 57a1ba9, and C.4, C.7 and S17 as amended at 361a599, which states these rulings; flume's record 0022 and record 0040; the change weir-kinds-reads-a-package-and-a-lock.
