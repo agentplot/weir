@@ -126,6 +126,37 @@ fn a_field_of_the_wrong_shape_is_refused() {
 }
 
 #[test]
+fn a_fix_or_a_bound_of_the_wrong_shape_is_refused() {
+    // A kind's fix is a kind's name and its bound a count (57 and C.4 as
+    // amended at blueprints 31f9f1c; core.42).
+    let refusal = read("fix-shapes.toml").unwrap_err();
+    let fields: Vec<_> = refusal.problems.iter().map(|p| p.field.as_str()).collect();
+    assert_eq!(
+        fields,
+        [
+            "kinds.bound-fraction.max_fixes",
+            "kinds.bound-negative.max_fixes",
+            "kinds.bound-string.max_fixes",
+            "kinds.fix-empty.fix",
+            "kinds.fix-number.fix",
+            "kinds.fix-path.fix",
+            "kinds.fix-space.fix",
+            "kinds.fix-version-zero.fix",
+        ]
+    );
+    for problem in &refusal.problems {
+        let expected = match problem.field.as_str() {
+            "kinds.fix-number.fix" => {
+                "must be a kind's name written as a string, such as \"fix\" or \"acme/fix@1\""
+            }
+            field if field.ends_with(".max_fixes") => "must be an integer of at least 0",
+            _ => "names no kind",
+        };
+        assert!(problem.reason.contains(expected), "{problem}");
+    }
+}
+
+#[test]
 fn a_quiet_time_of_more_than_one_part_is_refused() {
     assert_eq!(
         read("quiet-parts.toml"),
