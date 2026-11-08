@@ -23,7 +23,7 @@ passing what follows `--` to `cargo test`.
 
 ## 2. weir check
 
-- [ ] 2.1 Have `weir check` list, under `  lands with no stages`, `  fixes run as <fix>` where a kind names its fix, the name as written, and `  fixes at most <n>` where it names its bound, neither where left out. `listing`'s doc comment says so (design 8; 52). True when `devenv shell -- moon run weir:test -- --test check` passes two tests. `a_kind_that_names_its_fix_is_listed` runs over weir-kinds' fixture `names-its-fix.toml` and holds the kinds spec's *A kind that names its fix is listed*. `a_kind_that_lands_with_no_stages_is_listed` is unchanged, proving neither line printed where both fields are left out.
+- [x] 2.1 Have `weir check` list, under `  lands with no stages`, `  fixes run as <fix>` where a kind names its fix, the name as written, and `  fixes at most <n>` where it names its bound, neither where left out. `listing`'s doc comment says so (design 8; 52). True when `devenv shell -- moon run weir:test -- --test check` passes two tests. `a_kind_that_names_its_fix_is_listed` runs over weir-kinds' fixture `names-its-fix.toml` and holds the kinds spec's *A kind that names its fix is listed*. `a_kind_that_lands_with_no_stages_is_listed` is unchanged, proving neither line printed where both fields are left out.
 
 ## 3. The pack
 

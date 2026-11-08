@@ -124,7 +124,10 @@ fn check(path: &Path) -> ExitCode {
 
 /// A declaration's kinds in name order, each `<name>@<version>` with a line
 /// per stage, or the line `  lands with no stages` for a kind that lands
-/// declaring none (51), and one for an elaboration kind's ending; or every
+/// declaring none (51), below it `  fixes run as <fix>` where the kind names
+/// the kind its fixes run as, the name as written, and `  fixes at most <n>`
+/// where it names how many it runs, neither where left out (52), and one
+/// line for an elaboration kind's ending; or every
 /// problem of the kinds and of their elaboration sections, gathered into
 /// one refusal (57, 81).
 fn listing(text: &str) -> Result<Vec<String>, Vec<Problem>> {
@@ -135,6 +138,12 @@ fn listing(text: &str) -> Result<Vec<String>, Vec<Problem>> {
         lines.push(format!("{}@{}", kind.name, kind.version));
         if kind.stages.is_empty() {
             lines.push("  lands with no stages".to_owned());
+        }
+        if let Some(fix) = &kind.fix {
+            lines.push(format!("  fixes run as {fix}"));
+        }
+        if let Some(times) = kind.max_fixes {
+            lines.push(format!("  fixes at most {times}"));
         }
         for stage in &kind.stages {
             lines.push(match &stage.end {
