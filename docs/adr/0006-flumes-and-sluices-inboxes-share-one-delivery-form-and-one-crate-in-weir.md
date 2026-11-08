@@ -1,7 +1,7 @@
 ---
 number: 6
 title: Flume's and sluice's inboxes share one delivery form and one crate in weir
-status: proposed
+status: accepted
 date: 2026-11-08
 decision-makers:
 - Chuck Swanberg
@@ -10,7 +10,7 @@ decision-makers:
 
 # Flume's and sluice's inboxes share one delivery form and one crate in weir
 
-Status: proposed to the user on 2026-11-08, as `briefs.15` has it; accepted only on their yes.
+Status: accepted by the user on 2026-11-08, on their card.
 
 Deciders: the user, 2026-11-08, in agentplot-design's pane, on how Flume and sluice hand a reader what it waits for: "it seems like we're maybe inventing multiple similar solutions", "Is it actually tracking what was read?", "Is it done well?", and "So would we move a shared crate under Weir so that it's loose and Flume could use the same inbox system?". Then, on agentplot-design's card of the same day, which offered this direction: "Runner as one more recipient now; one shared inbox in weir next". The name, the form's rules below, and the order of the work are agentplot-design's, each cheap to change.
 
@@ -47,4 +47,3 @@ Option 1.
 ## Consequences
 
 - The statement gains weir's clauses for the form in the change that builds it, and Flume's 43 and 62 and sluice's 51 move to cite them as each tool adopts it.
-- No unit is queued from this record until the user accepts it.
