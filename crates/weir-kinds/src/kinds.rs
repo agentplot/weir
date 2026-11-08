@@ -203,6 +203,14 @@ pub struct KindSettings {
 /// holds `agents` and nothing else the format names gives settings and is
 /// never refused for its stages (57, C.4).
 ///
+/// A kind that lands with no stages may name the kind its fixes run as,
+/// `fix`, and how many it runs, `max_fixes`, either without the other (52,
+/// C.4). A `fix` that is not a string naming a kind, or a `max_fixes` that
+/// is not an integer of at least 0, is refused naming the field, and so is
+/// either on a kind whose stages read as one or more, whether it lands or
+/// not, named after the stages' own problems; where the kind's `stages` is
+/// refused, neither is judged against them (57).
+///
 /// A table or field the format does not name is returned unread and never
 /// fails the read (56). The same text always gives the same result, and
 /// nothing is read but the text (58, 82).
