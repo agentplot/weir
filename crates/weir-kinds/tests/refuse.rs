@@ -107,6 +107,58 @@ fn empty_stages_beside_a_lands_of_the_wrong_shape() {
 }
 
 #[test]
+fn a_kind_with_stages_that_names_its_fix_is_refused() {
+    // Only a kind that lands with no stages names its fix kind and its
+    // bound, and a kind with stages is refused naming each, whether it
+    // lands or not (57 as amended at blueprints 31f9f1c).
+    let refusal = read("stages-and-a-fix.toml").unwrap_err();
+    let fields: Vec<_> = refusal.problems.iter().map(|p| p.field.as_str()).collect();
+    assert_eq!(
+        fields,
+        [
+            "kinds.bump.fix",
+            "kinds.bump.max_fixes",
+            "kinds.tidy.fix",
+            "kinds.tidy.max_fixes",
+        ]
+    );
+    for problem in &refusal.problems {
+        assert!(
+            problem
+                .reason
+                .contains("only a kind that lands with no stages names"),
+            "{problem}"
+        );
+    }
+}
+
+#[test]
+fn a_fix_of_the_wrong_shape_beside_stages() {
+    // Named once, by its shape (57).
+    assert_eq!(
+        read("a-fix-of-the-wrong-shape-beside-stages.toml"),
+        Err(Refusal {
+            problems: vec![Problem {
+                field: "kinds.bump.fix".to_owned(),
+                reason:
+                    "must be a kind's name written as a string, such as \"fix\" or \"acme/fix@1\""
+                        .to_owned(),
+            }],
+        })
+    );
+}
+
+#[test]
+fn a_fix_beside_stages_already_refused() {
+    // Where the stages are refused, neither field is judged against them
+    // (57).
+    assert_eq!(
+        fields("a-fix-beside-stages-already-refused.toml"),
+        ["kinds.landing.stages", "kinds.not-landing.stages"]
+    );
+}
+
+#[test]
 fn a_stage_with_no_prompt_is_refused() {
     assert_eq!(fields("no-prompt.toml"), ["kinds.bump.stages[1].prompt"]);
 }

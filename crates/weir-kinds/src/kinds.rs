@@ -319,8 +319,12 @@ fn read_kind(name: &str, kind: &Table, at: &str, problems: &mut Problems) -> Kin
     let lands_read = (problems.len() == before).then_some(lands);
     let agents = read_agents(kind, at, problems);
     let stages = read_stages(kind, lands_read, at, problems);
-    let fix = read_fix(kind, at, problems);
-    let max_fixes = read_max_fixes(kind, at, problems);
+    // `fix` and `max_fixes` are judged against stages read as one or more:
+    // where `stages` is refused, it is named once and neither is judged
+    // against it (57).
+    let with_stages = !stages.is_empty();
+    let fix = read_fix(kind, with_stages, at, problems);
+    let max_fixes = read_max_fixes(kind, with_stages, at, problems);
     Kind {
         name: name.to_owned(),
         version,
@@ -338,12 +342,25 @@ fn read_kind(name: &str, kind: &Table, at: &str, problems: &mut Problems) -> Kin
 /// A kind's `fix`, the kind its fixes run as: a kind's name in any of its
 /// four forms, returned as written; `None` when left out (52, C.4). A
 /// value that is not a string, or a string that names no kind, is refused
-/// naming the field (57); which kind it names is the reader's (58;
-/// core.32).
-fn read_fix(kind: &Table, at: &str, problems: &mut Problems) -> Option<NamedKind> {
+/// naming the field, and so is a name on a kind `with_stages`, whose stages
+/// read as one or more, since only a kind that lands with no stages names
+/// it (57); which kind it names is the reader's (58; core.32).
+fn read_fix(
+    kind: &Table,
+    with_stages: bool,
+    at: &str,
+    problems: &mut Problems,
+) -> Option<NamedKind> {
     let here = field(at, "fix");
     match kind.get("fix")? {
         Value::String(text) => match text.parse() {
+            Ok(_) if with_stages => {
+                problems.refuse(
+                    &here,
+                    "is on a kind with stages, and only a kind that lands with no stages names the kind its fixes run as; a kind with stages names its fix round by a stage's `on_fail`",
+                );
+                None
+            }
             Ok(fix) => Some(fix),
             Err(refusal) => {
                 problems.refuse(&here, refusal.to_string());
@@ -362,12 +379,27 @@ fn read_fix(kind: &Table, at: &str, problems: &mut Problems) -> Option<NamedKind
 
 /// A kind's `max_fixes`, how many fixes it runs: an integer of at least 0;
 /// `None` when left out (52, C.4), its meaning then its reader's (58). Any
-/// other value is refused naming the field (57).
-fn read_max_fixes(kind: &Table, at: &str, problems: &mut Problems) -> Option<u64> {
+/// other value is refused naming the field, and so is a count on a kind
+/// `with_stages`, whose stages read as one or more, since only a kind that
+/// lands with no stages names it (57).
+fn read_max_fixes(
+    kind: &Table,
+    with_stages: bool,
+    at: &str,
+    problems: &mut Problems,
+) -> Option<u64> {
+    let here = field(at, "max_fixes");
     match kind.get("max_fixes")? {
+        Value::Integer(times) if *times >= 0 && with_stages => {
+            problems.refuse(
+                &here,
+                "is on a kind with stages, and only a kind that lands with no stages names how many fixes it runs; a kind with stages bounds its send-backs by a stage's `max_send_backs`",
+            );
+            None
+        }
         Value::Integer(times) if *times >= 0 => Some(times.unsigned_abs()),
         _ => {
-            problems.refuse(&field(at, "max_fixes"), "must be an integer of at least 0");
+            problems.refuse(&here, "must be an integer of at least 0");
             None
         }
     }
