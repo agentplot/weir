@@ -1,6 +1,7 @@
 //! The pack's kinds cases, `pack/kinds/<case>/case.toml`, each of one
-//! form: a declaration and the kinds it reads into, each stage with its
-//! end and its repeat; a package held at an identity, laid out in two
+//! form: a declaration and the kinds it reads into, each with its fix kind
+//! and its bound where it names them, and each stage with its end and its
+//! repeat; a package held at an identity, laid out in two
 //! folders, and the kind, identity and content hash it reads into, checked
 //! against a lock where the case names one; or a lock and the identities
 //! and hashes it records; or each field refused. Read against the crate,
@@ -118,6 +119,12 @@ struct ExpectEntry {
 struct ExpectKind {
     version: u64,
     stages: Vec<ExpectStage>,
+    /// The kind its fixes run as, the name as spelled; left out where the
+    /// kind names none (52, C.4).
+    fix: Option<String>,
+    /// How many fixes it runs; left out where the kind names none (52,
+    /// C.4).
+    max_fixes: Option<u64>,
     /// The kind's sections the format does not name, returned unread.
     #[serde(default)]
     unread: Vec<String>,
@@ -563,6 +570,19 @@ fn kind_differences(name: &str, kind: &Kind, expected: &ExpectKind) -> Vec<Strin
             kind.version, expected.version
         ));
     }
+    let fix = kind.fix.as_ref().map(ToString::to_string);
+    if fix != expected.fix {
+        said.push(format!(
+            "{name}: reads {kind_name} with fix {fix:?}, and the case expects fix {:?}",
+            expected.fix
+        ));
+    }
+    if kind.max_fixes != expected.max_fixes {
+        said.push(format!(
+            "{name}: reads {kind_name} with max_fixes {:?}, and the case expects max_fixes {:?}",
+            kind.max_fixes, expected.max_fixes
+        ));
+    }
     let unread: Vec<&String> = kind.sections.keys().collect();
     if unread != expected.unread.iter().collect::<Vec<_>>() {
         said.push(format!(
@@ -903,5 +923,34 @@ stages = [{ name = "review", end = "commits" }]
     assert!(
         said[0].starts_with("wrong-hash: hashes to `sha256:"),
         "{said:?}"
+    );
+}
+
+#[test]
+fn a_case_whose_kind_differs_in_its_fix_is_named() {
+    // A kind's fix and its bound are held against the kind read (52, C.4
+    // as amended at blueprints 31f9f1c; C.7).
+    let text = r#"
+satisfies = [52]
+declaration = """
+[kinds.train]
+lands = true
+stages = []
+fix = "other"
+max_fixes = 2
+"""
+
+[expect.kinds.train]
+version = 1
+stages = []
+fix = "fix"
+"#;
+    let case = read_case("wrong-fix", text).unwrap();
+    assert_eq!(
+        differences("wrong-fix", &case),
+        [
+            r#"wrong-fix: reads train with fix Some("other"), and the case expects fix Some("fix")"#,
+            "wrong-fix: reads train with max_fixes Some(2), and the case expects max_fixes None",
+        ]
     );
 }
