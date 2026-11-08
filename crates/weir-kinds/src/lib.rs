@@ -8,7 +8,12 @@
 //! not name, and apart from them the settings given to kinds the
 //! declaration does not declare, or refuses the declaration whole, naming
 //! every field that fails it (52, 57, C.4). A kind's stages are one or
-//! more, or none where it lands, declared as `stages = []` (51, 57). An
+//! more, or none where it lands, declared as `stages = []` (51, 57). A kind
+//! that lands with no stages may name its landing fix, the kind a place
+//! runs when the merge queue sends its branch back, by that kind's identity
+//! with its version returned as written, and how many landing fixes it
+//! runs; which kind that identity resolves to is the caller's (52, 58, C.4;
+//! core.32; record 0005). An
 //! elaboration kind's section is one of those sections: whoever runs
 //! places never looks inside it, and whoever runs elaborations reads it
 //! with [`read_elaboration`] (55, 56).

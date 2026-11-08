@@ -1,0 +1,28 @@
+# A package of a kind that lands with no stages and names its landing fix:
+# an identity and no part of the package, so `kind.toml` is the one file
+# it holds, and its content hash is that file's alone (52, 89 as amended
+# at blueprints 8eec6dd; 92; record 0005).
+satisfies = [52, 89, 92]
+
+[package]
+held = "acme/train@1"
+
+[package.files]
+"kind.toml" = """
+[kinds.train]
+branch = "train"
+lands = true
+stages = []
+landing_fix = "acme/fix@1"
+max_landing_fixes = 2
+"""
+
+[expect]
+identity = "acme/train@1"
+hash = "sha256:8d97ed164c981861ef9106fa72b2efc2dd8992cfa01cc10b3241aeb21e90bd69"
+
+[expect.kind]
+version = 1
+stages = []
+landing_fix = "acme/fix@1"
+max_landing_fixes = 2

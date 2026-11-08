@@ -1,0 +1,21 @@
+# A kind with stages naming its landing fix and how many it runs, one that
+# lands and one that does not: each field refused, since only a kind that
+# lands with no stages names them (57 as amended at blueprints 8eec6dd).
+[kinds.bump]
+lands = true
+landing_fix = "acme/fix@1"
+max_landing_fixes = 2
+
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+
+[kinds.tidy]
+landing_fix = "acme/fix@1"
+max_landing_fixes = 2
+
+[[kinds.tidy.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]

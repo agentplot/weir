@@ -1,0 +1,23 @@
+# A kind with stages naming its landing fix and how many landing fixes it
+# runs: refused naming each, since only a kind that lands with no stages
+# names them (52, 57 as amended at blueprints 8eec6dd).
+satisfies = [52, 57]
+declaration = """
+[kinds.bump]
+lands = true
+landing_fix = "acme/fix@1"
+max_landing_fixes = 2
+
+[[kinds.bump.stages]]
+name = "code"
+prompt = "prompts/code.md"
+deliverables = ["commits"]
+"""
+
+[[expect.refused]]
+field = "kinds.bump.landing_fix"
+reason_holds = "only a kind that lands with no stages names"
+
+[[expect.refused]]
+field = "kinds.bump.max_landing_fixes"
+reason_holds = "only a kind that lands with no stages names"

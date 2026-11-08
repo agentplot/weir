@@ -5,30 +5,36 @@ use toml::{Table, Value};
 
 use crate::deliverable::{Deliverable, End};
 use crate::fields::{boolean, field, key, strings, unnamed};
+use crate::identity::Identity;
 use crate::name::not_a_kinds_name;
 use crate::quiet;
 use crate::refusal::{not_toml, Problems, Refusal};
 use crate::repeat::Repeat;
 
 /// The fields of a kind the format names; every other key is a section.
-const KIND_FIELDS: [&str; 6] = [
+const KIND_FIELDS: [&str; 8] = [
     "version",
     "branch",
     "starts_unready",
     "lands",
     "agents",
     "stages",
+    "landing_fix",
+    "max_landing_fixes",
 ];
 
 /// The fields of a kind's table that declare a kind: a table holding
 /// `agents` and none of these gives settings and declares no kind (57,
-/// C.4). An elaboration kind's section is the format's own (55).
-const DECLARING_FIELDS: [&str; 6] = [
+/// C.4). An elaboration kind's section is the format's own (55), and a
+/// landing fix and its bound are fields the format names on a kind (52).
+const DECLARING_FIELDS: [&str; 8] = [
     "version",
     "branch",
     "starts_unready",
     "lands",
     "stages",
+    "landing_fix",
+    "max_landing_fixes",
     "elaboration",
 ];
 
@@ -90,6 +96,18 @@ pub struct Kind {
     /// kind lands, declared as `stages = []`, and then it runs no agent (51,
     /// 57).
     pub stages: Vec<Stage>,
+    /// Its landing fix, the kind a place runs when the merge queue sends
+    /// its branch back, named by that kind's identity with its version and
+    /// returned as written; `None` when left out, since the format gives no
+    /// default (52, 57, 58, C.4; record 0005). Only a kind that lands with
+    /// no stages names it. Which kind the identity resolves to, and what
+    /// that kind holds, are the reader's (58; core.32).
+    pub landing_fix: Option<Identity>,
+    /// How many landing fixes it runs before its place waits on its
+    /// caller, at least 0; `None` when left out, its meaning then its
+    /// reader's (52, 57, 58, C.4; record 0005). Only a kind that lands with
+    /// no stages names it, and it reads with or without `landing_fix`.
+    pub max_landing_fixes: Option<u64>,
     /// Every key of the kind the format does not name, unread and as
     /// written, an elaboration kind's `elaboration` section among them
     /// (55, 56).
@@ -185,6 +203,17 @@ pub struct KindSettings {
 /// and so is `stages = []` on a kind that does not land (S12); a table that
 /// holds `agents` and nothing else the format names gives settings and is
 /// never refused for its stages (57, C.4).
+///
+/// A kind that lands with no stages may name its landing fix,
+/// `landing_fix`, by the kind's identity with its version, and how many
+/// landing fixes it runs, `max_landing_fixes`, either without the other
+/// (52, C.4; record 0005). A `landing_fix` that is not a string holding an
+/// identity with its version, a bare name among them, or a
+/// `max_landing_fixes` that is not an integer of at least 0, is refused
+/// naming the field, and so is either on a kind whose stages read as one
+/// or more, whether it lands or not, named after the stages' own problems;
+/// where the kind's `stages` is refused, neither is judged against them
+/// (57).
 ///
 /// A table or field the format does not name is returned unread and never
 /// fails the read (56). The same text always gives the same result, and
@@ -303,15 +332,94 @@ fn read_kind(name: &str, kind: &Table, at: &str, problems: &mut Problems) -> Kin
     let before = problems.len();
     let lands = boolean(kind, "lands", at, problems);
     let lands_read = (problems.len() == before).then_some(lands);
+    let agents = read_agents(kind, at, problems);
+    let stages = read_stages(kind, lands_read, at, problems);
+    // `landing_fix` and `max_landing_fixes` are judged against stages read
+    // as one or more: where `stages` is refused, it is named once and
+    // neither is judged against it (57).
+    let with_stages = !stages.is_empty();
+    let landing_fix = read_landing_fix(kind, with_stages, at, problems);
+    let max_landing_fixes = read_max_landing_fixes(kind, with_stages, at, problems);
     Kind {
         name: name.to_owned(),
         version,
         branch,
         starts_unready,
         lands,
-        agents: read_agents(kind, at, problems),
-        stages: read_stages(kind, lands_read, at, problems),
+        agents,
+        stages,
+        landing_fix,
+        max_landing_fixes,
         sections: unnamed(kind, &KIND_FIELDS),
+    }
+}
+
+/// A kind's `landing_fix`, the kind a place runs when the merge queue
+/// sends its branch back: an identity with its version,
+/// `<source>/<name>@<version>`, returned as written; `None` when left out
+/// (52, C.4; record 0005). A value that is not a string, or a string that
+/// is no identity with its version, a bare name among them, is refused
+/// naming the field with why, and so is an identity on a kind
+/// `with_stages`, whose stages read as one or more, since only a kind that
+/// lands with no stages names it (57); which kind it names is the reader's
+/// (58; core.32).
+fn read_landing_fix(
+    kind: &Table,
+    with_stages: bool,
+    at: &str,
+    problems: &mut Problems,
+) -> Option<Identity> {
+    let here = field(at, "landing_fix");
+    match kind.get("landing_fix")? {
+        Value::String(text) => match text.parse() {
+            Ok(_) if with_stages => {
+                problems.refuse(
+                    &here,
+                    "is on a kind with stages, and only a kind that lands with no stages names its landing fix; a kind with stages names where a failed submission sends its place back by a stage's `on_fail`",
+                );
+                None
+            }
+            Ok(landing_fix) => Some(landing_fix),
+            Err(refusal) => {
+                problems.refuse(&here, refusal.to_string());
+                None
+            }
+        },
+        _ => {
+            problems.refuse(
+                &here,
+                "must be a kind's identity with its version written as a string, such as \"acme/fix@1\"",
+            );
+            None
+        }
+    }
+}
+
+/// A kind's `max_landing_fixes`, how many landing fixes it runs: an
+/// integer of at least 0; `None` when left out (52, C.4; record 0005), its
+/// meaning then its reader's (58). Any other value is refused naming the
+/// field, and so is a count on a kind `with_stages`, whose stages read as
+/// one or more, since only a kind that lands with no stages names it (57).
+fn read_max_landing_fixes(
+    kind: &Table,
+    with_stages: bool,
+    at: &str,
+    problems: &mut Problems,
+) -> Option<u64> {
+    let here = field(at, "max_landing_fixes");
+    match kind.get("max_landing_fixes")? {
+        Value::Integer(times) if *times >= 0 && with_stages => {
+            problems.refuse(
+                &here,
+                "is on a kind with stages, and only a kind that lands with no stages names how many landing fixes it runs; a kind with stages bounds its send-backs by a stage's `max_send_backs`",
+            );
+            None
+        }
+        Value::Integer(times) if *times >= 0 => Some(times.unsigned_abs()),
+        _ => {
+            problems.refuse(&here, "must be an integer of at least 0");
+            None
+        }
     }
 }
 

@@ -1,0 +1,15 @@
+# An agents table beside a landing fix, and another beside a bound,
+# neither with stages: a table that holds `landing_fix` or
+# `max_landing_fixes` is a kind, never settings, and a kind declares its
+# stages (57 and C.4 as amended at blueprints 8eec6dd; core.41).
+[kinds.train]
+landing_fix = "acme/fix@1"
+
+[kinds.train.agents]
+model = "opus"
+
+[kinds.yard]
+max_landing_fixes = 2
+
+[kinds.yard.agents]
+model = "opus"

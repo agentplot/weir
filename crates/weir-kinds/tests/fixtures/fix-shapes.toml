@@ -1,0 +1,44 @@
+# A kind's landing fix or its bound of the wrong shape, one kind that lands
+# with no stages for each: a landing fix that is not a string, or a string
+# that is no identity with its version, and a bound that is not an integer
+# of at least 0, each refused naming the field (57 and C.4 as amended at
+# blueprints 8eec6dd; core.42).
+[kinds.fix-number]
+lands = true
+stages = []
+landing_fix = 3
+
+[kinds.fix-empty]
+lands = true
+stages = []
+landing_fix = ""
+
+[kinds.fix-space]
+lands = true
+stages = []
+landing_fix = "a b"
+
+[kinds.fix-path]
+lands = true
+stages = []
+landing_fix = "../fix"
+
+[kinds.fix-version-zero]
+lands = true
+stages = []
+landing_fix = "acme/fix@0"
+
+[kinds.bound-negative]
+lands = true
+stages = []
+max_landing_fixes = -1
+
+[kinds.bound-string]
+lands = true
+stages = []
+max_landing_fixes = "2"
+
+[kinds.bound-fraction]
+lands = true
+stages = []
+max_landing_fixes = 1.5
