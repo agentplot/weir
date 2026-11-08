@@ -1,0 +1,12 @@
+# A fix beside stages the read refuses: a kind that lands with its stages
+# left out, and one that does not land with `stages = []`. Each kind's
+# stages are named once, and neither its fix nor its bound is judged
+# against them (57 as amended at blueprints 51b6316 and 31f9f1c).
+[kinds.landing]
+lands = true
+fix = "fix"
+
+[kinds.not-landing]
+stages = []
+fix = "fix"
+max_fixes = 2

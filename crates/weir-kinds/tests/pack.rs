@@ -1,6 +1,7 @@
 //! The pack's kinds cases, `pack/kinds/<case>/case.toml`, each of one
-//! form: a declaration and the kinds it reads into, each stage with its
-//! end and its repeat; a package held at an identity, laid out in two
+//! form: a declaration and the kinds it reads into, each with its fix kind
+//! and its bound where it names them, and each stage with its end and its
+//! repeat; a package held at an identity, laid out in two
 //! folders, and the kind, identity and content hash it reads into, checked
 //! against a lock where the case names one; or a lock and the identities
 //! and hashes it records; or each field refused. Read against the crate,
@@ -17,8 +18,8 @@ use std::path::{Path, PathBuf};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use weir_kinds::{
-    read_elaboration, read_kinds, read_lock, read_package_dir, Declaration, End, Identity, Kind,
-    Package, Problem,
+    read_elaboration, read_kinds, read_lock, read_package_dir, ContentHash, Declaration, End,
+    Identity, Kind, Package, Problem,
 };
 
 /// A case as its `case.toml` writes it: a field the format does not name
@@ -45,11 +46,12 @@ struct Case {
 enum Form {
     /// A declaration's text.
     Declaration { text: String, expect: Expect },
-    /// A package and the identity it is held at.
+    /// A package and the identity it is held at, what it expects boxed so
+    /// the variant stays near the others' size.
     Package {
         package: PackageCase,
         held: Identity,
-        expect: ExpectPackage,
+        expect: Box<ExpectPackage>,
     },
     /// A lock's text.
     Lock { text: String, expect: ExpectLock },
@@ -118,6 +120,12 @@ struct ExpectEntry {
 struct ExpectKind {
     version: u64,
     stages: Vec<ExpectStage>,
+    /// The kind its fixes run as, the name as spelled; left out where the
+    /// kind names none (52, C.4).
+    fix: Option<String>,
+    /// How many fixes it runs; left out where the kind names none (52,
+    /// C.4).
+    max_fixes: Option<u64>,
     /// The kind's sections the format does not name, returned unread.
     #[serde(default)]
     unread: Vec<String>,
@@ -190,7 +198,7 @@ fn read_case(name: &str, text: &str) -> Result<Case, String> {
             Form::Package {
                 package,
                 held,
-                expect,
+                expect: Box::new(expect),
             }
         }
         (None, None, Some(text)) => {
@@ -563,6 +571,19 @@ fn kind_differences(name: &str, kind: &Kind, expected: &ExpectKind) -> Vec<Strin
             kind.version, expected.version
         ));
     }
+    let fix = kind.fix.as_ref().map(ToString::to_string);
+    if fix != expected.fix {
+        said.push(format!(
+            "{name}: reads {kind_name} with fix {fix:?}, and the case expects fix {:?}",
+            expected.fix
+        ));
+    }
+    if kind.max_fixes != expected.max_fixes {
+        said.push(format!(
+            "{name}: reads {kind_name} with max_fixes {:?}, and the case expects max_fixes {:?}",
+            kind.max_fixes, expected.max_fixes
+        ));
+    }
     let unread: Vec<&String> = kind.sections.keys().collect();
     if unread != expected.unread.iter().collect::<Vec<_>>() {
         said.push(format!(
@@ -904,4 +925,123 @@ stages = [{ name = "review", end = "commits" }]
         said[0].starts_with("wrong-hash: hashes to `sha256:"),
         "{said:?}"
     );
+}
+
+#[test]
+fn a_case_whose_kind_differs_in_its_fix_is_named() {
+    // A kind's fix and its bound are held against the kind read (52, C.4
+    // as amended at blueprints 31f9f1c; C.7).
+    let text = r#"
+satisfies = [52]
+declaration = """
+[kinds.train]
+lands = true
+stages = []
+fix = "other"
+max_fixes = 2
+"""
+
+[expect.kinds.train]
+version = 1
+stages = []
+fix = "fix"
+"#;
+    let case = read_case("wrong-fix", text).unwrap();
+    assert_eq!(
+        differences("wrong-fix", &case),
+        [
+            r#"wrong-fix: reads train with fix Some("other"), and the case expects fix Some("fix")"#,
+            "wrong-fix: reads train with max_fixes Some(2), and the case expects max_fixes None",
+        ]
+    );
+}
+
+/// A kind that lands with no stages names its fix kind and its bound, read
+/// with both as a declaration and as a package, and a kind with stages
+/// naming both is refused naming each (52, 57 and 89 as amended at
+/// blueprints 31f9f1c; 92).
+#[test]
+fn a_kind_that_names_its_fix_and_one_with_stages_that_may_not() {
+    let cites = |case: &Case| -> Vec<i64> {
+        case.satisfies
+            .iter()
+            .filter_map(toml::Value::as_integer)
+            .collect()
+    };
+    let name = "a-kind-that-lands-with-no-stages-names-its-fix";
+    let naming = case(name);
+    assert_eq!(cites(&naming), [52, 57]);
+    let Form::Declaration {
+        text: train,
+        expect,
+    } = &naming.form
+    else {
+        panic!("{name}: a declaration's case");
+    };
+    for line in [
+        "lands = true",
+        "stages = []",
+        r#"fix = "fix""#,
+        "max_fixes = 2",
+    ] {
+        assert!(train.contains(line), "{name}: {train}");
+    }
+    let kinds = expect.kinds.as_ref().unwrap();
+    assert_eq!(kinds.keys().collect::<Vec<_>>(), ["train"]);
+    let expected = &kinds["train"];
+    assert_eq!(expected.version, 1);
+    assert!(expected.stages.is_empty());
+    assert_eq!(expected.fix.as_deref(), Some("fix"));
+    assert_eq!(expected.max_fixes, Some(2));
+    assert_eq!(differences(name, &naming), Vec::<String>::new());
+
+    let name = "a-kind-with-stages-that-names-its-fix";
+    let with_stages = case(name);
+    assert_eq!(cites(&with_stages), [52, 57]);
+    let Form::Declaration { text, expect } = &with_stages.form else {
+        panic!("{name}: a declaration's case");
+    };
+    for line in ["lands = true", r#"fix = "fix""#, "max_fixes = 2"] {
+        assert!(text.contains(line), "{name}: {text}");
+    }
+    assert_eq!(
+        text.matches("[[kinds.bump.stages]]").count(),
+        1,
+        "{name}: {text}"
+    );
+    let refused = expect.refused.as_ref().unwrap();
+    let fields: Vec<_> = refused.iter().map(|r| r.field.as_str()).collect();
+    assert_eq!(fields, ["kinds.bump.fix", "kinds.bump.max_fixes"], "{name}");
+    for refusal in refused {
+        assert_eq!(
+            refusal.reason_holds, "only a kind that lands with no stages names",
+            "{name}"
+        );
+    }
+    assert_eq!(differences(name, &with_stages), Vec::<String>::new());
+
+    let name = "a-package-of-a-kind-that-names-its-fix";
+    let packaged = case(name);
+    assert_eq!(cites(&packaged), [52, 89, 92]);
+    let Form::Package {
+        package, expect, ..
+    } = &packaged.form
+    else {
+        panic!("{name}: a package's case");
+    };
+    assert_eq!(package.held, "acme/train@1");
+    assert_eq!(package.files.keys().collect::<Vec<_>>(), ["kind.toml"]);
+    assert_eq!(&package.files["kind.toml"], train, "{name}");
+    assert!(package.links.is_empty() && package.lock.is_none(), "{name}");
+    assert_eq!(expect.identity.as_deref(), Some("acme/train@1"));
+    assert_eq!(
+        expect.hash.as_deref(),
+        Some(ContentHash::of(&package.files).to_string().as_str())
+    );
+    let kind = expect.kind.as_ref().unwrap();
+    assert_eq!(kind.version, 1);
+    assert!(kind.stages.is_empty());
+    assert_eq!(kind.fix.as_deref(), Some("fix"));
+    assert_eq!(kind.max_fixes, Some(2));
+    assert_eq!(differences(name, &packaged), Vec::<String>::new());
 }

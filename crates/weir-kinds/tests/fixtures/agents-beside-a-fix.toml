@@ -1,0 +1,15 @@
+# An agents table beside a fix kind, and another beside a bound, neither
+# with stages: a table that holds `fix` or `max_fixes` is a kind, never
+# settings, and a kind declares its stages (57 and C.4 as amended at
+# blueprints 31f9f1c; core.41).
+[kinds.train]
+fix = "fix"
+
+[kinds.train.agents]
+model = "opus"
+
+[kinds.yard]
+max_fixes = 2
+
+[kinds.yard.agents]
+model = "opus"

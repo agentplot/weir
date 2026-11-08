@@ -1,0 +1,21 @@
+# A kind's fix in each of a kind's name's four forms, each spelt back as
+# written (52, C.4 as amended at blueprints 31f9f1c; core.42).
+[kinds.bare]
+lands = true
+stages = []
+fix = "fix"
+
+[kinds.versioned]
+lands = true
+stages = []
+fix = "fix@2"
+
+[kinds.sourced]
+lands = true
+stages = []
+fix = "acme/fix"
+
+[kinds.whole]
+lands = true
+stages = []
+fix = "acme/fix@1"

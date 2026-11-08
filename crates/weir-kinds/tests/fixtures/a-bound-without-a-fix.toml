@@ -1,0 +1,7 @@
+# A kind that lands with no stages naming how many fixes it runs and no
+# fix kind: either reads without the other (52, 57, 58 and C.4 as amended
+# at blueprints 31f9f1c).
+[kinds.train]
+lands = true
+stages = []
+max_fixes = 0
