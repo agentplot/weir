@@ -55,11 +55,11 @@ Every tool runs through the shell, one command at a time:
 
 | layer | what | how long |
 |---|---|---|
-| `check-fast` | format (treefmt), the README's prose (Vale), a new place's first commit through the hooks, and OpenSpec's Claude Code files | seconds |
+| `check-fast` | format (treefmt), the README's prose (Vale), a new place's first commit through the hooks, OpenSpec's Claude Code files, and the specs, through `openspec validate --strict` | seconds |
 
 `devenv shell -- check-fast` runs them (`moon run :#check-fast`);
-`devenv shell -- moon run root:format`, `prose`, `hooks` and
-`openspec-claude` run one each. Each crate brings its cargo tests and
+`devenv shell -- moon run root:format`, `prose`, `hooks`,
+`openspec-claude` and `specs` run one each. Each crate brings its cargo tests and
 lint as a moon project of its own when it lands.
 
 ## Claude Code
