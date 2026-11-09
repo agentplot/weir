@@ -1,0 +1,7 @@
+# A delivery each of whose readers has confirmed it (S22) is owed to no
+# reader and is done: its deliverer may let go of it.
+satisfies = [107]
+done = ["place/7f3a/end/2"]
+
+[call.owed]
+now = "2026-11-08T12:00:00-05:00"

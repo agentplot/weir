@@ -1,0 +1,31 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# weir-delivery: a delivery's records and the calls over them (100 to 113;
+# C.8). One task per check (core.39), each declaring everything it reads
+# (kit:testing.3).
+language: 'rust'
+dependsOn: [capture]
+
+tasks:
+  format:
+    command: 'cargo fmt -p weir-delivery --check'
+    inputs: &inputs ['/crates/weir-delivery/**/*', '/crates/weir-capture/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  lint:
+    command: 'cargo clippy -p weir-delivery --all-targets -- -D warnings'
+    inputs: *inputs
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  typecheck:
+    command: 'cargo check -p weir-delivery --all-targets'
+    inputs: *inputs
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  # The tests run recfix, from devenv.nix's recutils, over the records they
+  # spell.
+  test:
+    command: 'cargo test -p weir-delivery'
+    inputs: *inputs
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}

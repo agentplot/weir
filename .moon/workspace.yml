@@ -16,6 +16,7 @@ projects:
   branch: 'crates/weir-branch'
   cadence: 'crates/weir-cadence'
   capture: 'crates/weir-capture'
+  delivery: 'crates/weir-delivery'
   kinds: 'crates/weir-kinds'
   pack: 'crates/weir-pack'
   signals: 'crates/weir-signals'

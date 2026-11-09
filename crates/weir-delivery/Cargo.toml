@@ -1,0 +1,18 @@
+[package]
+name = "weir-delivery"
+description = "A delivery, one message a deliverer owes its readers, owed to each until that reader confirms it by its key: its four records spelled in recutils and JSON, and record, hand, confirm and owed as functions over a deliverer's records (statement 100 to 113; C.8)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+weir-capture = { path = "../weir-capture" }
+serde.workspace = true
+serde_json.workspace = true
+time.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true

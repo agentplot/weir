@@ -1,0 +1,24 @@
+# A delivery for two readers, handed to the first by a notice (S22): both
+# are still owed it, the first with its hand-over, and it is not done.
+satisfies = [102, 103, 105]
+done = []
+
+[call.owed]
+now = "2026-11-08T11:00:00-05:00"
+
+[[owed]]
+reader = "planner"
+known = false
+
+[[owed.delivery]]
+key = "place/7f3a/end/2"
+expired = false
+handed = ["notice"]
+
+[[owed]]
+reader = "reviewer"
+known = false
+
+[[owed.delivery]]
+key = "place/7f3a/end/2"
+expired = false

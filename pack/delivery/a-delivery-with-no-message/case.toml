@@ -1,0 +1,13 @@
+# A delivery recorded with an empty message is refused, naming `message`.
+satisfies = [100]
+
+[call.record]
+key = "place/7f3a/end/2"
+message = ""
+readers = ["planner"]
+at = "2026-11-08T10:02:00-05:00"
+span = 604800
+
+[refused]
+field = "message"
+reason_holds = "is empty"
