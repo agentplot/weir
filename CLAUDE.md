@@ -69,7 +69,7 @@ lint as a moon project of its own when it lands.
 each approved by name, so a session in a trusted folder starts them
 unasked. devenv writes `.mcp.json` and `.claude/settings.json` on
 entering the shell, and as a place's readiness sources it, and git
-ignores both (agentplot/boomdrive's record 0022; record 0005): a Claude
+ignores both (agentplot/boomdrive's record 0022; record 0007): a Claude
 Code setting of the repository's goes into devenv's options, never into
 those files. OpenSpec's skills and commands under `.claude/` are tracked
 as the OpenSpec `devenv.nix` pins writes them; when the pin moves,

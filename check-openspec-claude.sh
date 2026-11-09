@@ -1,7 +1,7 @@
 #!/bin/sh
 # OpenSpec's Claude Code skills and commands, which the tree tracks under
 # .claude/skills/openspec-* and .claude/commands/opsx, are exactly what
-# the OpenSpec devenv.nix pins writes (record 0005; core.40): ten
+# the OpenSpec devenv.nix pins writes (record 0007; core.40): ten
 # workflows, propose, explore, new, continue, apply, ff, sync, archive,
 # bulk-archive and verify, as skills and as commands. They are written
 # afresh into a scratch directory under a configuration of this script's
