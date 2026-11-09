@@ -1,0 +1,14 @@
+format: weir-handover/1
+key: place/7f3a/end/2
+reader: reviewer
+by: session-start
+at: 2026-11-08T11:00:00-05:00
+
+format: weir-confirmation/1
+key: place/7f3a/end/2
+reader: reviewer
+at: 2026-11-08T11:00:00-05:00
+
+format: weir-known/1
+reader: reviewer
+known_at: 2026-11-08T11:00:00-05:00

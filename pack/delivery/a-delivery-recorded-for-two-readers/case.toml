@@ -1,0 +1,11 @@
+# A delivery recorded for two readers, with no record before it: the one
+# weir-delivery/1 to add, its readers in the order given, expiring a week
+# after it was recorded, at its offset.
+satisfies = [100, 104]
+
+[call.record]
+key = "place/7f3a/end/2"
+message = "construct ended: the change is written."
+readers = ["planner", "reviewer"]
+at = "2026-11-08T10:02:00-05:00"
+span = 604800

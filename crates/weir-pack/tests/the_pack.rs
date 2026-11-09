@@ -1,5 +1,6 @@
 //! weir's own pack passes its own check, held to "weir's pack passes its
-//! own check" (conformance-pack; 67; core.35).
+//! own check" (conformance-pack; 67; core.35), its cases of each of the
+//! seven shapes read, `delivery` among them.
 
 use std::collections::BTreeSet;
 
@@ -21,6 +22,7 @@ fn the_repositorys_pack() {
     for shape in Shape::ALL {
         assert!(checked.read[&shape] > 0, "no case of {shape} read");
     }
+    assert!(checked.to_string().contains(" delivery"), "{checked}");
     println!("{checked}");
 }
 
@@ -36,6 +38,22 @@ fn the_branch_cases_cite_44_to_50() {
         assert!(
             cited.contains(&Clause::number(clause)),
             "no branch case cites {clause}"
+        );
+    }
+}
+
+#[test]
+fn the_delivery_cases_cite_100_to_107() {
+    let pack = Pack::embedded();
+    let cited: BTreeSet<Clause> = pack
+        .cases(Shape::Delivery)
+        .iter()
+        .flat_map(|case| satisfies(case).unwrap_or_else(|why| panic!("{why}")))
+        .collect();
+    for clause in 100..=107 {
+        assert!(
+            cited.contains(&Clause::number(clause)),
+            "no delivery case cites {clause}"
         );
     }
 }

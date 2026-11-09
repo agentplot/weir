@@ -1,0 +1,11 @@
+# The second reader's session starts, and the call that hands it the
+# delivery confirms on receipt (S22): the hand-over, the confirmation and
+# the weir-known/1 for a name no reader had confirmed under, in that order.
+satisfies = [103, 106]
+
+[call.hand]
+key = "place/7f3a/end/2"
+reader = "reviewer"
+by = "session-start"
+at = "2026-11-08T11:00:00-05:00"
+confirms = true

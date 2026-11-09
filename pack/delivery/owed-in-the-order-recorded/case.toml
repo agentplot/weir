@@ -1,0 +1,23 @@
+# Three deliveries for one reader, recorded in the order end/3, end/1,
+# end/2: what the reader is owed is in the order recorded.
+satisfies = [105]
+done = []
+
+[call.owed]
+now = "2026-11-08T12:00:00-05:00"
+
+[[owed]]
+reader = "planner"
+known = false
+
+[[owed.delivery]]
+key = "place/7f3a/end/3"
+expired = false
+
+[[owed.delivery]]
+key = "place/7f3a/end/1"
+expired = false
+
+[[owed.delivery]]
+key = "place/7f3a/end/2"
+expired = false
