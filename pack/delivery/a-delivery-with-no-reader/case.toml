@@ -1,0 +1,13 @@
+# A delivery recorded with no reader is refused, naming `readers`.
+satisfies = [100]
+
+[call.record]
+key = "place/7f3a/end/2"
+message = "construct ended: the change is written."
+readers = []
+at = "2026-11-08T10:02:00-05:00"
+span = 604800
+
+[refused]
+field = "readers"
+reason_holds = "names no reader"

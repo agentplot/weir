@@ -121,3 +121,123 @@ fn a_case_out_of_its_shape() {
         assert!(why.contains(says), "{why}");
     }
 }
+
+/// Design 13's cases: each case's name, its call, the outcome it names and
+/// the clauses it cites.
+const THE_CASES: [(&str, &str, &str, &[u32]); 21] = [
+    (
+        "a-delivery-recorded-for-two-readers",
+        "record",
+        "added",
+        &[100, 104],
+    ),
+    ("a-delivery-with-no-reader", "record", "refused", &[100]),
+    ("a-reader-named-twice", "record", "refused", &[100]),
+    ("a-delivery-with-no-message", "record", "refused", &[100]),
+    ("a-span-of-no-seconds", "record", "refused", &[104]),
+    ("one-key-recorded-twice", "record", "held", &[101]),
+    (
+        "a-reader-confirms-by-its-key",
+        "confirm",
+        "added",
+        &[102, 106],
+    ),
+    ("a-second-confirmation", "confirm", "already", &[102]),
+    (
+        "a-confirmation-of-a-key-no-delivery-is-under",
+        "confirm",
+        "refused",
+        &[102],
+    ),
+    (
+        "a-confirmation-by-a-reader-not-named",
+        "confirm",
+        "refused",
+        &[102],
+    ),
+    ("a-hand-over-confirms-nothing", "hand", "added", &[103]),
+    ("handed-and-still-owed", "owed", "owed", &[102, 103, 105]),
+    ("a-reader-confirms-on-receipt", "hand", "added", &[103, 106]),
+    (
+        "a-hand-over-to-a-reader-that-confirmed",
+        "hand",
+        "already",
+        &[103],
+    ),
+    (
+        "a-hand-over-to-a-reader-not-named",
+        "hand",
+        "refused",
+        &[103],
+    ),
+    (
+        "an-expired-delivery-is-shown",
+        "owed",
+        "owed",
+        &[104, 105, 106],
+    ),
+    (
+        "an-expired-delivery-confirmed",
+        "confirm",
+        "added",
+        &[102, 104],
+    ),
+    ("owed-in-the-order-recorded", "owed", "owed", &[105]),
+    ("a-name-stays-known", "owed", "owed", &[106]),
+    (
+        "a-delivery-done-when-every-reader-confirms",
+        "owed",
+        "owed",
+        &[107],
+    ),
+    (
+        "a-delivery-not-done-while-a-reader-has-not-confirmed",
+        "owed",
+        "owed",
+        &[107],
+    ),
+];
+
+fn outcome(outcome: &weir_pack::Outcome) -> &'static str {
+    match outcome {
+        weir_pack::Outcome::Added(_) => "added",
+        weir_pack::Outcome::Held => "held",
+        weir_pack::Outcome::Already(_) => "already",
+        weir_pack::Outcome::Refused { .. } => "refused",
+        weir_pack::Outcome::Owed { .. } => "owed",
+    }
+}
+
+#[test]
+fn the_cases_named() {
+    use std::collections::BTreeSet;
+    use weir_pack::Clause;
+
+    let pack = Pack::embedded();
+    let names: BTreeSet<String> = pack
+        .cases(Shape::Delivery)
+        .into_iter()
+        .map(|case| case.name)
+        .collect();
+    let named: BTreeSet<String> = THE_CASES
+        .iter()
+        .map(|(name, ..)| name.to_string())
+        .collect();
+    assert_eq!(names, named, "the pack's delivery cases are design 13's");
+    let mut cited = BTreeSet::new();
+    for (name, call, expects, cites) in THE_CASES {
+        let case = pack.case(Shape::Delivery, name).expect("the case");
+        let read = read_delivery_case(&case).unwrap_or_else(|why| panic!("{why}"));
+        assert_eq!(read.call.name(), call, "{name}");
+        assert_eq!(outcome(&read.expected), expects, "{name}");
+        let satisfies: Vec<Clause> = cites.iter().copied().map(Clause::number).collect();
+        assert_eq!(read.satisfies, satisfies, "{name}");
+        cited.extend(satisfies);
+    }
+    for clause in 100..=107 {
+        assert!(
+            cited.contains(&Clause::number(clause)),
+            "no delivery case cites {clause}"
+        );
+    }
+}

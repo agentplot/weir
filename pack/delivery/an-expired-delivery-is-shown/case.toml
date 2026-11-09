@@ -1,0 +1,17 @@
+# A delivery names a reader misspelt, `planer`, and nothing confirms it
+# (S23). Past its expiry it is shown expired, with its reader, and the
+# name as one no reader has confirmed under. A store that drops expired
+# deliveries fails this case (S25).
+satisfies = [104, 105, 106]
+done = []
+
+[call.owed]
+now = "2026-11-12T09:00:00-05:00"
+
+[[owed]]
+reader = "planer"
+known = false
+
+[[owed.delivery]]
+key = "place/7f3a/end/2"
+expired = true

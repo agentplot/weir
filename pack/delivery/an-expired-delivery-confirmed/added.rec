@@ -1,0 +1,8 @@
+format: weir-confirmation/1
+key: place/7f3a/end/2
+reader: planner
+at: 2026-11-12T09:00:00-05:00
+
+format: weir-known/1
+reader: planner
+known_at: 2026-11-12T09:00:00-05:00

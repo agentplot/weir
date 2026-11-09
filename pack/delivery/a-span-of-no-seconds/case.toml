@@ -1,0 +1,14 @@
+# A delivery whose span is 0 seconds is refused, naming `span`: a span is
+# at least one second.
+satisfies = [104]
+
+[call.record]
+key = "place/7f3a/end/2"
+message = "construct ended: the change is written."
+readers = ["planner"]
+at = "2026-11-08T10:02:00-05:00"
+span = 0
+
+[refused]
+field = "span"
+reason_holds = "is 0 seconds"
