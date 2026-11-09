@@ -1,0 +1,11 @@
+# A delivery is never handed to a reader that has confirmed it: nothing is
+# added, and the answer says when the reader confirmed.
+satisfies = [103]
+already = "2026-11-08T10:40:12-05:00"
+
+[call.hand]
+key = "place/7f3a/end/2"
+reader = "planner"
+by = "wait"
+at = "2026-11-09T08:00:00-05:00"
+confirms = false

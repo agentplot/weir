@@ -1,0 +1,14 @@
+# A delivery naming one reader twice is refused, naming `readers` and the
+# reader.
+satisfies = [100]
+
+[call.record]
+key = "place/7f3a/end/2"
+message = "construct ended: the change is written."
+readers = ["planner", "planner"]
+at = "2026-11-08T10:02:00-05:00"
+span = 604800
+
+[refused]
+field = "readers"
+reason_holds = "names `planner` twice"

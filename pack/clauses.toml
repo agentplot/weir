@@ -2,9 +2,10 @@
 # it stands in, as the pack's check reads them (67; C.7). Numbers only,
 # never a clause's words (core.37): the statement is in agentplot/blueprints,
 # and a clause it adds, removes or renumbers is changed here in the change
-# that follows it.
+# that follows it. 94 to 99, statechart kinds and the engine, stay out until
+# weir's statechart change takes them in with their cases.
 statement = "agentplot/blueprints:design/weir/requirements.md"
-commit = "a11f6d5"
+commit = "006fc34"
 
 [[section]]
 name = "A.1"
@@ -55,6 +56,10 @@ name = "A.12"
 clauses = [69, 70, 71]
 
 [[section]]
+name = "A.14"
+clauses = [100, 101, 102, 103, 104, 105, 106, 107]
+
+[[section]]
 name = "B.1"
 clauses = [72, 73, 74]
 
@@ -77,3 +82,7 @@ clauses = [83, 84, 85]
 [[section]]
 name = "B.6"
 clauses = [86, 87]
+
+[[section]]
+name = "B.7"
+clauses = [108, 109, 110, 111, 112, 113]

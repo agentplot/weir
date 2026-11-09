@@ -1,0 +1,14 @@
+# A delivery is never handed to a reader it does not name: refused, naming
+# `reader` and the reader.
+satisfies = [103]
+
+[call.hand]
+key = "place/7f3a/end/2"
+reader = "stranger"
+by = "notice"
+at = "2026-11-08T10:02:05-05:00"
+confirms = false
+
+[refused]
+field = "reader"
+reason_holds = "`stranger` is not a reader of"

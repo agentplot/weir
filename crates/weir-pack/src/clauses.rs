@@ -89,7 +89,7 @@ impl PartialOrd for Clause {
 /// One section of the statement and the clauses it holds, in order.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Section {
-    /// `A.1` to `A.12`, `B.1` to `B.6`.
+    /// `A.1` to `A.12`, `A.14`, `B.1` to `B.7`.
     pub name: String,
     pub clauses: Vec<Clause>,
 }
@@ -104,10 +104,10 @@ pub struct Index {
     pub sections: Vec<Section>,
 }
 
-/// The sections whose clauses the pack's check counts, with 71 beside
-/// them (67).
-pub const COUNTED_SECTIONS: [&str; 10] = [
-    "A.1", "A.2", "A.3", "A.4", "A.5", "A.6", "A.7", "A.8", "A.9", "A.10",
+/// The sections whose clauses the pack's check counts, A.1 to A.10 and
+/// A.14, with 71 beside them (67).
+pub const COUNTED_SECTIONS: [&str; 11] = [
+    "A.1", "A.2", "A.3", "A.4", "A.5", "A.6", "A.7", "A.8", "A.9", "A.10", "A.14",
 ];
 
 /// The clause of A.12 the check counts beside the sections (67).
@@ -141,8 +141,8 @@ impl Index {
         self.sections.iter().find(|section| section.name == name)
     }
 
-    /// The clauses the pack's check counts: every clause of A.1 to A.10,
-    /// and 71 (67); or why the index cannot say, naming the section or the
+    /// The clauses the pack's check counts: every clause of A.1 to A.10
+    /// and of A.14, and 71 (67); or why the index cannot say, naming the section or the
     /// clause it lacks.
     pub fn counted(&self) -> Result<BTreeSet<Clause>, String> {
         let mut counted = BTreeSet::new();

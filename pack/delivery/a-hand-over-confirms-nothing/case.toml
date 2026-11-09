@@ -1,0 +1,10 @@
+# A delivery handed to its reader by a notice: the hand-over alone, which
+# confirms nothing.
+satisfies = [103]
+
+[call.hand]
+key = "place/7f3a/end/2"
+reader = "planner"
+by = "notice"
+at = "2026-11-08T10:02:05-05:00"
+confirms = false
