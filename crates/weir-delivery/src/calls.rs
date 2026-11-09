@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use crate::record::{self, Delivery, Record};
+use crate::record::{self, Confirmation, Delivery, Known, Record};
 use crate::text::{Key, Message, Reader, Span, Time};
 
 /// A call, or a read of a record, refused: the field that failed and why
@@ -84,4 +84,96 @@ pub fn record(
         Some(held) => Recorded::Held(held.clone()),
         None => Recorded::Add(vec![delivery.into()]),
     })
+}
+
+/// What `confirm` gives (110): the records to add, or that the reader has
+/// confirmed the delivery, and when it first did (102).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Confirmed {
+    /// The `weir-confirmation/1` record and, where no `weir-known/1` record
+    /// names the reader, one making its name known, in that order.
+    Add(Vec<Record>),
+    /// The reader has confirmed the delivery: when it first did. Nothing is
+    /// to be added.
+    Already(Time),
+}
+
+/// The delivery `records` hold under `key`, where `reader` is one of its
+/// readers; or a refusal naming `key` when no delivery is under it, or
+/// `reader` when the delivery does not name it (102, 103).
+fn delivery_to<'a>(
+    records: &'a [Record],
+    key: &Key,
+    reader: &Reader,
+) -> Result<&'a Delivery, Refusal> {
+    let delivery = delivery_under(records, key)
+        .ok_or_else(|| Refusal::new("key", format!("no delivery is recorded under `{key}`")))?;
+    if !delivery.readers().contains(reader) {
+        return Err(Refusal::new(
+            "reader",
+            format!("`{reader}` is not a reader of `{key}`"),
+        ));
+    }
+    Ok(delivery)
+}
+
+/// When `reader` first confirmed the delivery under `key`, where the
+/// records hold its confirmation.
+fn first_confirmed<'a>(records: &'a [Record], key: &Key, reader: &Reader) -> Option<&'a Time> {
+    records.iter().find_map(|record| match record {
+        Record::Confirmation(confirmation)
+            if confirmation.key == *key && confirmation.reader == *reader =>
+        {
+            Some(&confirmation.at)
+        }
+        _ => None,
+    })
+}
+
+/// The records `reader`'s confirmation of `key` at `at` adds: the
+/// confirmation, and its name made known where no `weir-known/1` record of
+/// `records` names it (106; core.50).
+fn confirming(records: &[Record], key: Key, reader: Reader, at: Time) -> Vec<Record> {
+    let known = records
+        .iter()
+        .any(|record| matches!(record, Record::Known(known) if known.reader == reader));
+    let mut add = vec![Confirmation {
+        key,
+        reader: reader.clone(),
+        at: at.clone(),
+    }
+    .into()];
+    if !known {
+        add.push(
+            Known {
+                reader,
+                known_at: at,
+            }
+            .into(),
+        );
+    }
+    add
+}
+
+/// `confirm` (110): `reader`'s confirmation of the delivery under `key`
+/// `at`, with its name made known where it was not (102, 106); or, where
+/// the records hold its confirmation of `key`, when it first confirmed,
+/// adding nothing. An expired delivery is confirmed as an owed one (104).
+/// A call is refused at the first field out of its shape, `key`, `reader`
+/// or `at`, then naming `key` where no delivery is under it, or `reader`
+/// where the delivery does not name it (core.48).
+pub fn confirm(
+    records: &[Record],
+    key: &str,
+    reader: &str,
+    at: &str,
+) -> Result<Confirmed, Refusal> {
+    let key = Key::parse(key)?;
+    let reader = Reader::parse(reader)?;
+    let at = Time::parse(at, "at")?;
+    delivery_to(records, &key, &reader)?;
+    if let Some(first) = first_confirmed(records, &key, &reader) {
+        return Ok(Confirmed::Already(first.clone()));
+    }
+    Ok(Confirmed::Add(confirming(records, key, reader, at)))
 }
