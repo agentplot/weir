@@ -11,7 +11,8 @@
 //! checks a meeting adapter passes (65, 66), with the adapter cases that
 //! fix their verdicts; the host cases, read, and compared with the report
 //! a host prints and the records at its branch's tip (65, 87); and the
-//! delivery cases, read (C.7, C.8).
+//! delivery cases, read, and run through a deliverer's store its caller
+//! hands it (65, 87, 112, 113; C.7, C.8).
 //!
 //! It runs no program and reads no repository: `weir conform` makes the
 //! repository a host is run against, runs the host and reads the tip, and
@@ -35,7 +36,8 @@ pub use check::{check, satisfies, Checked, Fault};
 pub use clauses::{read_index, Clause, Index, Section};
 pub use compare::{compare_report, compare_tip, verdict, Machine};
 pub use delivery::{
-    read_delivery_case, Call, DeliveryCase, ExpectedDelivery, ExpectedReader, Outcome,
+    conform_deliveries, read_delivery_case, run_delivery_case, Call, DeliveryCase,
+    ExpectedDelivery, ExpectedReader, Outcome,
 };
 pub use host::{
     read_host_case, Expected, ExpectedRefusal, ExpectedRun, HostCase, Invocation, Offered, Step,

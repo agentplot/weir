@@ -11,13 +11,19 @@
 //! the refusal, by its field and a phrase of its reason (`[refused]`); or,
 //! for `owed`, each reader owed with its deliveries and the keys done
 //! (`done` and `[[owed]]`).
+//!
+//! The run holds a deliverer's store to the cases through its read and add
+//! alone (112): a case runs against weir's crate, through a store its
+//! caller hands it (65, 87, 113).
 
 use serde::Deserialize;
 use toml::Value;
-use weir_delivery::{rec, Record};
+use weir_delivery::{
+    json, rec, Confirmed, Delivery, Handed, Owed, Record, Recorded, Refusal, Store, Time,
+};
 
 use crate::clauses::Clause;
-use crate::pack::Case;
+use crate::pack::{Case, Pack, Shape};
 
 /// The files a delivery case may hold.
 const FILES: [&str; 3] = ["case.toml", "start.rec", "added.rec"];
@@ -341,4 +347,303 @@ pub fn read_delivery_case(case: &Case) -> Result<DeliveryCase, String> {
         start,
         expected,
     })
+}
+
+/// What a case's call answered.
+enum Answer {
+    Add(Vec<Record>),
+    Held(Delivery),
+    Already(Time),
+    Refused(Refusal),
+    Owed(Owed),
+}
+
+impl Answer {
+    fn said(&self) -> String {
+        match self {
+            Answer::Add(records) => format!("{} records to add", records.len()),
+            Answer::Held(_) => "the key held".into(),
+            Answer::Already(at) => format!("that the reader confirmed at {at}"),
+            Answer::Refused(refusal) => format!("a refusal, {refusal}"),
+            Answer::Owed(_) => "what is owed".into(),
+        }
+    }
+}
+
+impl Outcome {
+    fn said(&self) -> String {
+        match self {
+            Outcome::Added(records) => format!("{} records added", records.len()),
+            Outcome::Held => "the key held".into(),
+            Outcome::Already(at) => format!("that the reader confirmed at {at}"),
+            Outcome::Refused {
+                field,
+                reason_holds,
+            } => format!("`{field}` refused for a reason holding \"{reason_holds}\""),
+            Outcome::Owed { .. } => "what is owed".into(),
+        }
+    }
+}
+
+/// The call `case` makes, with weir's crate, over `records`.
+fn answer(call: &Call, records: &[Record]) -> Answer {
+    let answered = match call {
+        Call::Record {
+            key,
+            message,
+            readers,
+            at,
+            span,
+        } => {
+            let readers: Vec<&str> = readers.iter().map(String::as_str).collect();
+            weir_delivery::record(records, key, message, &readers, at, *span).map(|recorded| {
+                match recorded {
+                    Recorded::Add(add) => Answer::Add(add),
+                    Recorded::Held(delivery) => Answer::Held(delivery),
+                }
+            })
+        }
+        Call::Hand {
+            key,
+            reader,
+            by,
+            at,
+            confirms,
+        } => weir_delivery::hand(records, key, reader, by, at, *confirms).map(
+            |handed| match handed {
+                Handed::Add(add) => Answer::Add(add),
+                Handed::Confirmed(at) => Answer::Already(at),
+            },
+        ),
+        Call::Confirm { key, reader, at } => {
+            weir_delivery::confirm(records, key, reader, at).map(|confirmed| match confirmed {
+                Confirmed::Add(add) => Answer::Add(add),
+                Confirmed::Already(at) => Answer::Already(at),
+            })
+        }
+        Call::Owed { now } => weir_delivery::owed(records, now).map(Answer::Owed),
+    };
+    answered.unwrap_or_else(Answer::Refused)
+}
+
+/// Each record of `expected` a store did not read back as written, and
+/// each it read back that is not expected, by its JSON line (C.8).
+fn differences(expected: &[Record], read: &[Record]) -> Vec<String> {
+    let mut unmatched: Vec<Option<&Record>> = read.iter().map(Some).collect();
+    let mut said = Vec::new();
+    for record in expected {
+        match unmatched.iter().position(|left| *left == Some(record)) {
+            Some(at) => unmatched[at] = None,
+            None => said.push(format!("not read back: {}", json::write(record))),
+        }
+    }
+    said.extend(
+        unmatched
+            .into_iter()
+            .flatten()
+            .map(|record| format!("not expected: {}", json::write(record))),
+    );
+    if said.is_empty() && expected != read {
+        said.push("read back in another order than added".into());
+    }
+    said
+}
+
+/// What `owed` gave, in the case's terms.
+fn as_expected(owed: &Owed) -> (Vec<ExpectedReader>, Vec<String>) {
+    let readers = owed
+        .readers
+        .iter()
+        .map(|owed| ExpectedReader {
+            reader: owed.reader.to_string(),
+            known: owed.known,
+            deliveries: owed
+                .deliveries
+                .iter()
+                .map(|owed| ExpectedDelivery {
+                    key: owed.delivery.key().to_string(),
+                    expired: owed.expired,
+                    handed: owed
+                        .handovers
+                        .iter()
+                        .map(|handover| handover.by.to_string())
+                        .collect(),
+                })
+                .collect(),
+        })
+        .collect();
+    let done = owed.done.iter().map(ToString::to_string).collect();
+    (readers, done)
+}
+
+/// Readers owed, in words: each with whether its name is known and each
+/// delivery's key, owed or expired, and the ways it was handed over.
+fn said_of(readers: &[ExpectedReader]) -> String {
+    if readers.is_empty() {
+        return "no reader".into();
+    }
+    readers
+        .iter()
+        .map(|reader| {
+            let deliveries: Vec<String> = reader
+                .deliveries
+                .iter()
+                .map(|delivery| {
+                    let mut said = format!(
+                        "`{}` {}",
+                        delivery.key,
+                        if delivery.expired { "expired" } else { "owed" }
+                    );
+                    if !delivery.handed.is_empty() {
+                        said.push_str(&format!(", handed by {}", delivery.handed.join(", ")));
+                    }
+                    said
+                })
+                .collect();
+            format!(
+                "`{}`, {}: {}",
+                reader.reader,
+                if reader.known { "known" } else { "not known" },
+                deliveries.join("; ")
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(" | ")
+}
+
+/// Runs `case` through `store`, an empty store its caller hands it, as C.7
+/// says: adds the starting records and reads them back, makes the case's
+/// call with weir's crate over what it read, adds what the call gives, and
+/// reads the store back (65, 87, 112, 113). Compares the store with the
+/// starting records followed by those the case expects added, record by
+/// record, and the answer with the case's; or names every difference, a
+/// record by its JSON line (S25; core.52).
+pub fn run_delivery_case<S: Store>(case: &DeliveryCase, store: &mut S) -> Result<(), Vec<String>> {
+    let mut said: Vec<String> = Vec::new();
+    let mut say = |difference: String| {
+        if !said.contains(&difference) {
+            said.push(difference);
+        }
+    };
+    if let Err(error) = store.add(&case.start) {
+        return Err(vec![format!(
+            "the store's add of the starting records failed: {error}"
+        )]);
+    }
+    let read = match store.read() {
+        Ok(read) => read,
+        Err(error) => return Err(vec![format!("the store's read failed: {error}")]),
+    };
+    differences(&case.start, &read)
+        .into_iter()
+        .for_each(&mut say);
+    let answer = answer(&case.call, &read);
+    if let Answer::Add(add) = &answer {
+        if let Err(error) = store.add(add) {
+            say(format!(
+                "the store's add of what `{}` gave failed: {error}",
+                case.call.name()
+            ));
+            return Err(said);
+        }
+    }
+    let mut expected = case.start.clone();
+    if let Outcome::Added(added) = &case.expected {
+        expected.extend(added.iter().cloned());
+    }
+    match store.read() {
+        Ok(read) => differences(&expected, &read).into_iter().for_each(&mut say),
+        Err(error) => say(format!("the store's read failed: {error}")),
+    }
+    let call = case.call.name();
+    match (&case.expected, &answer) {
+        (Outcome::Added(_), Answer::Add(_)) => {}
+        (Outcome::Held, Answer::Held(delivery)) => {
+            let Call::Record { key, .. } = &case.call else {
+                unreachable!("a case expecting the key held makes `record`")
+            };
+            let standing = case.start.iter().find_map(|record| match record {
+                Record::Delivery(standing) if standing.key().as_str() == key => Some(standing),
+                _ => None,
+            });
+            if standing != Some(delivery) {
+                say(format!(
+                    "`record` held the key with {}, and the starting records hold {}",
+                    json::write(&Record::Delivery(delivery.clone())),
+                    standing.map_or("no delivery under it".into(), |standing| json::write(
+                        &Record::Delivery(standing.clone())
+                    ))
+                ));
+            }
+        }
+        (Outcome::Already(expected), Answer::Already(at)) => {
+            if at.as_str() != expected {
+                say(format!(
+                    "`{call}` said the reader confirmed at {at}, and the case expects {expected}"
+                ));
+            }
+        }
+        (
+            Outcome::Refused {
+                field,
+                reason_holds,
+            },
+            Answer::Refused(refusal),
+        ) => {
+            if refusal.field != *field || !refusal.reason.contains(reason_holds.as_str()) {
+                say(format!(
+                    "`{call}` gave a refusal, {refusal}, and the case expects {}",
+                    case.expected.said()
+                ));
+            }
+        }
+        (Outcome::Owed { readers, done }, Answer::Owed(owed)) => {
+            let (gave, gave_done) = as_expected(owed);
+            if gave != *readers {
+                say(format!(
+                    "`owed` gave {}, and the case expects {}",
+                    said_of(&gave),
+                    said_of(readers)
+                ));
+            }
+            if gave_done != *done {
+                say(format!(
+                    "`owed` gave done [{}], and the case expects [{}]",
+                    gave_done.join(", "),
+                    done.join(", ")
+                ));
+            }
+        }
+        (expected, answer) => say(format!(
+            "`{call}` gave {}, and the case expects {}",
+            answer.said(),
+            expected.said()
+        )),
+    }
+    if said.is_empty() {
+        Ok(())
+    } else {
+        Err(said)
+    }
+}
+
+/// Runs every delivery case of `pack`, each through a fresh store from
+/// `make`, and gives each case's name, `delivery/<name>`, with its
+/// verdict; a case that does not read fails, saying why (87, 113). A
+/// deliverer calls it in its own tests over its own store, with
+/// `Pack::embedded()`.
+pub fn conform_deliveries<S: Store>(
+    pack: &Pack,
+    mut make: impl FnMut() -> S,
+) -> Vec<(String, Result<(), Vec<String>>)> {
+    pack.cases(Shape::Delivery)
+        .iter()
+        .map(|case| match read_delivery_case(case) {
+            Err(why) => (case.id(), Err(vec![why])),
+            Ok(read) => {
+                let verdict = run_delivery_case(&read, &mut make());
+                (read.id, verdict)
+            }
+        })
+        .collect()
 }
