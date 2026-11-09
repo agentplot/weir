@@ -1,0 +1,16 @@
+format: weir-delivery/1
+key: place/7f3a/end/2
+reader: planner
+reader: reviewer
+message: construct ended: the change is written.
+recorded_at: 2026-11-08T10:02:00-05:00
+expires_at: 2026-11-15T10:02:00-05:00
+
+format: weir-confirmation/1
+key: place/7f3a/end/2
+reader: planner
+at: 2026-11-08T10:40:12-05:00
+
+format: weir-known/1
+reader: planner
+known_at: 2026-11-08T10:40:12-05:00

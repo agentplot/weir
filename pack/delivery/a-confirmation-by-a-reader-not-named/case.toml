@@ -1,0 +1,12 @@
+# A confirmation by a reader the delivery does not name is refused, naming
+# `reader` and the reader.
+satisfies = [102]
+
+[call.confirm]
+key = "place/7f3a/end/2"
+reader = "stranger"
+at = "2026-11-08T10:40:12-05:00"
+
+[refused]
+field = "reader"
+reason_holds = "`stranger` is not a reader of"

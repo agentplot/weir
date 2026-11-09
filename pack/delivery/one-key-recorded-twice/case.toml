@@ -1,0 +1,11 @@
+# A key recorded twice (S24): the second call, with another message, another
+# reader and another span, adds nothing, and the first delivery stands.
+satisfies = [101]
+held = true
+
+[call.record]
+key = "place/7f3a/end/2"
+message = "another message: the change is written again."
+readers = ["reviewer"]
+at = "2026-11-09T08:00:00-05:00"
+span = 60

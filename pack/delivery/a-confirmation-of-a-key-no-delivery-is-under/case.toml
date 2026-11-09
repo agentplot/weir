@@ -1,0 +1,12 @@
+# A confirmation of a key no delivery is recorded under is refused, naming
+# `key` and the key.
+satisfies = [102]
+
+[call.confirm]
+key = "place/0000/end/1"
+reader = "planner"
+at = "2026-11-08T10:40:12-05:00"
+
+[refused]
+field = "key"
+reason_holds = "no delivery is recorded under `place/0000/end/1`"

@@ -1,0 +1,8 @@
+# A reader confirms a delivery past its expiry as it confirms an owed one:
+# the confirmation, and the weir-known/1 for its name.
+satisfies = [102, 104]
+
+[call.confirm]
+key = "place/7f3a/end/2"
+reader = "planner"
+at = "2026-11-12T09:00:00-05:00"

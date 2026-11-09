@@ -1343,6 +1343,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "weir-delivery"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "time",
+ "weir-capture",
+]
+
+[[package]]
 name = "weir-kinds"
 version = "0.0.0"
 dependencies = [
@@ -1362,6 +1372,7 @@ dependencies = [
  "time",
  "toml",
  "weir-capture",
+ "weir-delivery",
 ]
 
 [[package]]

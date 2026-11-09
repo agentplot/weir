@@ -13,6 +13,9 @@
 #                          section, a kind's identity, its package and
 #                          content hash, and a lock of kinds: landed
 #   crates/weir-cadence    five-field cron, caught up once: landed
+#   crates/weir-delivery   a delivery's four records in recutils and JSON,
+#                          and record, hand, confirm and owed over a
+#                          deliverer's records: landed
 #   crates/weir-pack       the conformance pack: its cases built in, its
 #                          check, the adapter and meeting checks and the
 #                          host cases' comparisons: landed
@@ -29,6 +32,7 @@ members = [
   "crates/weir-adapters",
   "crates/weir-signals",
   "crates/weir-pack",
+  "crates/weir-delivery",
 ]
 
 [workspace.package]

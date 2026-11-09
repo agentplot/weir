@@ -1,0 +1,17 @@
+# A name stays known after the deliveries confirmed under it are let go of:
+# its weir-known/1 stands with no delivery of its own left, and the reader
+# owed a new one is shown with its name known. A store that loses known
+# names fails this case.
+satisfies = [106]
+done = []
+
+[call.owed]
+now = "2026-11-08T11:00:00-05:00"
+
+[[owed]]
+reader = "planner"
+known = true
+
+[[owed.delivery]]
+key = "place/7f3a/end/2"
+expired = false

@@ -1,0 +1,8 @@
+# A reader confirms a delivery by its key, its name not yet known: the
+# confirmation, and the weir-known/1 that makes its name known.
+satisfies = [102, 106]
+
+[call.confirm]
+key = "place/7f3a/end/2"
+reader = "planner"
+at = "2026-11-08T10:40:12-05:00"
