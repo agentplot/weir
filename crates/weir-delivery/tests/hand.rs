@@ -47,7 +47,7 @@ fn a_hand_over_by_a_notice() {
     assert_eq!(planner.reader.as_str(), "planner");
     assert_eq!(
         planner.deliveries[0].handovers,
-        [handover.clone()],
+        std::slice::from_ref(handover),
         "still owed, with that hand-over"
     );
     assert!(owed.done.is_empty());

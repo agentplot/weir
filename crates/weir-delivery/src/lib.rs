@@ -19,6 +19,7 @@ pub mod json;
 mod owed;
 pub mod rec;
 mod record;
+mod store;
 mod text;
 
 pub use calls::{confirm, hand, record, Confirmed, Handed, Recorded, Refusal};
@@ -26,4 +27,5 @@ pub use owed::{owed, Owed, OwedDelivery, ReaderOwed};
 pub use record::{
     Confirmation, Delivery, Handover, Known, Record, CONFIRMATION, DELIVERY, HANDOVER, KNOWN,
 };
+pub use store::Store;
 pub use text::{Key, Message, Reader, Span, Time, Way};
