@@ -30,6 +30,7 @@ conformance pack do that for the family's captures.
 | `weir-branch` | The one write protocol for a shared branch. |
 | `weir-kinds` | The one kind format, with an elaboration kind's section, a kind's packages, their content hash and locks. |
 | `weir-cadence` | Five-field cron, caught up once after a missed run. |
+| `weir-delivery` | One form for a message a tool owes a reader, owed until the reader confirms it by its key: its records, their spellings and the calls over a deliverer's own store. |
 | the conformance pack | Contract lines in, the records a host must write out. |
 
 Each record format is named `weir-<record>/<major>`. Every crate is

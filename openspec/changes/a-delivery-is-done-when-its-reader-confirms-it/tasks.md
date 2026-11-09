@@ -43,4 +43,4 @@ runs the repository's whole checks once every task is done.
 
 ## 5. The README
 
-- [ ] 5.1 Add `weir-delivery` to the README's table of crates: one form for a message a tool owes a reader, owed until the reader confirms it by its key, with its records, their spellings and the calls over a deliverer's own store. True when `devenv shell -- moon run root:prose` passes.
+- [x] 5.1 Add `weir-delivery` to the README's table of crates: one form for a message a tool owes a reader, owed until the reader confirms it by its key, with its records, their spellings and the calls over a deliverer's own store. True when `devenv shell -- moon run root:prose` passes.
