@@ -8,8 +8,9 @@ use std::path::Path;
 
 use weir_pack::{check, Clause, Fault, Pack, Shape};
 
-/// A small index: one clause or a few in each counted section, the pack's
-/// own and the never-does clauses, and a section of Part B.
+/// A small index: one clause or a few in each counted section, A.14 among
+/// them, the pack's own and the never-does clauses, and a section of Part
+/// B.
 const INDEX: &str = r#"statement = "agentplot/blueprints:design/weir/requirements.md"
 commit = "ae9d782"
 
@@ -277,6 +278,16 @@ fn a_clause_of_part_a_cited_by_no_case() {
         Some("satisfies = [14]\n"),
     );
     assert_eq!(faults(&no_71), ["71: is cited by no case"]);
+}
+
+#[test]
+fn a_clause_of_a14_cited_by_no_case() {
+    let files = with(
+        &passing(),
+        "delivery/a-second-confirmation/case.toml",
+        Some("satisfies = [102]\n"),
+    );
+    assert_eq!(faults(&files), ["106: is cited by no case"]);
 }
 
 #[test]
