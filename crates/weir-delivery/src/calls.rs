@@ -3,8 +3,8 @@
 
 use std::fmt;
 
-use crate::record::{self, Confirmation, Delivery, Known, Record};
-use crate::text::{Key, Message, Reader, Span, Time};
+use crate::record::{self, Confirmation, Delivery, Handover, Known, Record};
+use crate::text::{Key, Message, Reader, Span, Time, Way};
 
 /// A call, or a read of a record, refused: the field that failed and why
 /// (100, 108 to 110; core.47).
@@ -176,4 +176,53 @@ pub fn confirm(
         return Ok(Confirmed::Already(first.clone()));
     }
     Ok(Confirmed::Add(confirming(records, key, reader, at)))
+}
+
+/// What `hand` gives (109): the records to add, or that the reader has
+/// confirmed the delivery, and when it first did (103).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Handed {
+    /// The `weir-handover/1` record and, where the reader confirms on
+    /// receipt, what `confirm` gives after it, to be added together.
+    Add(Vec<Record>),
+    /// The reader has confirmed the delivery: when it first did. Nothing is
+    /// handed over and nothing is to be added.
+    Confirmed(Time),
+}
+
+/// `hand` (109): the hand-over of the delivery under `key` to `reader`
+/// `by` a way `at`, which confirms nothing (103); where `confirms`, the
+/// reader confirming on receipt, the confirmation `confirm` gives after
+/// it, in the same answer. Where the records hold the reader's
+/// confirmation of `key`, it says when, adding nothing. A call is refused
+/// at the first field out of its shape, `key`, `reader`, `by` or `at`,
+/// then naming `key` where no delivery is under it, or `reader` where the
+/// delivery does not name it (core.48).
+pub fn hand(
+    records: &[Record],
+    key: &str,
+    reader: &str,
+    by: &str,
+    at: &str,
+    confirms: bool,
+) -> Result<Handed, Refusal> {
+    let key = Key::parse(key)?;
+    let reader = Reader::parse(reader)?;
+    let by = Way::parse(by)?;
+    let at = Time::parse(at, "at")?;
+    delivery_to(records, &key, &reader)?;
+    if let Some(first) = first_confirmed(records, &key, &reader) {
+        return Ok(Handed::Confirmed(first.clone()));
+    }
+    let mut add = vec![Handover {
+        key: key.clone(),
+        reader: reader.clone(),
+        by,
+        at: at.clone(),
+    }
+    .into()];
+    if confirms {
+        add.extend(confirming(records, key, reader, at));
+    }
+    Ok(Handed::Add(add))
 }
