@@ -1,0 +1,135 @@
+## MODIFIED Requirements
+
+### Requirement: A host case holds its steps, its starting records and the records expected
+
+A host case SHALL hold, in its folder: `case.toml` naming its clauses, the limit, and one or more steps in order; `start/`, the files the branch holds before the first step, which may be absent; and `tip/`, every file the branch's tip must hold after the last step (C.7). A field the case format does not name SHALL fail the case's read, naming the case and the field.
+
+#### Scenario: A case read
+- **WHEN** a host case with two run steps and a `start/` holding one capture is read
+- **THEN** both steps are read in order, each with its adapter and its expected report, and the starting and expected files by their paths from the branch's root
+
+#### Scenario: A misspelt field
+- **WHEN** a host case's step names `refusals` in place of `refused`
+- **THEN** reading it fails, naming the case and `refusals`
+
+### Requirement: Each step is one of three invocations with the case's flags
+
+`weir conform` SHALL append to the host command, for every step, `--inbox <repository path> --branch inbox --limit <bytes>`, the limit the case's, and then: for an intake, `--raw-dir <the case's raw place>` when the step names one, the step's lines on standard input; for an import, `--import`, the step's import lines on standard input (C.7). The host command SHALL be the words given after `conform`, run with no shell.
+
+#### Scenario: An intake step
+- **WHEN** a step is an intake with a raw place and `weir conform host-under-test --flag` runs it
+- **THEN** the host is run as `host-under-test --flag --inbox <repo> --branch inbox --limit <bytes> --raw-dir <raw>` with the step's lines on standard input
+
+#### Scenario: A run step
+- **WHEN** a step is a run
+- **THEN** the host is run with `--run <declaration>` and no lines on standard input, the declaration's command the case's script
+
+#### Scenario: An import step
+- **WHEN** a step is an import
+- **THEN** the host is run with `--import` and the step's import lines on standard input
+
+### Requirement: The report a host prints is compared with the step's
+
+After each step, `weir conform` SHALL read the last line the host printed on standard output as `weir-report/1`, and SHALL fail the case when it is missing or does not read, or when its keys taken, its count held or its refusals differ from the step's: a refusal is matched by its line and key, and its reason SHALL hold the phrase the step names (15; C.7). A host that exits non-zero and prints no report SHALL fail the case, naming its exit and the last line of its standard error.
+
+#### Scenario: A refusal with another reason
+- **WHEN** a step expects line 3 refused for key `moves/x` with a reason holding `first segment`, and the host reports line 3 refused for `moves/x` because `bad key`
+- **THEN** the case fails, naming the line, the key, the phrase expected and the reason reported
+
+#### Scenario: A run whose cursor is kept from an incomplete run (S4)
+- **WHEN** a run step's adapter offers five captures and exits without its completion, and the host reports the run's last cursor as kept
+- **THEN** the case fails, naming the cursor expected, none, and the cursor reported
+
+### Requirement: The records at the tip are compared as written
+
+After the last step, `weir conform` SHALL read every file at the branch's tip and SHALL fail the case when the tip holds a file `tip/` does not, lacks one `tip/` holds, or holds one whose text differs from it (24; C.7; core.14). Every field and every file SHALL be compared byte for byte, save the three fields of a capture the host wrote during the case that are checked for their form (22).
+
+#### Scenario: A host keeps raw material in a record (S15)
+- **WHEN** the host under test writes a capture's raw notes into its `capture.rec`
+- **THEN** the case fails, naming the file that differs and the clauses the case cites, 17 among them
+
+#### Scenario: A host keeps raw material beside its record
+- **WHEN** the host under test writes a copy of a raw file under `inbox/captures/<key>/`
+- **THEN** the case fails, naming the file the tip holds that the case does not
+
+#### Scenario: A pointer to a bank that lacks a file
+- **WHEN** a capture's pointer names a path on this machine that does not hold one of the raw files the offer named
+- **THEN** the case fails, naming the capture and the raw file not banked
+
+#### Scenario: A field of the host's own
+- **WHEN** two hosts that keep the contract run the same case on one machine at different times
+- **THEN** both pass, though their `taken_at` differ
+
+### Requirement: The pack's host cases cover what a host does
+
+The pack SHALL hold host cases exercising at least: an offer taken with its raw material banked and an own excerpt cut at the limit (S1); the same offer met again and held (S2); a run of fourteen offers, one keyed under `moves`, that one refused and thirteen taken (S3); and a run that ends without its completion and the next run from the old cursor (S4).
+
+#### Scenario: The cases named
+- **WHEN** the host cases of the pack are read
+- **THEN** each kind of case this requirement names is among them, and the example host passes every one
+
+## ADDED Requirements
+
+### Requirement: A host case's step names its invocation and its input
+
+Each step of a host case SHALL name its invocation, `intake`, `run` or `import`, and its input: for an intake, a lines file (`lines.jsonl`) and optionally a raw place, a folder of the case; for a run, the case's adapter, a POSIX shell script in the case's folder that prints the case's lines, writes the case's raw material into the raw place it is handed and exits as the case says; for an import, a file of import lines (C.7).
+
+#### Scenario: A case read
+- **WHEN** a host case with two run steps and a `start/` holding one capture is read
+- **THEN** both steps are read in order, each with its adapter and its expected report, and the starting and expected files by their paths from the branch's root
+
+### Requirement: A host case's step says what the host must report of it
+
+Each step of a host case SHALL say what the host must report of it: the keys taken in order, the count held and each refusal by its line, its key and a phrase its reason holds; for a run step, also the listing's count, its failures, the cursor kept and whether the run was complete (15, 23; C.7).
+
+#### Scenario: A case read
+- **WHEN** a host case with two run steps and a `start/` holding one capture is read
+- **THEN** both steps are read in order, each with its adapter and its expected report, and the starting and expected files by their paths from the branch's root
+
+### Requirement: A run step hands the host a declaration of the case's adapter
+
+For a run step, `weir conform` SHALL append `--run <declaration>` after the flags every step takes, a declaration it writes naming the case's adapter by the case's name, its command the case's script, its configuration's schema one that takes any configuration and no secret (C.7).
+
+#### Scenario: A run step
+- **WHEN** a step is a run
+- **THEN** the host is run with `--run <declaration>` and no lines on standard input, the declaration's command the case's script
+
+### Requirement: A run step's report is compared for its listing and its cursor
+
+For a run step, `weir conform` SHALL also compare the listing's count and failures, the cursor kept and whether the run was complete with the step's (8, 9, 23).
+
+#### Scenario: A run whose cursor is kept from an incomplete run (S4)
+- **WHEN** a run step's adapter offers five captures and exits without its completion, and the host reports the run's last cursor as kept
+- **THEN** the case fails, naming the cursor expected, none, and the cursor reported
+
+### Requirement: A capture's fields of the host's own are checked for their form
+
+In a capture the host wrote during the case, three fields SHALL be checked for their form in place of their text, since they are the host's and its machine's (22): `machine`, `taken_at` and `pointer`. `machine` SHALL be this machine's short hostname, and `taken_at` an RFC 3339 time within the case's running.
+
+#### Scenario: A field of the host's own
+- **WHEN** two hosts that keep the contract run the same case on one machine at different times
+- **THEN** both pass, though their `taken_at` differ
+
+### Requirement: A capture's pointer is checked against the bank it names
+
+In a capture the host wrote during the case, `pointer`, present exactly where `tip/` holds one, SHALL be `<machine>:<path>`, the machine the record's, and `<path>` a place on this machine that holds, byte for byte, every raw file the case's offer named, and the whole text of an own excerpt that was cut (17, 18, 21).
+
+#### Scenario: A pointer to a bank that lacks a file
+- **WHEN** a capture's pointer names a path on this machine that does not hold one of the raw files the offer named
+- **THEN** the case fails, naming the capture and the raw file not banked
+
+### Requirement: The pack's host cases cover a malformed line, raw material with no raw place and a field the contract does not name
+
+The pack SHALL hold host cases exercising at least: a malformed line among good ones; an offer naming raw material at an intake with no raw place; and an offer carrying a field the contract does not name, holding a secret's value, which reaches no record (71; core.6).
+
+#### Scenario: The cases named
+- **WHEN** the host cases of the pack are read
+- **THEN** each kind of case this requirement names is among them, and the example host passes every one
+
+### Requirement: The pack's host cases cover an import
+
+The pack SHALL hold host cases exercising at least an import whose captures, signals and moves are written as read, imported twice the second time writing nothing, with a `new-territory` move and a move of another word (37 to 39, 63, 75a; S8, S9).
+
+#### Scenario: The cases named
+- **WHEN** the host cases of the pack are read
+- **THEN** each kind of case this requirement names is among them, and the example host passes every one

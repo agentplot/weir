@@ -26,6 +26,16 @@ tasks:
     inputs: ['/.claude/skills/**/*', '/.claude/commands/**/*', '/check-openspec-claude.sh', '/devenv.nix', '/devenv.lock']
     tags: [check-fast]
     options: {runFromWorkspaceRoot: true}
+  # Every spec under openspec/specs passes openspec validate --strict, which
+  # fails a warning as an error, by the openspec devenv.nix pins (core.39,
+  # core.40), as sluice, flume and boomdrive hold theirs. It sends no usage
+  # statistics and asks for no newer release.
+  specs:
+    command: 'openspec validate --specs --strict --no-interactive'
+    env: {OPENSPEC_TELEMETRY: '0', OPENSPEC_NO_UPDATE_CHECK: '1'}
+    inputs: ['/openspec/specs/**/*', '/openspec/config.yaml', '/devenv.nix', '/devenv.lock']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
   # The README's prose, through Vale (.vale.ini, styles/Weir).
   prose:
     command: 'vale README.md'
