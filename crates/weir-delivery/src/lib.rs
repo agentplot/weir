@@ -20,7 +20,7 @@ pub mod rec;
 mod record;
 mod text;
 
-pub use calls::Refusal;
+pub use calls::{record, Recorded, Refusal};
 pub use record::{
     Confirmation, Delivery, Handover, Known, Record, CONFIRMATION, DELIVERY, HANDOVER, KNOWN,
 };
