@@ -15,6 +15,7 @@
 #![deny(missing_docs)]
 
 mod calls;
+pub mod json;
 pub mod rec;
 mod record;
 mod text;
