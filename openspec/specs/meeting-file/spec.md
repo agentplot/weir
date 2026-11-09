@@ -19,7 +19,7 @@ The meeting file SHALL offer one capture for the file it is given, keyed `meetin
 
 ### Requirement: The event time is the meeting's start where the file states it
 
-The offer's `event_at` SHALL be the meeting's start where the file says it, the first of these it says: a `start` field, then a `date` field, of its front matter, a block the file opens with, a line `---`, lines `<name>: <value>` and a closing `---`; else a date that opens its first line, the first line not blank after any front matter; else the date the file's name begins with, read as the folder drop reads it; else its last write, in UTC to the second (5, 62; C.6). A value or a line that reads as no time SHALL pass to the next way.
+The offer's `event_at` SHALL be the meeting's start where the file says it, the first of these it says: a `start` field, then a `date` field, of its front matter; else a date that opens its first line, the first line not blank after any front matter; else the date the file's name begins with, read as the folder drop reads it; else its last write, in UTC to the second (5, 62; C.6). A value or a line that reads as no time SHALL pass to the next way.
 
 #### Scenario: A file that states its start
 - **WHEN** the file opens with `---`, `start: 2026-10-02T14:00:00-04:00`, `---`
@@ -68,3 +68,11 @@ When the file cannot be read or copied, the meeting file SHALL print no offer an
 #### Scenario: An unreadable file
 - **WHEN** the meeting file runs over a file it cannot read
 - **THEN** it prints only `{"done": {"listed": 1, "failed": [{"what": "<file name>", "why": "…"}]}}`
+
+### Requirement: A meeting file's front matter is the block it opens with
+
+A meeting file's front matter SHALL be a block the file opens with, a line `---`, lines `<name>: <value>` and a closing `---` (62; C.6).
+
+#### Scenario: A file that states its start
+- **WHEN** the file opens with `---`, `start: 2026-10-02T14:00:00-04:00`, `---`
+- **THEN** the offer's `event_at` is `2026-10-02T14:00:00-04:00`
