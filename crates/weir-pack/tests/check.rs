@@ -62,6 +62,10 @@ name = "A.12"
 clauses = [69, 70, 71]
 
 [[section]]
+name = "A.14"
+clauses = [102, 106]
+
+[[section]]
 name = "B.2"
 clauses = [75, "75a"]
 
@@ -87,8 +91,8 @@ fn write_all(root: &Path, files: &[(&str, &str)]) {
 }
 
 /// A pack that passes: every counted clause cited, 60 only by a cadence
-/// case and 48 only by a branch case, `"75a"` cited, 69 cited by none and
-/// 87 by one.
+/// case, 48 only by a branch case and 102 and 106 only by a delivery case,
+/// `"75a"` cited, 69 cited by none and 87 by one.
 fn passing() -> Vec<(&'static str, &'static str)> {
     vec![
         ("clauses.toml", INDEX),
@@ -105,6 +109,10 @@ fn passing() -> Vec<(&'static str, &'static str)> {
             "satisfies = [26, 33, 35, 37, \"75a\"]\n",
         ),
         ("kinds/two-deliverables/case.toml", "satisfies = [57]\n"),
+        (
+            "delivery/a-second-confirmation/case.toml",
+            "satisfies = [102, 106]\n",
+        ),
     ]
 }
 
@@ -139,7 +147,28 @@ fn a_pack_that_passes_says_how_many_cases_of_each_shape() {
     }
     assert_eq!(
         checked.to_string(),
-        "the pack passed, its cases read: 1 host, 1 adapter, 1 cadence, 1 branch, 1 inbox, 1 kinds"
+        "the pack passed, its cases read: 1 host, 1 adapter, 1 cadence, 1 branch, 1 inbox, 1 kinds, 1 delivery"
+    );
+}
+
+#[test]
+fn a_delivery_case_is_a_case_of_the_pack() {
+    let (_dir, pack) = pack_of(&passing());
+    let checked = check(&pack).unwrap_or_else(|faults| panic!("{faults:?}"));
+    assert_eq!(checked.read[&Shape::Delivery], 1);
+    let cases = pack.cases(Shape::Delivery);
+    assert_eq!(cases.len(), 1);
+    assert_eq!(cases[0].id(), "delivery/a-second-confirmation");
+    assert_eq!(Shape::parse("delivery"), Some(Shape::Delivery));
+    assert_eq!(Shape::ALL.len(), 7);
+    let no_clause = with(
+        &passing(),
+        "delivery/a-second-confirmation/case.toml",
+        Some("satisfies = [102, 106, 140]\n"),
+    );
+    assert_eq!(
+        faults(&no_clause),
+        ["pack/delivery/a-second-confirmation: cites 140, which names no clause of the statement"]
     );
 }
 
@@ -152,7 +181,7 @@ fn a_folder_of_no_shape() {
     );
     assert_eq!(
         faults(&files),
-        ["pack/hosts: is no shape of the pack, which are host, adapter, cadence, branch, inbox, kinds"]
+        ["pack/hosts: is no shape of the pack, which are host, adapter, cadence, branch, inbox, kinds, delivery"]
     );
     let stray = with(&passing(), "README.md", Some("# The pack\n"));
     assert_eq!(faults(&stray).len(), 1);
@@ -285,7 +314,7 @@ fn every_fault_is_named_at_once() {
     assert_eq!(
         said,
         [
-            "pack/hosts: is no shape of the pack, which are host, adapter, cadence, branch, inbox, kinds",
+            "pack/hosts: is no shape of the pack, which are host, adapter, cadence, branch, inbox, kinds, delivery",
             "pack/host/held-key: cites 140, which names no clause of the statement",
             "14: is cited by no case",
             "71: is cited by no case",

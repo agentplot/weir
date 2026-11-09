@@ -1372,6 +1372,7 @@ dependencies = [
  "time",
  "toml",
  "weir-capture",
+ "weir-delivery",
 ]
 
 [[package]]
