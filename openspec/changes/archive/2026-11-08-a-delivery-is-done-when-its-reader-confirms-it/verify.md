@@ -23,6 +23,14 @@ archived.
   `conformance-pack` stands under the same name in
   `openspec/specs/conformance-pack/spec.md` and keeps every scenario it
   holds there.
+- `openspec archive` applied the delta, 29 requirements added and 4
+  modified. The new specs' Purposes are written from the proposal's
+  capabilities, and conformance-pack's names seven shapes. After it,
+  `openspec validate --specs --strict` passes the three new specs.
+  conformance-pack fails it on a warning: its index requirement is 631
+  characters, over the validator's 500, as the delta writes it. Ten
+  other specs, which this change leaves as they stand, fail it the same
+  way. The repository's checks do not run it.
 - The statement at blueprints 006fc34, read from a local clone that
   holds it:
   - `pack/clauses.toml` names commit `006fc34` and holds every clause
