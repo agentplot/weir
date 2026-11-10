@@ -1,7 +1,7 @@
 ---
 number: 7
 title: weir's devenv declares its MCP servers, writes Claude Code's files at a place's readiness, and holds OpenSpec's files to its pin
-status: proposed
+status: accepted
 date: 2026-11-07
 decision-makers:
 - the code stage of the chore weir-devenv-declares-its-mcp-servers
@@ -9,7 +9,7 @@ decision-makers:
 
 # weir's devenv declares its MCP servers, writes Claude Code's files at a place's readiness, and holds OpenSpec's files to its pin
 
-Status: proposed, as every record here is until the operator's yes. Numbered 0007 on 2026-11-08, written as 0005 the same day the landing fix's record took that number. These are the code stage's own choices under agentplot/boomdrive's record 0022, which the user accepted on 2026-11-07 and which asks each repository's change to confirm that its places have their servers before their agents start. Each is cheap to change later.
+Status: accepted by the user on 2026-11-09, on their card. Proposed by the code stage of the chore weir-devenv-declares-its-mcp-servers. Numbered 0007 on 2026-11-08, written as 0005 the same day the landing fix's record took that number. These are the code stage's own choices under agentplot/boomdrive's record 0022, which the user accepted on 2026-11-07 and which asks each repository's change to confirm that its places have their servers before their agents start. Each is cheap to change later.
 
 Sources: agentplot/boomdrive's record 0022 and its amendment of 2026-11-07, at cac1d14 on boomdrive's `bolt/boomdrive-sessions-start-their-mcp-servers`; agentplot/sluice's record 0097 and its chore of the same name at d2e0df24; agentplot/flume's chore of the same name at 82ce9857 and f2d4483a; devenv 2.4's `src/modules/integrations/claude.nix`, `src/modules/files.nix` and `src/modules/integrations/git-hooks.nix`; OpenSpec 1.14.3's `init`; rules core.39 and core.40.
 
