@@ -10,6 +10,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use crate::git::Git;
 
@@ -28,11 +29,14 @@ pub enum Place {
     Local { git_dir: PathBuf },
 }
 
-/// A shared branch: its name and where it lies.
+/// A shared branch: its name, where it lies, and the most a try of a git
+/// call that reaches its remote may take, `weir-bounded`'s limit, which no
+/// caller sets (C.3; core.53).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Branch {
     name: String,
     place: Place,
+    pub(crate) limit: Duration,
 }
 
 impl Branch {
@@ -49,6 +53,7 @@ impl Branch {
                 cache: cache.into(),
                 url: url.into(),
             },
+            limit: weir_bounded::TRY_FOR,
         }
     }
 
@@ -60,6 +65,7 @@ impl Branch {
             place: Place::Local {
                 git_dir: git_dir.into(),
             },
+            limit: weir_bounded::TRY_FOR,
         }
     }
 
@@ -373,7 +379,10 @@ impl Tip {
 
 /// Reads `branch`: the commit it stands at, or none when it does not exist
 /// (78). A remote's tip is fetched into the cache, made with
-/// `git init --bare` when it is missing; nothing on the branch changes.
+/// `git init --bare` when it is missing; nothing on the branch changes. The
+/// fetch, and the listing that says whether a branch not fetched exists,
+/// are each one try to the branch's limit, a stopped one failing the read
+/// (69; C.3; core.53).
 pub fn read(branch: &Branch) -> Result<Option<Tip>, Failure> {
     branch
         .check()
@@ -411,7 +420,7 @@ pub(crate) fn read_tip(branch: &Branch) -> Result<Option<Tip>, Failure> {
             let git = Git::new(cache);
             let refspec = format!("+{}:{}", branch.head_ref(), branch.cache_ref());
             let fetched = git
-                .run(
+                .reach(
                     &[
                         "fetch",
                         "--quiet",
@@ -421,7 +430,8 @@ pub(crate) fn read_tip(branch: &Branch) -> Result<Option<Tip>, Failure> {
                         url,
                         &refspec,
                     ],
-                    None,
+                    url,
+                    branch.limit,
                 )
                 .map_err(failed)?;
             if fetched.ok() {
@@ -431,9 +441,10 @@ pub(crate) fn read_tip(branch: &Branch) -> Result<Option<Tip>, Failure> {
                 )
             } else {
                 let listed = git
-                    .run(
+                    .reach(
                         &["ls-remote", "--exit-code", "--", url, &branch.head_ref()],
-                        None,
+                        url,
+                        branch.limit,
                     )
                     .map_err(failed)?;
                 match listed.code {
@@ -481,8 +492,9 @@ pub(crate) enum Moved {
 
 /// Moves `branch` to `commit` only while it stands at `tip`, none meaning
 /// it must not exist: on a remote by a push with the tip as the lease's
-/// expected value, never with force; with no remote by `update-ref` from
-/// the tip, forty zeros for none (44, 48, 79; C.3 step 4; core.27).
+/// expected value, never with force, as one try to the branch's limit, a
+/// stopped one failing the move; with no remote by `update-ref` from the
+/// tip, forty zeros for none (44, 48, 79; C.3 step 4; core.27, core.53).
 pub(crate) fn move_to(
     branch: &Branch,
     tip: Option<&Tip>,
@@ -498,8 +510,10 @@ pub(crate) fn move_to(
                 "--force-with-lease={head}:{}",
                 tip.map(Tip::commit).unwrap_or_default()
             );
+            // One try to the branch's limit: a stopped push fails the move
+            // and is no refusal, so it is never replayed (C.3; core.26).
             let pushed = git
-                .run(
+                .reach(
                     &[
                         "push",
                         "--porcelain",
@@ -509,7 +523,8 @@ pub(crate) fn move_to(
                         url,
                         &format!("{commit}:{head}"),
                     ],
-                    None,
+                    url,
+                    branch.limit,
                 )
                 .map_err(failed)?;
             if !pushed.ok() {
@@ -539,6 +554,7 @@ pub(crate) fn move_to(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::silent::{self, Silent};
 
     #[test]
     fn a_password_in_the_address_is_refused_without_it() {
@@ -571,6 +587,44 @@ mod tests {
         ] {
             assert!(check_path(path).is_err(), "{path:?} taken");
         }
+    }
+
+    #[test]
+    fn a_remote_that_never_answers_a_fetch() {
+        let silent = Silent::new();
+        let started = std::time::Instant::now();
+        let failure = read(&silent.branch()).unwrap_err();
+        let took = started.elapsed();
+        assert!(took < Duration::from_secs(5), "took {took:?}");
+        assert_eq!(failure.step, Step::Read, "{failure}");
+        for named in ["git fetch", silent::URL, "300ms"] {
+            assert!(failure.said.contains(named), "{named} unnamed: {failure}");
+        }
+        assert!(silent.called_is_gone(), "the call's process is left");
+    }
+
+    #[test]
+    fn a_remote_that_never_answers_a_push() {
+        let silent = Silent::new();
+        let git = Git::new(silent.cache())
+            .env("GIT_AUTHOR_NAME", "a test")
+            .env("GIT_AUTHOR_EMAIL", "test@example.org")
+            .env("GIT_COMMITTER_NAME", "a test")
+            .env("GIT_COMMITTER_EMAIL", "test@example.org");
+        let tree = git.text(&["mktree"], Some(b"")).expect("the empty tree");
+        let commit = git
+            .text(&["commit-tree", &tree, "-m", "a write"], None)
+            .expect("a commit of the empty tree");
+        let failure = match move_to(&silent.branch(), None, &commit, "a write") {
+            Err(failure) => failure,
+            Ok(Moved::Moved) => panic!("the branch moved on a silent remote"),
+            Ok(Moved::Refused(said)) => panic!("a stopped push taken as a refusal: {said}"),
+        };
+        assert_eq!(failure.step, Step::Move, "{failure}");
+        for named in ["git push", silent::URL, "300ms"] {
+            assert!(failure.said.contains(named), "{named} unnamed: {failure}");
+        }
+        assert!(silent.called_is_gone(), "the call's process is left");
     }
 
     #[test]

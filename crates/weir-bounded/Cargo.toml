@@ -1,0 +1,16 @@
+[package]
+name = "weir-bounded"
+description = "A call to a remote run to the family's limit for a try, in a process group of its own ended at that limit with everything it started, and a stopped call's words (statement 69, C.3; record 0008)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+libc.workspace = true
+tempfile.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true

@@ -1,0 +1,30 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+# weir-bounded: a call to a remote run to the family's limit for a try (69;
+# C.3; record 0008; core.53). One task per check (core.39), each declaring
+# everything it reads (kit:testing.3).
+language: 'rust'
+
+tasks:
+  format:
+    command: 'cargo fmt -p weir-bounded --check'
+    inputs: ['/crates/weir-bounded/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  lint:
+    command: 'cargo clippy -p weir-bounded --all-targets -- -D warnings'
+    inputs: ['/crates/weir-bounded/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  typecheck:
+    command: 'cargo check -p weir-bounded --all-targets'
+    inputs: ['/crates/weir-bounded/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}
+  # The tests run sh, sleep and cat, each to a limit of its own, and reach
+  # no network.
+  test:
+    command: 'cargo test -p weir-bounded'
+    inputs: ['/crates/weir-bounded/**/*', '/Cargo.toml', '/Cargo.lock', '/devenv.nix', '/devenv.lock', '/.prototools']
+    tags: [check-fast]
+    options: {runFromWorkspaceRoot: true}

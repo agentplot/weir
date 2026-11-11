@@ -353,3 +353,44 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::lock::LOCK;
+    use crate::silent::{self, Silent};
+
+    #[test]
+    fn a_write_whose_remote_never_answers() {
+        let silent = Silent::new();
+        let clock = || OffsetDateTime::UNIX_EPOCH;
+        let ask = Ask {
+            what: "a write",
+            who: "a test",
+            bound: None,
+            stale_after: Duration::from_secs(60),
+            clock: &clock,
+        };
+        let refused = write(&silent.branch(), &ask, |_| {
+            Ok(Files::from([(
+                "inbox/a.rec".to_string(),
+                "format: x\n".to_string(),
+            )]))
+        })
+        .unwrap_err();
+        let words = weir_bounded::stopped("git fetch", silent::URL, Duration::from_millis(300));
+        match &refused {
+            WriteError::Failed {
+                step: Step::Read,
+                said,
+                ..
+            } => assert!(said.ends_with(&words), "{refused}"),
+            _ => panic!("not a failed read: {refused}"),
+        }
+        assert!(
+            !silent.cache().join(LOCK).exists(),
+            "the writers' lock is held"
+        );
+        assert!(silent.called_is_gone(), "the call's process is left");
+    }
+}

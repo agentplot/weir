@@ -3,12 +3,16 @@
 //! so a caller inside a hook or a worktree never redirects it; never waiting
 //! on a prompt; and always in one language (C.3). Reaching a remote is
 //! git's own, through its credential helpers: the crate passes no secret
-//! (core.3).
+//! (core.3). Each try of a call that reaches the remote, the fetch, the
+//! listing and the push, runs through `weir-bounded` to the branch's
+//! limit, ended there with everything it started; every other call runs to
+//! its end (69; C.3; core.53).
 
 use std::ffi::OsStr;
 use std::io::{Seek, SeekFrom, Write as _};
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::time::Duration;
 
 /// The variables that would point git at another repository, index or
 /// object store than the one named.
@@ -93,6 +97,18 @@ pub(crate) fn run_program<S: AsRef<OsStr>>(
     })
 }
 
+/// A stopped call's failure: the last line git wrote on standard error,
+/// trimmed, and `; `, where it wrote one, then `weir-bounded`'s words
+/// naming the call, its remote and its limit (C.3; core.53).
+pub(crate) fn stopped(call: &str, remote: &str, limit: Duration, err: &[u8]) -> String {
+    let words = weir_bounded::stopped(call, remote, limit);
+    let said = String::from_utf8_lossy(err);
+    match said.trim().lines().next_back().map(str::trim) {
+        Some(line) if !line.is_empty() => format!("{line}; {words}"),
+        _ => words,
+    }
+}
+
 /// git in one git directory, with the environment its commands run in.
 pub(crate) struct Git<'a> {
     dir: &'a Path,
@@ -132,6 +148,39 @@ impl<'a> Git<'a> {
         run_program(self.command(), args, input)
     }
 
+    /// Runs `git --git-dir <dir> <args>`, a call that reaches `remote`, as
+    /// one try to `limit` in a process group of its own, with nothing on
+    /// its standard input. `Err` is git failing to start, or the try
+    /// stopped at its limit, its standard output never read (C.3; core.53).
+    pub fn reach<S: AsRef<OsStr>>(
+        &self,
+        args: &[S],
+        remote: &str,
+        limit: Duration,
+    ) -> Result<Ran, String> {
+        let mut command = self.command();
+        command.args(args).stdin(Stdio::null());
+        let ended = weir_bounded::output(&mut command, limit)
+            .map_err(|error| format!("git could not be run: {error}"))?;
+        if ended.stopped {
+            let verb = args
+                .first()
+                .map(|verb| verb.as_ref().to_string_lossy().into_owned())
+                .unwrap_or_default();
+            return Err(stopped(
+                &format!("git {verb}"),
+                remote,
+                limit,
+                &ended.stderr,
+            ));
+        }
+        Ok(Ran {
+            code: ended.status.code(),
+            out: ended.stdout,
+            err: ended.stderr,
+        })
+    }
+
     /// Runs it and gives what it printed, or its words when it fails.
     pub fn text<S: AsRef<OsStr>>(
         &self,
@@ -144,5 +193,27 @@ impl<'a> Git<'a> {
         } else {
             Err(ran.said())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_stopped_calls_failure_follows_gits_last_line() {
+        let remote = "ssh://silent.invalid/inbox.git";
+        let limit = Duration::from_millis(300);
+        let words = weir_bounded::stopped("git fetch", remote, limit);
+        assert_eq!(
+            words,
+            "git fetch with ssh://silent.invalid/inbox.git was still going after 300ms, \
+             the most a try may take, and was stopped"
+        );
+        assert_eq!(
+            stopped("git fetch", remote, limit, b"warning: y\nfatal: x\n"),
+            format!("fatal: x; {words}")
+        );
+        assert_eq!(stopped("git fetch", remote, limit, b""), words);
     }
 }
