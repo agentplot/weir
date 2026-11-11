@@ -14,6 +14,10 @@
 
 use std::time::Duration;
 
+mod group;
+
+pub use group::end_group;
+
 /// The most a try of a call to a remote may take: the family's limit, one
 /// value no setting changes (C.3; record 0008).
 pub const TRY_FOR: Duration = Duration::from_secs(30);
