@@ -492,8 +492,9 @@ pub(crate) enum Moved {
 
 /// Moves `branch` to `commit` only while it stands at `tip`, none meaning
 /// it must not exist: on a remote by a push with the tip as the lease's
-/// expected value, never with force; with no remote by `update-ref` from
-/// the tip, forty zeros for none (44, 48, 79; C.3 step 4; core.27).
+/// expected value, never with force, as one try to the branch's limit, a
+/// stopped one failing the move; with no remote by `update-ref` from the
+/// tip, forty zeros for none (44, 48, 79; C.3 step 4; core.27, core.53).
 pub(crate) fn move_to(
     branch: &Branch,
     tip: Option<&Tip>,
@@ -509,8 +510,10 @@ pub(crate) fn move_to(
                 "--force-with-lease={head}:{}",
                 tip.map(Tip::commit).unwrap_or_default()
             );
+            // One try to the branch's limit: a stopped push fails the move
+            // and is no refusal, so it is never replayed (C.3; core.26).
             let pushed = git
-                .run(
+                .reach(
                     &[
                         "push",
                         "--porcelain",
@@ -520,7 +523,8 @@ pub(crate) fn move_to(
                         url,
                         &format!("{commit}:{head}"),
                     ],
-                    None,
+                    url,
+                    branch.limit,
                 )
                 .map_err(failed)?;
             if !pushed.ok() {
@@ -594,6 +598,30 @@ mod tests {
         assert!(took < Duration::from_secs(5), "took {took:?}");
         assert_eq!(failure.step, Step::Read, "{failure}");
         for named in ["git fetch", silent::URL, "300ms"] {
+            assert!(failure.said.contains(named), "{named} unnamed: {failure}");
+        }
+        assert!(silent.called_is_gone(), "the call's process is left");
+    }
+
+    #[test]
+    fn a_remote_that_never_answers_a_push() {
+        let silent = Silent::new();
+        let git = Git::new(silent.cache())
+            .env("GIT_AUTHOR_NAME", "a test")
+            .env("GIT_AUTHOR_EMAIL", "test@example.org")
+            .env("GIT_COMMITTER_NAME", "a test")
+            .env("GIT_COMMITTER_EMAIL", "test@example.org");
+        let tree = git.text(&["mktree"], Some(b"")).expect("the empty tree");
+        let commit = git
+            .text(&["commit-tree", &tree, "-m", "a write"], None)
+            .expect("a commit of the empty tree");
+        let failure = match move_to(&silent.branch(), None, &commit, "a write") {
+            Err(failure) => failure,
+            Ok(Moved::Moved) => panic!("the branch moved on a silent remote"),
+            Ok(Moved::Refused(said)) => panic!("a stopped push taken as a refusal: {said}"),
+        };
+        assert_eq!(failure.step, Step::Move, "{failure}");
+        for named in ["git push", silent::URL, "300ms"] {
             assert!(failure.said.contains(named), "{named} unnamed: {failure}");
         }
         assert!(silent.called_is_gone(), "the call's process is left");
