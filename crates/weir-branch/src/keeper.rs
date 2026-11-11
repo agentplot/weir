@@ -10,6 +10,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use crate::git::Git;
 
@@ -28,11 +29,14 @@ pub enum Place {
     Local { git_dir: PathBuf },
 }
 
-/// A shared branch: its name and where it lies.
+/// A shared branch: its name, where it lies, and the most a try of a git
+/// call that reaches its remote may take, `weir-bounded`'s limit, which no
+/// caller sets (C.3; core.53).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Branch {
     name: String,
     place: Place,
+    pub(crate) limit: Duration,
 }
 
 impl Branch {
@@ -49,6 +53,7 @@ impl Branch {
                 cache: cache.into(),
                 url: url.into(),
             },
+            limit: weir_bounded::TRY_FOR,
         }
     }
 
@@ -60,6 +65,7 @@ impl Branch {
             place: Place::Local {
                 git_dir: git_dir.into(),
             },
+            limit: weir_bounded::TRY_FOR,
         }
     }
 
