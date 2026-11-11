@@ -28,4 +28,4 @@ checks once every task is done.
 
 ## 3. The README
 
-- [ ] 3.1 Add `weir-bounded` to the README's table of crates, after `weir-branch`: a call to a remote run to the family's limit for a try, ended with everything it started. True when `devenv shell -- moon run root:prose` passes.
+- [x] 3.1 Add `weir-bounded` to the README's table of crates, after `weir-branch`: a call to a remote run to the family's limit for a try, ended with everything it started. True when `devenv shell -- moon run root:prose` passes.
