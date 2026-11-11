@@ -13,6 +13,7 @@ $schema: 'https://moonrepo.dev/schemas/workspace.json'
 
 projects:
   adapters: 'crates/weir-adapters'
+  bounded: 'crates/weir-bounded'
   branch: 'crates/weir-branch'
   cadence: 'crates/weir-cadence'
   capture: 'crates/weir-capture'

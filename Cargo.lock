@@ -1310,6 +1310,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "weir-bounded"
+version = "0.0.0"
+dependencies = [
+ "libc",
+ "tempfile",
+]
+
+[[package]]
 name = "weir-branch"
 version = "0.0.0"
 dependencies = [

@@ -9,6 +9,8 @@
 #                          signals-folder import: landed
 #   crates/weir-branch     the shared-branch write protocol, its lock and
 #                          the pack's protocol cases: landed
+#   crates/weir-bounded    a call to a remote run to the family's limit
+#                          for a try, ended with everything it started
 #   crates/weir-kinds      the kind format, with an elaboration kind's
 #                          section, a kind's identity, its package and
 #                          content hash, and a lock of kinds: landed
@@ -33,6 +35,7 @@ members = [
   "crates/weir-signals",
   "crates/weir-pack",
   "crates/weir-delivery",
+  "crates/weir-bounded",
 ]
 
 [workspace.package]
@@ -50,6 +53,8 @@ sha2 = "0.11"
 # checked with nothing but its schema (core.1).
 jsonschema = { version = "0.60", default-features = false }
 tempfile = "3"
+# killpg, for ending a try's process group at its limit (core.53).
+libc = "0.2"
 clap = { version = "4", features = ["derive"] }
 # croner finds the times a cron pattern names, over jiff's zoned times.
 croner = { version = "4", default-features = false, features = ["jiff"] }
