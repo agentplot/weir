@@ -13,13 +13,17 @@
 //! The crate keeps nothing between calls: the branch, its cache, the bound,
 //! the lock's stale age and the clock are the caller's to hand in. It runs
 //! git and `recfix` for the write it was asked to make, each ended before
-//! the call returns (69; C.3).
+//! the call returns (69; C.3). Each try of git's that reaches the remote,
+//! the fetch, the listing and the push, is ended at `weir-bounded`'s limit
+//! with everything it started (69, 78; C.3; core.53).
 
 mod commit;
 mod git;
 pub mod keeper;
 pub mod lock;
 mod recfix;
+#[cfg(test)]
+mod silent;
 pub mod write;
 
 pub use keeper::{read, Branch, Failure, Files, Place, Step, Tip, TipError};

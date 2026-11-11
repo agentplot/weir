@@ -379,7 +379,10 @@ impl Tip {
 
 /// Reads `branch`: the commit it stands at, or none when it does not exist
 /// (78). A remote's tip is fetched into the cache, made with
-/// `git init --bare` when it is missing; nothing on the branch changes.
+/// `git init --bare` when it is missing; nothing on the branch changes. The
+/// fetch, and the listing that says whether a branch not fetched exists,
+/// are each one try to the branch's limit, a stopped one failing the read
+/// (69; C.3; core.53).
 pub fn read(branch: &Branch) -> Result<Option<Tip>, Failure> {
     branch
         .check()
@@ -417,7 +420,7 @@ pub(crate) fn read_tip(branch: &Branch) -> Result<Option<Tip>, Failure> {
             let git = Git::new(cache);
             let refspec = format!("+{}:{}", branch.head_ref(), branch.cache_ref());
             let fetched = git
-                .run(
+                .reach(
                     &[
                         "fetch",
                         "--quiet",
@@ -427,7 +430,8 @@ pub(crate) fn read_tip(branch: &Branch) -> Result<Option<Tip>, Failure> {
                         url,
                         &refspec,
                     ],
-                    None,
+                    url,
+                    branch.limit,
                 )
                 .map_err(failed)?;
             if fetched.ok() {
@@ -437,9 +441,10 @@ pub(crate) fn read_tip(branch: &Branch) -> Result<Option<Tip>, Failure> {
                 )
             } else {
                 let listed = git
-                    .run(
+                    .reach(
                         &["ls-remote", "--exit-code", "--", url, &branch.head_ref()],
-                        None,
+                        url,
+                        branch.limit,
                     )
                     .map_err(failed)?;
                 match listed.code {
@@ -545,6 +550,7 @@ pub(crate) fn move_to(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::silent::{self, Silent};
 
     #[test]
     fn a_password_in_the_address_is_refused_without_it() {
@@ -577,6 +583,20 @@ mod tests {
         ] {
             assert!(check_path(path).is_err(), "{path:?} taken");
         }
+    }
+
+    #[test]
+    fn a_remote_that_never_answers_a_fetch() {
+        let silent = Silent::new();
+        let started = std::time::Instant::now();
+        let failure = read(&silent.branch()).unwrap_err();
+        let took = started.elapsed();
+        assert!(took < Duration::from_secs(5), "took {took:?}");
+        assert_eq!(failure.step, Step::Read, "{failure}");
+        for named in ["git fetch", silent::URL, "300ms"] {
+            assert!(failure.said.contains(named), "{named} unnamed: {failure}");
+        }
+        assert!(silent.called_is_gone(), "the call's process is left");
     }
 
     #[test]
