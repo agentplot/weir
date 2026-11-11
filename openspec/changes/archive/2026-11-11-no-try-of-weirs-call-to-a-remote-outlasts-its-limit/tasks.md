@@ -1,0 +1,31 @@
+# Tasks
+
+One agent works these in order, reading this change (proposal, design,
+specs) and building on the tasks before each. The statement is read at
+blueprints ad3a1ae: 69, C.3 and section 9 as written there. Record 0008,
+core.53 and core.1's details are already on this branch. No test or doc
+of a crate names a tool of the family (core.2), and no test reaches a
+network: a silent remote is the cache's `core.sshCommand` of design 10.
+A test named for a scenario holds that scenario and keeps its name, in
+snake case. Each check runs one crate's tests, or one of its test
+binaries, through that crate's moon task, moon passing what follows
+`--` to `cargo test`. The verify stage runs the repository's whole
+checks once every task is done.
+
+## 1. The crate
+
+- [x] 1.1 Add `crates/weir-bounded`, a library crate depending on `libc` and `tempfile`, with `[lib] doctest = false`, `[lints] workspace = true` and a description citing 69, C.3 and record 0008. Add `libc = "0.2"` to the workspace's dependencies, and the crate to `Cargo.toml`'s `members` and to the comment's list of crates there. Give it `crates/weir-bounded/moon.yml`, language `rust`, with the tasks `format`, `lint`, `typecheck` and `test`, each one cargo command run from the workspace root, tagged `check-fast`, its inputs `/crates/weir-bounded/**/*`, `/Cargo.toml`, `/Cargo.lock`, `/devenv.nix`, `/devenv.lock` and `/.prototools`, as weir-cadence's are. List it as `bounded` in `.moon/workspace.yml`. Its `src/lib.rs` carries `#![deny(missing_docs)]`, a module doc saying it runs a call to a remote to the family's limit and starts no thread, and `TRY_FOR`, `GRACE`, `span` and `stopped` as design 2, 6 and 7 give them (design 1, 2, 6, 7; core.39, core.40, core.53; kit:testing.1, kit:testing.3). True when `devenv shell -- moon run bounded:test -- --test words` passes `a_stopped_calls_words_name_its_call_remote_and_limit`, `a_limit_is_said_in_seconds_or_milliseconds` and `the_limit_and_grace_are_the_familys`, holding the remote-limit scenarios of those names.
+- [x] 1.2 Add `end_group` as design 5 says, through `libc::killpg`, each `unsafe` block with a `SAFETY` comment (design 5; core.53). True when `devenv shell -- moon run bounded:test -- --test output` passes `a_group_already_gone_is_left_alone`, holding the remote-limit scenario of that name: the test spawns `sh -c 'exit 0'` with `process_group(0)`, waits on it, and calls `end_group` for its id with a grace of ten seconds.
+- [x] 1.3 Add `Ended`, `output` and `output_kept` as design 2, 3 and 4 say: the command spawned in a process group of its own, its standard output and error written to unnamed temporary files, the wait polling every 10 ms until the leader is reaped and its group is gone, the group ended through `end_group` with `GRACE` at the limit, and each file read from its start, its first `kept` bytes kept and the part said cut where it holds more (design 2, 3, 4; 69; core.1, core.53). True when `devenv shell -- moon run bounded:test -- --test output` passes `a_process_that_never_ends_is_ended_with_its_group`, `a_process_asked_to_end_says_so_in_its_grace`, `a_process_that_will_not_end_is_killed`, `a_child_that_outlives_its_leader_is_ended_at_the_limit`, `a_process_that_ends_gives_its_exit_and_all_it_printed`, `the_input_the_caller_sets_is_read` and `what_passes_the_kept_part_is_said_cut`, holding the remote-limit scenarios of those names.
+- [x] 1.4 Add `tests/sources.rs`, reading every file under the crate's `src`: none names any of the eight tools core.2's details list, as a whole word in any case, as weir-branch's `tests/names.rs` reads them, and none holds `thread::spawn` or `thread::Builder` (design 3; core.1, core.2). True when `devenv shell -- moon run bounded:test -- --test sources` passes `the_crate_names_no_tool` and `the_crate_starts_no_thread`, holding the remote-limit scenarios of those names.
+
+## 2. The branch's calls to a remote
+
+- [x] 2.1 Have weir-branch depend on `weir-bounded`, its moon project gain `dependsOn: [bounded]` and `/crates/weir-bounded/**/*` among its four tasks' inputs. Give `Branch` its try's limit, a field private to the crate that `remote` and `local` set to `weir_bounded::TRY_FOR`. In `git.rs`, add `Git::reach(args, remote, limit)` and the stopped call's failure as design 7 and 8 say, `run` and `run_program` left for every call that reaches no remote (design 6, 7, 8; C.3; core.3, core.53). True when `devenv shell -- moon run branch:test -- --lib a_stopped_calls_failure_follows_gits_last_line` passes, holding the shared-branch-write scenario of that name in `git.rs`'s tests.
+- [x] 2.2 Run `read_tip`'s `git fetch` and its `git ls-remote` through `reach` with the branch's limit, a stopped one failing at `Step::Read`. Have `lib.rs`'s module doc say each try of git's that reaches the remote is ended at `weir-bounded`'s limit with everything it started (design 8, 10; 69, 78; C.3; core.53). True when `devenv shell -- moon run branch:test -- --lib a_remote_that_never_answers_a_fetch` passes, holding the shared-branch-write scenario of that name in `keeper.rs`'s tests, over the silent remote of design 10 with a limit of 300 ms.
+- [x] 2.3 Run `move_to`'s `git push` through `reach` with the branch's limit, a stopped one returned as `Err` at `Step::Move` and never as `Moved::Refused` (design 8, 9; 44, 79; C.3; core.26, core.27, core.53). True when `devenv shell -- moon run branch:test -- --lib a_remote_that_never_answers_a_push` passes, holding the shared-branch-write scenario of that name in `keeper.rs`'s tests: the test makes a commit of the empty tree in the cache through `commit-tree` and moves the branch to it from no tip.
+- [x] 2.4 Hold a write over a silent remote: it fails as `WriteError::Failed` at `Step::Read`, its words the stopped fetch's, and the cache's `weir.lock` is gone once it returns (design 9; 49; C.3; core.28, core.53). True when `devenv shell -- moon run branch:test -- --lib a_write_whose_remote_never_answers` passes, holding the shared-branch-write scenario of that name in a `mod tests` of `write.rs`.
+
+## 3. The README
+
+- [x] 3.1 Add `weir-bounded` to the README's table of crates, after `weir-branch`: a call to a remote run to the family's limit for a try, ended with everything it started. True when `devenv shell -- moon run root:prose` passes.
