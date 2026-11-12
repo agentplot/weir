@@ -12,7 +12,7 @@ decision-makers:
 Status: accepted by the user on 2026-10-26, on their card ("Take my eight picks as they stand": approved; "Publish the design": approved). Amended 2026-11-02 to follow the statement as amended at blueprints d50535a and 9e537bb: clause 39 and S9 carry ruling 3, a move's note kept beside it, and C.6 says where ruling 8's meeting file states its start.
 
 Deciders: the user, 2026-10-26, on madswan-design's card of 2026-10-22.
-Sources: `agentplot/blueprints:design/weir/requirements.md` section 10 and clauses 4, 17, 44, 61, 62, C.1, C.2, C.5, C.6, at 955c25a; `design/millpond/requirements.md` 63, C.1, C.11; `design/capture/design.md`, the key rule.
+Sources: `boomdrivedev/blueprints:design/weir/requirements.md` section 10 and clauses 4, 17, 44, 61, 62, C.1, C.2, C.5, C.6, at 955c25a; `design/millpond/requirements.md` 63, C.1, C.11; `design/capture/design.md`, the key rule.
 
 ## Context and problem statement
 

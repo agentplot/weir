@@ -12,7 +12,7 @@ decision-makers:
 Status: accepted by the user on 2026-10-26, on their card. Its names follow record 0003 since 2026-11-04.
 
 Deciders: the user, in weir's statement (plan step F1, ruled through 2026-10-26).
-Sources: `agentplot/blueprints:design/weir/requirements.md` at 955c25a; `agentplot/blueprints:design/capture/design.md` and `plan.md`; `agentplot/blueprints:design/requirements-style.md`; sluice's, timber's and flume's `docs/adr/0001` as the model.
+Sources: `boomdrivedev/blueprints:design/weir/requirements.md` at 955c25a; `boomdrivedev/blueprints:design/capture/design.md` and `plan.md`; `boomdrivedev/blueprints:design/requirements-style.md`; sluice's, timber's and flume's `docs/adr/0001` as the model.
 
 ## Context and problem statement
 

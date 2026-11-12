@@ -10,9 +10,9 @@ decision-makers:
 
 # No try of weir's call to a remote outlasts the family's limit, and weir-bounded holds it
 
-Status: accepted on 2026-11-12 by agentplot-design. It is the design agent's own choice, made on the statement and the rules written, and cheap to change: it holds no choice of the user's. The direction is agentplot-design's ruling of 2026-11-10: weir owns the code of a call's limit, since sluice, Flume and Boomdrive already take weir's crates. The limit itself is agentplot/sluice record 0109's, the family's one design for it. The form below is the construct stage's own choice, each part cheap to change.
+Status: accepted on 2026-11-12 by agentplot-design. It is the design agent's own choice, made on the statement and the rules written, and cheap to change: it holds no choice of the user's. The direction is agentplot-design's ruling of 2026-11-10: weir owns the code of a call's limit, since sluice, Flume and Boomdrive already take weir's crates. The limit itself is boomdrivedev/sluice record 0109's, the family's one design for it. The form below is the construct stage's own choice, each part cheap to change.
 
-Sources: the brief of the change `no-try-of-weirs-call-to-a-remote-outlasts-its-limit`; agentplot/sluice record 0109, on sluice's main at `e6809f9`, with its `crates/sluice/src/bounded.rs`, `runs::end_group` and `retry::TRY_FOR` there; agentplot/boomdrive record 0042 and its rule core.58, on boomdrive's `bolt/no-try-of-the-runners-call-to-a-remote-outlasts-its-limit` at `9a72117f`, with its crate `boomdrive-bounded`; agentplot-ops's signal `2026-11-10-agentplot-ops-e19d134d/01`; the statement in agentplot/blueprints, `design/weir/requirements.md`, 44, 46, 69, C.3 and section 9 as amended at blueprints `ad3a1ae`; `crates/weir-branch/src/keeper.rs` `read_tip` and `move_to`, and `crates/weir-branch/src/git.rs` `run_program`, at `c781f73`; rules core.1, core.2, core.3, core.26, core.27, core.28, core.39 and core.40.
+Sources: the brief of the change `no-try-of-weirs-call-to-a-remote-outlasts-its-limit`; boomdrivedev/sluice record 0109, on sluice's main at `e6809f9`, with its `crates/sluice/src/bounded.rs`, `runs::end_group` and `retry::TRY_FOR` there; boomdrivedev/boomdrive record 0042 and its rule core.58, on boomdrive's `bolt/no-try-of-the-runners-call-to-a-remote-outlasts-its-limit` at `9a72117f`, with its crate `boomdrive-bounded`; agentplot-ops's signal `2026-11-10-agentplot-ops-e19d134d/01`; the statement in boomdrivedev/blueprints, `design/weir/requirements.md`, 44, 46, 69, C.3 and section 9 as amended at blueprints `ad3a1ae`; `crates/weir-branch/src/keeper.rs` `read_tip` and `move_to`, and `crates/weir-branch/src/git.rs` `run_program`, at `c781f73`; rules core.1, core.2, core.3, core.26, core.27, core.28, core.39 and core.40.
 
 ## Context and problem statement
 
@@ -63,9 +63,9 @@ For a stopped push:
 
 ## Amendment, 2026-11-12: a try ends at its caller's halt too
 
-Status: accepted on 2026-11-12 by agentplot-design. It is the design agent's own choice, decided by this record's one owner and by agentplot/boomdrive's core.58, which rules out the group's ending in a crate of the runner's own. It is cheap to change and holds no choice of the user's.
+Status: accepted on 2026-11-12 by agentplot-design. It is the design agent's own choice, decided by this record's one owner and by boomdrivedev/boomdrive's core.58, which rules out the group's ending in a crate of the runner's own. It is cheap to change and holds no choice of the user's.
 
-Sources: the question of Flume's fix place `fix--the-runners-stop-ends-its-try-in-flight--take-main-f20992b` of 2026-11-12; agentplot/boomdrive record 0042 and its amendment "the runner's stop ends its try in flight", on boomdrive's `bolt/the-runners-stop-ends-its-try-in-flight` at `069dc45c`; boomdrive's core.58 on its main at `f20992bc`; agentplot/sluice record 0109, its Ctrl-C point.
+Sources: the question of Flume's fix place `fix--the-runners-stop-ends-its-try-in-flight--take-main-f20992b` of 2026-11-12; boomdrivedev/boomdrive record 0042 and its amendment "the runner's stop ends its try in flight", on boomdrive's `bolt/the-runners-stop-ends-its-try-in-flight` at `069dc45c`; boomdrive's core.58 on its main at `f20992bc`; boomdrivedev/sluice record 0109, its Ctrl-C point.
 
 ### Context
 

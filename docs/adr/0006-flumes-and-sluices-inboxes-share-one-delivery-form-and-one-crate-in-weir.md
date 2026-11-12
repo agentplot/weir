@@ -14,7 +14,7 @@ Status: accepted by the user on 2026-11-08, on their card.
 
 Deciders: the user, 2026-11-08, in agentplot-design's pane, on how Flume and sluice hand a reader what it waits for: "it seems like we're maybe inventing multiple similar solutions", "Is it actually tracking what was read?", "Is it done well?", and "So would we move a shared crate under Weir so that it's loose and Flume could use the same inbox system?". Then, on agentplot-design's card of the same day, which offered this direction: "Runner as one more recipient now; one shared inbox in weir next". The name, the form's rules below, and the order of the work are agentplot-design's, each cheap to change.
 
-Sources: agentplot/blueprints `design/weir/requirements.md`, section 1 ("An inbox written by one tool is read by the next with no import") and its vocabulary, where "inbox" is the captures' inbox; `design/flume/requirements.md` 7, 43, 62 and 132; `design/sluice/requirements.md` 51; agentplot/flume `crates/flume-seams/src/held.rs` (`EndHeld`, `Delivery`, `DeliveredBy`) and `crates/flume-core/src/wait.rs` (`inbox`); agentplot/flume record 0060, rewritten on the same answer; this repository's `core.1`, `core.22` and `core.30`.
+Sources: boomdrivedev/blueprints `design/weir/requirements.md`, section 1 ("An inbox written by one tool is read by the next with no import") and its vocabulary, where "inbox" is the captures' inbox; `design/flume/requirements.md` 7, 43, 62 and 132; `design/sluice/requirements.md` 51; boomdrivedev/flume `crates/flume-seams/src/held.rs` (`EndHeld`, `Delivery`, `DeliveredBy`) and `crates/flume-core/src/wait.rs` (`inbox`); boomdrivedev/flume record 0060, rewritten on the same answer; this repository's `core.1`, `core.22` and `core.30`.
 
 ## Context and problem statement
 
@@ -40,7 +40,7 @@ Option 1.
 - **The crate.** Functions over records the caller passes in and gets back, holding no state and naming no tool, as `core.1` asks. Its records name their format, `weir-delivery/<major>` (`core.22`).
 - **Each tool's storage stays its own.** Flume's place records on the host and sluice's records on the branch differ for their own reasons, and each tool plugs its store into the crate.
 - **The order.**
-  1. Flume's runner becomes one more recipient now, on Flume's present inbox (agentplot/flume record 0060).
+  1. Flume's runner becomes one more recipient now, on Flume's present inbox (boomdrivedev/flume record 0060).
   2. weir's form, crate and pack.
   3. Flume, then sluice, move onto the crate, each in a change of its own. sluice takes its first dependency on weir for it.
 

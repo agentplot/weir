@@ -28,10 +28,10 @@ Flywheel, the product, its brand and its ecosystem, is renamed, and every reposi
 Option 1, as the user decided it for every repository. The names:
 
 - Flywheel, the product, brand and ecosystem, and the family of open tools on their sites, sluice, flume, timber, weir and the rest, is **Boomdrive**: one word, a capital B in prose, `boomdrive` in code, commands, packages, paths and repository names, and `Boomdrive` where the code's case needs a capital. Never "Boom Drive", "BoomDrive", `boom_drive` or `boom-drive`.
-- Flywheel Cloud, the control plane, is **Boomdrive Cloud**, in agentplot/boomdrive-cloud, which was flywheel-cloud.
-- The runner is **Boomdrive**, in agentplot/boomdrive, which was flywheel-runner. Its command `flywheel` is `boomdrive`, and its crates `flywheel` and `flywheel-hosted` are `boomdrive` and `boomdrive-hosted`.
+- Flywheel Cloud, the control plane, is **Boomdrive Cloud**, in boomdrivedev/boomdrive-cloud, which was flywheel-cloud.
+- The runner is **Boomdrive**, in boomdrivedev/boomdrive, which was flywheel-runner. Its command `flywheel` is `boomdrive`, and its crates `flywheel` and `flywheel-hosted` are `boomdrive` and `boomdrive-hosted`.
 - flywheel-web is agentplot/boomdrive-web.
-- tailrace is **timber**, in agentplot/timber: its crate, command, site and records.
+- tailrace is **timber**, in boomdrivedev/timber: its crate, command, site and records.
 - A customer's unit of work, "a Flywheel", is **a drive**, plural drives, and `Drive` in code, the interface's word and the code's the same.
 - crew's word for a partition's state branch, "the flywheel's branch", is **drive** too, following the unit's word: the drive's branch, a drive branch. A runner's mark on its launches, `flywheel:<partition>/<n>`, is `boomdrive:<partition>/<n>`.
 - agentplot/flywheel, the original, is archived; a mention of it as history stays, naming it as archived.
