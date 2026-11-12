@@ -1,4 +1,4 @@
-//! The inbox of the statement in agentplot/blueprints
+//! The inbox of the statement in boomdrivedev/blueprints
 //! `design/weir/requirements.md`: the records an inbox keeps beside its
 //! captures, where each lies, and every write it takes, fixed once so that
 //! every host and tool reads and writes one inbox the same way (40 to 43).

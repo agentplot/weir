@@ -165,16 +165,20 @@ fn every_record_written_by_its_operation_reads_back_as_written() {
     inbox = formed(
         &inbox,
         inbox
-            .send(&["pin-mise"], "agentplot/weir fix", "2026-10-25T12:00:00Z")
+            .send(
+                &["pin-mise"],
+                "boomdrivedev/weir fix",
+                "2026-10-25T12:00:00Z",
+            )
             .unwrap(),
     );
-    let landing = Outcome::Landing("agentplot/weir 1a2b3c4".into());
+    let landing = Outcome::Landing("boomdrivedev/weir 1a2b3c4".into());
     inbox = formed(
         &inbox,
         inbox
             .settle_send(
                 "pin-mise",
-                "agentplot/weir fix",
+                "boomdrivedev/weir fix",
                 "2026-10-25T12:00:00Z",
                 &landing,
             )
@@ -296,14 +300,14 @@ fn every_record_written_by_its_operation_reads_back_as_written() {
         [
             SendRecord {
                 item: "pin-mise".into(),
-                target: "agentplot/weir fix".into(),
+                target: "boomdrivedev/weir fix".into(),
                 brief: Some(brief.into()),
                 sent_at: "2026-10-25T12:00:00Z".into(),
                 outcome: Outcome::Open,
             },
             SendRecord {
                 item: "pin-mise".into(),
-                target: "agentplot/weir fix".into(),
+                target: "boomdrivedev/weir fix".into(),
                 brief: None,
                 sent_at: "2026-10-25T12:00:00Z".into(),
                 outcome: landing,

@@ -3,6 +3,6 @@ satisfies = [36, 41]
 
 [operation.settle-send]
 item = "acme-bump"
-target = "agentplot/weir change"
+target = "boomdrivedev/weir change"
 sent_at = "2026-10-22T10:00:00Z"
-outcome = "landing agentplot/weir#14"
+outcome = "landing boomdrivedev/weir#14"

@@ -51,7 +51,7 @@ fn the_index_holds_every_clause_under_its_section() {
     let index = the_packs_index();
     assert_eq!(
         index.statement,
-        "agentplot/blueprints:design/weir/requirements.md"
+        "boomdrivedev/blueprints:design/weir/requirements.md"
     );
     assert!(!index.commit.is_empty());
     let read: Vec<(&str, Vec<Clause>)> = index

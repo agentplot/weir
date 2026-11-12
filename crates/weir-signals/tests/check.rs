@@ -36,7 +36,7 @@ fn full() -> InboxAt {
     let inbox = after(
         &inbox,
         &inbox
-            .send(&["shim-timeout"], "agentplot/weir fix", AT)
+            .send(&["shim-timeout"], "boomdrivedev/weir fix", AT)
             .unwrap(),
     );
     after(

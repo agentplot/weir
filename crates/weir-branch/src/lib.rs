@@ -1,4 +1,4 @@
-//! The shared-branch write protocol of the statement in agentplot/blueprints
+//! The shared-branch write protocol of the statement in boomdrivedev/blueprints
 //! `design/weir/requirements.md`: how every writer of a shared branch reads
 //! it and writes it, so that no write is lost and no two writes move the
 //! branch from one tip (44 to 50, 78 to 80; C.3).
