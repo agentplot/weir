@@ -60,3 +60,30 @@ For a stopped push:
 - The crate runs on Unix alone, since a process group is Unix's. weir runs on no other host.
 - sluice's `bounded.rs` and `runs::end_group`, `boomdrive-bounded`, and Flume's `fetch_branch` can each take `weir-bounded` in a change of its own. None moves in this one.
 - This record adds core.53. The change `no-try-of-weirs-call-to-a-remote-outlasts-its-limit` builds it.
+
+## Amendment, 2026-11-12: a try ends at its caller's halt too
+
+Status: accepted on 2026-11-12 by agentplot-design. It is the design agent's own choice, decided by this record's one owner and by agentplot/boomdrive's core.58, which rules out the group's ending in a crate of the runner's own. It is cheap to change and holds no choice of the user's.
+
+Sources: the question of Flume's fix place `fix--the-runners-stop-ends-its-try-in-flight--take-main-f20992b` of 2026-11-12; agentplot/boomdrive record 0042 and its amendment "the runner's stop ends its try in flight", on boomdrive's `bolt/the-runners-stop-ends-its-try-in-flight` at `069dc45c`; boomdrive's core.58 on its main at `f20992bc`; agentplot/sluice record 0109, its Ctrl-C point.
+
+### Context
+
+Boomdrive's runner ends the tries it has in flight when it is stopped, so a stop leaves no git running and the runner stops well within launchd's twenty seconds. Its stop sets a halt, and each try ends at its limit or its halt. That halt was built in `boomdrive-bounded`. Boomdrive's main has since run every call to a remote through `weir-bounded`, and its core.58 rules out the group's ending in a crate of its own. `weir-bounded` takes a limit alone and starts the call itself. So its caller can neither end the wait nor reach the group.
+
+### Decision outcome
+
+- **A halt is a try's second end.** `weir-bounded`'s run of a command takes, beside its limit, a halt its caller holds: one shared flag the caller may set from any thread. A try ends at whichever comes first. At either, its group is asked to end, given `GRACE`, then killed, by the one ending. A try begun with its halt set runs no process. A caller that never sets its halt sees its call run as before.
+- **The words.** A halted call fails with words of its own, apart from the limit's. They say the call to its remote was stopped as its caller asked, after git's last line on standard error and `; ` where git wrote one. They name no tool (core.2). A halted call's standard output is never read as an answer.
+- **No thread.** The wait that reads the limit reads the halt too (core.1).
+- **weir-branch passes its caller's halt.** A read or a write of weir-branch's can be given its caller's halt, which reaches each of its tries. A halted push fails its write as a stopped one does, and is never replayed (core.26).
+- **Not taken.**
+  - The halt in a crate of a tool's own: a copy of the group's ending, which this record's one owner and boomdrive's core.58 rule out.
+  - `weir-bounded` handing its caller the group to end: each caller would write an ending of its own, the drift this record's one owner prevents.
+  - A halt in a static of the crate: a test runs many callers in one process, and core.1 rules out a static.
+
+### Consequences
+
+- Boomdrive's runner takes its stop's halt through `weir-bounded`, so its fetch, its listing and weir-branch's read and write of crew's state repository all end at its stop.
+- sluice can end its tries on Ctrl-C by the same halt once it takes `weir-bounded`, which is sluice's to decide.
+- core.53 is amended in the same commit.
