@@ -6,12 +6,12 @@ The narrative is the statement in agentplot/blueprints,
 `design/weir/requirements.md`; a rule here names the clause it
 enforces and never restates it. There are no area pages yet; a rule
 that binds only one crate moves to an area page when that crate
-exists. Every rule below but core.53 is drawn from the statement the
-user ratified, or from a record the user accepted, and waits on no
-yes. core.53 waits on the operator's yes to record 0008, which carries
-agentplot-design's ruling of 2026-11-10 that weir owns the code of the
-family's limit for a call to a remote, and the statement's 69, C.3 and
-section 9 it was written into at blueprints ad3a1ae.
+exists. Every rule below is drawn from the statement the user ratified,
+or from an accepted record, and waits on no yes. core.53 comes from
+record 0008, accepted by agentplot-design on 2026-11-12 as its own
+choice, which carries its ruling of 2026-11-10 that weir owns the code
+of the family's limit for a call to a remote, and the statement's 69,
+C.3 and section 9 it was written into at blueprints ad3a1ae.
 A rule that names a renamed thing names it as the user renamed it, in
 their own words, which record 0003 carries. A kind's name and a
 package's links follow the user's ruling of 2026-11-05, in their own
