@@ -26,7 +26,7 @@ clauses 100 to 113 and C.8 it was written into at blueprints 006fc34.
 ### The crates and what they know
 
 - **[core.1]** No crate keeps state, starts a process that outlives its call, or names a host, tool, machine or inbox: every function answers from its inputs alone, every write is one a caller asked for, and a child a crate runs for a write, git in the branch keeper, ends with the call.
-- **[core.2]** Code outside the signals-folder import and the pack's cases names no tool of the family and no source.
+- **[core.2]** Code outside the signals-folder import and the pack's cases names no tool of the family and no source. A test of this rule reads a ruled-out name as a whole word, so an owner's name that contains a tool's, such as `boomdrivedev`, names no tool.
 - **[core.3]** No record weir defines holds a secret, and no code path writes one into a record, a line or a log.
 - **[core.4]** No code path judges what a capture or a delivery's message says, chooses a move, cuts an excerpt except as the limit forces, lists a source, hands a delivery over or confirms one, starts an agent, submits or lands.
 
