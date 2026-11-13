@@ -8,7 +8,7 @@ devenv.local.nix
 .DS_Store
 
 # Claude Code's project files, which devenv writes from devenv.nix at each
-# entry to the shell and at a place's readiness (agentplot/boomdrive's
+# entry to the shell and at a place's readiness (boomdrivedev/boomdrive's
 # record 0022; record 0007)
 /.mcp.json
 /.claude/settings.json

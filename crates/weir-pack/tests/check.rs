@@ -11,7 +11,7 @@ use weir_pack::{check, Clause, Fault, Pack, Shape};
 /// A small index: one clause or a few in each counted section, A.14 among
 /// them, the pack's own and the never-does clauses, and a section of Part
 /// B.
-const INDEX: &str = r#"statement = "agentplot/blueprints:design/weir/requirements.md"
+const INDEX: &str = r#"statement = "boomdrivedev/blueprints:design/weir/requirements.md"
 commit = "ae9d782"
 
 [[section]]

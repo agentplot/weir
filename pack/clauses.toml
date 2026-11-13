@@ -1,10 +1,10 @@
 # The statement's clause numbers, each under the section of Parts A and B
 # it stands in, as the pack's check reads them (67; C.7). Numbers only,
-# never a clause's words (core.37): the statement is in agentplot/blueprints,
+# never a clause's words (core.37): the statement is in boomdrivedev/blueprints,
 # and a clause it adds, removes or renumbers is changed here in the change
 # that follows it. 94 to 99, statechart kinds and the engine, stay out until
 # weir's statechart change takes them in with their cases.
-statement = "agentplot/blueprints:design/weir/requirements.md"
+statement = "boomdrivedev/blueprints:design/weir/requirements.md"
 commit = "006fc34"
 
 [[section]]

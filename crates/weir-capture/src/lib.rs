@@ -1,4 +1,4 @@
-//! The capture contract of the statement in agentplot/blueprints
+//! The capture contract of the statement in boomdrivedev/blueprints
 //! `design/weir/requirements.md`: what an adapter tells a host, and what a
 //! host does with it, fixed once so that every host given the same lines
 //! writes the same records (24).

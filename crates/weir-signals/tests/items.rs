@@ -159,7 +159,7 @@ fn an_attach_counts() {
     );
     let send = SendRecord {
         item: "shim-timeout".into(),
-        target: "agentplot/weir fix".into(),
+        target: "boomdrivedev/weir fix".into(),
         brief: Some("the brief\n".into()),
         sent_at: AT.into(),
         outcome: Outcome::Open,

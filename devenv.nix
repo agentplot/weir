@@ -208,7 +208,7 @@ in
     before = [ "devenv:enterShell" ];
   };
 
-  # Claude Code's project files (agentplot/boomdrive's record 0022; record
+  # Claude Code's project files (boomdrivedev/boomdrive's record 0022; record
   # 0005): .mcp.json from the servers below and .claude/settings.json from
   # the rest, each a link devenv makes into the store and git ignores. The
   # repository's one server is devenv's hosted one, which searches packages

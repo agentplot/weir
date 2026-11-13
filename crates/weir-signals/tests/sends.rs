@@ -10,7 +10,7 @@ use common::{a_move, after, empty, moved, paths, recfix, recsel_value, with_sign
 
 const AT: &str = "2026-10-25T09:00:00Z";
 const SENT_AT: &str = "2026-10-25T14:00:00+02:00";
-const TARGET: &str = "agentplot/weir fix";
+const TARGET: &str = "boomdrivedev/weir fix";
 
 const BRIEF: &str =
     "# The shim times out\n\nPin mise to 2026.9.18 until upstream\nreleases the fix.\n";
@@ -91,7 +91,7 @@ fn the_first_send() {
         sends.starts_with(
             "format: weir-send/1\n\
              item: shim-timeout\n\
-             target: agentplot/weir fix\n\
+             target: boomdrivedev/weir fix\n\
              brief: # The shim times out\n"
         ),
         "{sends}"
@@ -185,7 +185,7 @@ fn one_send_to_a_target_at_a_time() {
 fn a_send_that_landed() {
     let inbox = sent();
     let before = inbox.files()["inbox/items/shim-timeout/sends.rec"].clone();
-    let landing = Outcome::Landing("agentplot/weir 1a2b3c4".into());
+    let landing = Outcome::Landing("boomdrivedev/weir 1a2b3c4".into());
     let write = inbox
         .settle_send("shim-timeout", TARGET, SENT_AT, &landing)
         .unwrap();
@@ -195,9 +195,9 @@ fn a_send_that_landed() {
         &sends[before.len()..],
         "\nformat: weir-send/1\n\
          item: shim-timeout\n\
-         target: agentplot/weir fix\n\
+         target: boomdrivedev/weir fix\n\
          sent_at: 2026-10-25T14:00:00+02:00\n\
-         outcome: landing agentplot/weir 1a2b3c4\n"
+         outcome: landing boomdrivedev/weir 1a2b3c4\n"
     );
     recfix(sends);
     let inbox = after(&inbox, &write);
@@ -230,7 +230,7 @@ fn an_outcome_for_a_settled_send() {
     assert_eq!(refused.0[0].field.as_deref(), Some("outcome"));
     assert_eq!(
         refused.0[0].why,
-        "of the send to `agentplot/weir fix` at `2026-10-25T14:00:00+02:00` is `abandoned` already"
+        "of the send to `boomdrivedev/weir fix` at `2026-10-25T14:00:00+02:00` is `abandoned` already"
     );
 }
 
@@ -267,7 +267,7 @@ fn every_outcome_reads_back() {
     for outcome in [
         Outcome::Open,
         Outcome::Abandoned,
-        Outcome::Landing("agentplot/weir 1a2b3c4".into()),
+        Outcome::Landing("boomdrivedev/weir 1a2b3c4".into()),
         Outcome::Conclusion("inquiry/toolchain#4".into()),
     ] {
         assert_eq!(Outcome::parse(&outcome.to_string()), Some(outcome));

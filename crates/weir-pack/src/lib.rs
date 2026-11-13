@@ -1,4 +1,4 @@
-//! The conformance pack of the statement in agentplot/blueprints
+//! The conformance pack of the statement in boomdrivedev/blueprints
 //! `design/weir/requirements.md`: the cases every host, adapter and profile
 //! of the family is held to, the same on every machine, with no source and
 //! no network (65 to 68, 87; C.7).

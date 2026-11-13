@@ -1,5 +1,5 @@
 # The family's shared crates, one workspace. Each joins `members` as it
-# lands (agentplot/blueprints, design/capture/plan.md):
+# lands (boomdrivedev/blueprints, design/capture/plan.md):
 #   crates/weir-capture    the capture contract: its types and key rules,
 #                          JSON in flight, recutils at rest, the sha256
 #                          content hash and the excerpt cut: landed

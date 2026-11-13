@@ -414,7 +414,7 @@ fn an_imported_move_is_checked_as_any_move() {
     let inbox = after(
         &inbox,
         &inbox
-            .send(&["sent-item"], "agentplot/weir fix", AT)
+            .send(&["sent-item"], "boomdrivedev/weir fix", AT)
             .unwrap(),
     );
     let mut capture = line("release/x", 6);
@@ -618,7 +618,7 @@ fn with_a_sent_item() -> InboxAt {
     after(
         &inbox,
         &inbox
-            .send(&["sent-item"], "agentplot/weir fix", AT)
+            .send(&["sent-item"], "boomdrivedev/weir fix", AT)
             .unwrap(),
     )
 }

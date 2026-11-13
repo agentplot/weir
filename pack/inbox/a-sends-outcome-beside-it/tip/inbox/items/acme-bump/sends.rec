@@ -1,6 +1,6 @@
 format: weir-send/1
 item: acme-bump
-target: agentplot/weir change
+target: boomdrivedev/weir change
 brief: # Bump acme
 +
 + The repository pins 0.9, and 1.0 is out.
@@ -10,6 +10,6 @@ outcome: open
 
 format: weir-send/1
 item: acme-bump
-target: agentplot/weir change
+target: boomdrivedev/weir change
 sent_at: 2026-10-22T10:00:00Z
-outcome: landing agentplot/weir#14
+outcome: landing boomdrivedev/weir#14

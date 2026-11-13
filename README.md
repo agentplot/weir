@@ -1,7 +1,7 @@
 # weir
 
 **Designed, not built.** The design is settled in
-[agentplot/blueprints](https://github.com/agentplot/blueprints); no code
+[boomdrivedev/blueprints](https://github.com/boomdrivedev/blueprints); no code
 exists yet.
 
 weir is the shared code of the agentplot tool family. It defines, once,
@@ -15,10 +15,10 @@ records a host must write from them come out.
 A weir measures and regulates a stream's flow. The contract and its
 conformance pack do that for the family's captures.
 
-- **The design:** `design/capture/design.md` in agentplot/blueprints,
+- **The design:** `design/capture/design.md` in boomdrivedev/blueprints,
   and its plan, `plan.md` beside it.
 - **The statement**, weir's invariants as numbered clauses, comes next,
-  as `design/weir/requirements.md` in agentplot/blueprints.
+  as `design/weir/requirements.md` in boomdrivedev/blueprints.
 
 ## The crates
 

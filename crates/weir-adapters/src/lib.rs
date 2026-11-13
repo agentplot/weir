@@ -1,4 +1,4 @@
-//! The built-in adapters of the statement in agentplot/blueprints
+//! The built-in adapters of the statement in boomdrivedev/blueprints
 //! `design/weir/requirements.md`, held once so every host runs one copy of
 //! each (61 to 64; C.6; section 9).
 //!

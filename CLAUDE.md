@@ -6,7 +6,7 @@ shared-branch write protocol, the kind format, cadence, the built-in
 adapters and the conformance pack. millpond, headwater, eddy, sounding
 and flume build on it, and Boomdrive later. Designed, not built.
 
-The design is in agentplot/blueprints: the capture design,
+The design is in boomdrivedev/blueprints: the capture design,
 `design/capture/design.md`, and its plan, `plan.md` beside it. weir's
 statement, `design/weir/requirements.md`, is written from them next
 (plan step F1). This repository cites the statement's clauses by number
@@ -18,7 +18,7 @@ the design wins.
 **The family.** This tool works with the others of the Boomdrive
 family: sluice (the merge queue), Flume (places and their agents),
 Boomdrive (the runner), timber, weir and boom. Each tool's statement is
-in agentplot/blueprints, `design/<tool>/requirements.md`. Before
+in boomdrivedev/blueprints, `design/<tool>/requirements.md`. Before
 designing or fixing a behavior here, look at how the related tools do
 the same thing, in their code and their statements: readiness,
 configuration, credentials, retries, what a place is. Where two tools do
@@ -69,7 +69,7 @@ lint as a moon project of its own when it lands.
 each approved by name, so a session in a trusted folder starts them
 unasked. devenv writes `.mcp.json` and `.claude/settings.json` on
 entering the shell, and as a place's readiness sources it, and git
-ignores both (agentplot/boomdrive's record 0022; record 0007): a Claude
+ignores both (boomdrivedev/boomdrive's record 0022; record 0007): a Claude
 Code setting of the repository's goes into devenv's options, never into
 those files. OpenSpec's skills and commands under `.claude/` are tracked
 as the OpenSpec `devenv.nix` pins writes them; when the pin moves,

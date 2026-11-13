@@ -1,5 +1,5 @@
 //! A call to a remote run to the family's limit for a try, of the statement
-//! in agentplot/blueprints `design/weir/requirements.md` (69; C.3; record
+//! in boomdrivedev/blueprints `design/weir/requirements.md` (69; C.3; record
 //! 0008; core.53).
 //!
 //! A try runs in a process group of its own and is waited on no longer

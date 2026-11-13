@@ -3,5 +3,5 @@ satisfies = [36]
 
 [operation.send]
 items = ["acme-bump"]
-target = "agentplot/weir change"
+target = "boomdrivedev/weir change"
 sent_at = "2026-10-22T10:00:00Z"

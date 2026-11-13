@@ -292,7 +292,7 @@ fn sent(inbox: &InboxAt, name: &str) -> InboxAt {
     );
     let send = SendRecord {
         item: name.into(),
-        target: "agentplot/weir fix".into(),
+        target: "boomdrivedev/weir fix".into(),
         brief: Some("the brief\n".into()),
         sent_at: "2026-10-25T10:00:00Z".into(),
         outcome: Outcome::Open,
