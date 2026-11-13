@@ -1,7 +1,7 @@
 ---
 number: 9
 title: The addresses of the moved tools name boomdrivedev, and the names that are no address stay
-status: accepted
+status: deprecated
 date: 2026-11-12
 decision-makers:
 - the brief of the fix main--weirs-addresses-name-boomdrivedev
@@ -10,7 +10,7 @@ decision-makers:
 
 # The addresses of the moved tools name boomdrivedev, and the names that are no address stay
 
-Status: accepted on the brief of the fix main--weirs-addresses-name-boomdrivedev, 2026-11-12, which decides the addresses in its words: "Every agentplot/ address in weir's tree of a tool that has moved names boomdrivedev/ instead: its flake inputs, its site's address, its README, policies and skills." Which names are no address, which files keep what they say, the fixtures, and how core.2's tests read a name are the code stage's own choices below, each cheap to change.
+Status: deprecated on 2026-11-13. It holds a one-off move, which is the plan's and no record's (crew's rule briefs.15 as amended 2026-11-13).
 
 Sources: the brief; `gh repo list boomdrivedev`, `gh repo list agentplot` and `gh api repos/agentplot/<repo>` for each repository weir's tree names, read on 2026-11-12; boomdrivedev/blueprints, which holds `006fc34` and answers the style guide's address the Vale rules link to; boomdrivedev/timber's record 0032, the same fix in timber; afterthought/kit-standard `docs/orgs/`; record 0003, whose rename is the precedent; rules core.2 and core.37; the OpenSpec change weirs-addresses-name-boomdrivedev.
 
