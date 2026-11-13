@@ -41,5 +41,3 @@ Option 1, the user's decision.
 
 - Good: a kick-back from the merge queue costs one small fix, never a statechart's whole run, and the kind that names it says which fix, at which version.
 - Good: the field's name says when it runs, apart from a statechart's own verify and send-back.
-- Bad: the fields weir's change `a-kind-with-no-stages-names-its-fix` built as `fix` and `max_fixes`, on the bolt `weir-kinds-name-their-fix`, are renamed before it lands, and their reading takes an identity alone.
-- Flume's queued `a-base-places-fix-kind-is-read-from-weirs-format` reads `landing_fix` and `max_landing_fixes`.
