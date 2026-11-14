@@ -15,9 +15,11 @@
 use std::time::Duration;
 
 mod group;
+mod halt;
 mod run;
 
 pub use group::end_group;
+pub use halt::Halt;
 pub use run::{output, output_kept, Ended};
 
 /// The most a try of a call to a remote may take: the family's limit, one
