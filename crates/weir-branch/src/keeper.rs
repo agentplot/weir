@@ -628,18 +628,22 @@ mod tests {
         assert!(silent.called_is_gone(), "the call's process is left");
     }
 
-    #[test]
-    fn a_remote_that_never_answers_a_push() {
-        let silent = Silent::new();
+    /// A commit of the empty tree in the silent remote's cache.
+    fn an_empty_commit(silent: &Silent) -> String {
         let git = Git::new(silent.cache())
             .env("GIT_AUTHOR_NAME", "a test")
             .env("GIT_AUTHOR_EMAIL", "test@example.org")
             .env("GIT_COMMITTER_NAME", "a test")
             .env("GIT_COMMITTER_EMAIL", "test@example.org");
         let tree = git.text(&["mktree"], Some(b"")).expect("the empty tree");
-        let commit = git
-            .text(&["commit-tree", &tree, "-m", "a write"], None)
-            .expect("a commit of the empty tree");
+        git.text(&["commit-tree", &tree, "-m", "a write"], None)
+            .expect("a commit of the empty tree")
+    }
+
+    #[test]
+    fn a_remote_that_never_answers_a_push() {
+        let silent = Silent::new();
+        let commit = an_empty_commit(&silent);
         let failure = match move_to(&silent.branch(), None, &commit, "a write") {
             Err(failure) => failure,
             Ok(Moved::Moved) => panic!("the branch moved on a silent remote"),
@@ -685,6 +689,28 @@ mod tests {
             assert!(failure.said.contains(named), "{named} unnamed: {failure}");
         }
         assert!(!silent.was_called(), "the silent remote was called");
+    }
+
+    #[test]
+    fn a_halt_ends_a_push_its_remote_never_answers() {
+        let silent = Silent::new();
+        let commit = an_empty_commit(&silent);
+        let halt = Halt::default();
+        let branch = silent.branch_halted_by(halt.clone());
+        let (moved, took) = silent::halted_after(&halt, Duration::from_millis(300), || {
+            move_to(&branch, None, &commit, "a write")
+        });
+        let failure = match moved {
+            Err(failure) => failure,
+            Ok(Moved::Moved) => panic!("the branch moved on a silent remote"),
+            Ok(Moved::Refused(said)) => panic!("a halted push taken as a refusal: {said}"),
+        };
+        assert!(took < Duration::from_secs(5), "took {took:?}");
+        assert_eq!(failure.step, Step::Move, "{failure}");
+        for named in ["git push", silent::URL, "was stopped as its caller asked"] {
+            assert!(failure.said.contains(named), "{named} unnamed: {failure}");
+        }
+        assert!(silent.called_is_gone(), "the call's process is left");
     }
 
     #[test]
