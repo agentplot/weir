@@ -675,6 +675,19 @@ mod tests {
     }
 
     #[test]
+    fn a_read_begun_with_its_halt_set_reaches_no_remote() {
+        let silent = Silent::new();
+        let halt = Halt::default();
+        halt.halt();
+        let failure = read(&silent.branch_halted_by(halt)).unwrap_err();
+        assert_eq!(failure.step, Step::Read, "{failure}");
+        for named in ["git fetch", "was stopped as its caller asked"] {
+            assert!(failure.said.contains(named), "{named} unnamed: {failure}");
+        }
+        assert!(!silent.was_called(), "the silent remote was called");
+    }
+
+    #[test]
     fn a_branch_name_git_can_be_handed() {
         assert!(check_name("inbox").is_ok());
         assert!(check_name("weir/inbox").is_ok());
