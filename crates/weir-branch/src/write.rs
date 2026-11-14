@@ -393,4 +393,43 @@ mod tests {
         );
         assert!(silent.called_is_gone(), "the call's process is left");
     }
+
+    #[test]
+    fn a_write_halted_while_it_reads_lets_its_lock_go() {
+        let silent = Silent::new();
+        let halt = weir_bounded::Halt::default();
+        let branch = silent.branch_halted_by(halt.clone());
+        let clock = || OffsetDateTime::UNIX_EPOCH;
+        let ask = Ask {
+            what: "a write",
+            who: "a test",
+            bound: None,
+            stale_after: Duration::from_secs(60),
+            clock: &clock,
+        };
+        let (written, took) = silent::halted_after(&halt, Duration::from_millis(300), || {
+            write(&branch, &ask, |_| {
+                Ok(Files::from([(
+                    "inbox/a.rec".to_string(),
+                    "format: x\n".to_string(),
+                )]))
+            })
+        });
+        let refused = written.unwrap_err();
+        assert!(took < Duration::from_secs(5), "took {took:?}");
+        let words = weir_bounded::halted("git fetch", silent::URL);
+        match &refused {
+            WriteError::Failed {
+                step: Step::Read,
+                said,
+                ..
+            } => assert!(said.ends_with(&words), "{refused}"),
+            _ => panic!("not a failed read: {refused}"),
+        }
+        assert!(
+            !silent.cache().join(LOCK).exists(),
+            "the writers' lock is held"
+        );
+        assert!(silent.called_is_gone(), "the call's process is left");
+    }
 }
