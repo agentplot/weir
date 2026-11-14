@@ -2,7 +2,8 @@
 //! reached with no network (68). Its address is an `ssh://` one, and the
 //! cache's `core.sshCommand` a script that writes its process id to a file
 //! in the test's folder and then becomes a `sleep 60`; `ssh.variant` is
-//! `simple`, so git runs it once, with no probe.
+//! `simple`, so git runs it once, with no probe. A halt set mid-call is
+//! set from a thread the test makes, never the crate (core.1).
 
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
@@ -11,6 +12,7 @@ use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 use tempfile::TempDir;
+use weir_bounded::Halt;
 
 use crate::keeper::Branch;
 
@@ -60,6 +62,18 @@ impl Silent {
         branch
     }
 
+    /// The branch `inbox` on the silent remote, through the cache, at the
+    /// family's limit, given `halt`.
+    pub(crate) fn branch_halted_by(&self, halt: Halt) -> Branch {
+        Branch::remote("inbox", &self.cache, URL).with_halt(halt)
+    }
+
+    /// Whether the silent remote was called: its script wrote its process
+    /// id.
+    pub(crate) fn was_called(&self) -> bool {
+        self.folder.path().join("pid").exists()
+    }
+
     /// The cache's git directory.
     pub(crate) fn cache(&self) -> &std::path::Path {
         &self.cache
@@ -90,4 +104,23 @@ impl Silent {
             std::thread::sleep(Duration::from_millis(20));
         }
     }
+}
+
+/// `call` made while a thread of the test's sets `halt` `after` the call
+/// begins, and how long the call took.
+pub(crate) fn halted_after<T>(
+    halt: &Halt,
+    after: Duration,
+    call: impl FnOnce() -> T,
+) -> (T, Duration) {
+    std::thread::scope(|scope| {
+        let setter = halt.clone();
+        let started = Instant::now();
+        scope.spawn(move || {
+            std::thread::sleep(after);
+            setter.halt();
+        });
+        let made = call();
+        (made, started.elapsed())
+    })
 }

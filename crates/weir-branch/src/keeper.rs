@@ -653,6 +653,28 @@ mod tests {
     }
 
     #[test]
+    fn a_halt_ends_a_fetch_its_remote_never_answers() {
+        let silent = Silent::new();
+        let halt = Halt::default();
+        let branch = silent.branch_halted_by(halt.clone());
+        let (read, took) =
+            silent::halted_after(&halt, Duration::from_millis(300), || read(&branch));
+        let failure = read.unwrap_err();
+        assert!(took < Duration::from_secs(5), "took {took:?}");
+        assert_eq!(failure.step, Step::Read, "{failure}");
+        for named in ["git fetch", silent::URL, "was stopped as its caller asked"] {
+            assert!(failure.said.contains(named), "{named} unnamed: {failure}");
+        }
+        for unnamed in ["30s", "the most a try may take"] {
+            assert!(
+                !failure.said.contains(unnamed),
+                "{unnamed} named: {failure}"
+            );
+        }
+        assert!(silent.called_is_gone(), "the call's process is left");
+    }
+
+    #[test]
     fn a_branch_name_git_can_be_handed() {
         assert!(check_name("inbox").is_ok());
         assert!(check_name("weir/inbox").is_ok());
