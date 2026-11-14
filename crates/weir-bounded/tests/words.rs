@@ -1,15 +1,23 @@
-//! The family's limit and grace, and a stopped call's words (C.3; record
-//! 0008; core.53).
+//! The family's limit and grace, and a stopped or halted call's words
+//! (C.3; record 0008 as amended 2026-11-12; core.53).
 
 use std::time::Duration;
 
-use weir_bounded::{span, stopped, GRACE, TRY_FOR};
+use weir_bounded::{halted, span, stopped, GRACE, TRY_FOR};
 
 #[test]
 fn a_stopped_calls_words_name_its_call_remote_and_limit() {
     assert_eq!(
         stopped("git fetch", "origin", TRY_FOR),
         "git fetch with origin was still going after 30s, the most a try may take, and was stopped"
+    );
+}
+
+#[test]
+fn a_halted_calls_words_name_its_call_and_remote() {
+    assert_eq!(
+        halted("git fetch", "origin"),
+        "git fetch with origin was stopped as its caller asked"
     );
 }
 

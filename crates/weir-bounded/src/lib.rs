@@ -1,14 +1,18 @@
-//! A call to a remote run to the family's limit for a try, of the statement
-//! in boomdrivedev/blueprints `design/weir/requirements.md` (69; C.3; record
-//! 0008; core.53).
+//! A call to a remote run to the family's limit for a try, or to its
+//! caller's halt, of the statement in boomdrivedev/blueprints
+//! `design/weir/requirements.md` (69; C.3; record 0008 as amended
+//! 2026-11-12; core.53).
 //!
 //! A try runs in a process group of its own and is waited on no longer
-//! than its limit. At the limit its group is asked to end, given
-//! [`GRACE`], then killed, so nothing it started outlives the call, and
-//! the call is said stopped. What it prints is written to unnamed
-//! temporary files and read once it has ended: the crate starts no thread
-//! (core.1). The limit, the group's ending and a stopped call's words are
-//! written here alone, and every call weir makes to a remote takes them.
+//! than its limit or its caller's [`Halt`], whichever comes first. At the
+//! first of them its group is asked to end, given [`GRACE`], then killed,
+//! so nothing it started outlives the call, and the call is said stopped
+//! by that one: at its limit, or halted. A try begun with its halt set
+//! runs no process. What it prints is written to unnamed temporary files
+//! and read once it has ended: the crate starts no thread, and holds no
+//! halt in a static (core.1). The limit, the halt, the group's ending and
+//! a stopped call's words are written here alone, and every call weir
+//! makes to a remote takes them.
 
 #![deny(missing_docs)]
 
@@ -40,10 +44,17 @@ pub fn span(limit: Duration) -> String {
     }
 }
 
-/// A stopped call's words, naming its call, its remote and its limit.
+/// A call's words where its limit came first, naming its call, its remote
+/// and its limit.
 pub fn stopped(call: &str, remote: &str, limit: Duration) -> String {
     format!(
         "{call} with {remote} was still going after {}, the most a try may take, and was stopped",
         span(limit)
     )
+}
+
+/// A call's words where its caller's halt came first, naming its call and
+/// its remote, and no limit, since the call was not still going at one.
+pub fn halted(call: &str, remote: &str) -> String {
+    format!("{call} with {remote} was stopped as its caller asked")
 }
