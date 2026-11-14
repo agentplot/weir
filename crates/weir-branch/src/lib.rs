@@ -15,7 +15,9 @@
 //! git and `recfix` for the write it was asked to make, each ended before
 //! the call returns (69; C.3). Each try of git's that reaches the remote,
 //! the fetch, the listing and the push, is ended at `weir-bounded`'s limit
-//! with everything it started (69, 78; C.3; core.53).
+//! or at its caller's halt, whichever comes first, with everything it
+//! started; a try begun with its halt set runs no git (69, 78; C.3; record
+//! 0008 as amended 2026-11-12; core.53).
 
 mod commit;
 mod git;
@@ -28,4 +30,5 @@ pub mod write;
 
 pub use keeper::{read, Branch, Failure, Files, Place, Step, Tip, TipError};
 pub use lock::{Broken, LOCK};
+pub use weir_bounded::Halt;
 pub use write::{write, Ask, Landed, Nothing, WriteError, Written, BOUND};

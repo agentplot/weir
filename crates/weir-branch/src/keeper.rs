@@ -12,6 +12,8 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use weir_bounded::Halt;
+
 use crate::git::Git;
 
 /// Files by path, each with its full text: those at a tip, or those a
@@ -29,14 +31,18 @@ pub enum Place {
     Local { git_dir: PathBuf },
 }
 
-/// A shared branch: its name, where it lies, and the most a try of a git
-/// call that reaches its remote may take, `weir-bounded`'s limit, which no
-/// caller sets (C.3; core.53).
+/// A shared branch: its name, where it lies, the most a try of a git call
+/// that reaches its remote may take, `weir-bounded`'s limit, which no
+/// caller sets, and its caller's halt, at which each try ends when it
+/// comes before the limit (C.3; record 0008 as amended 2026-11-12;
+/// core.53). Two branches are equal when their names, places and limits
+/// are and their halts share one flag.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Branch {
     name: String,
     place: Place,
     pub(crate) limit: Duration,
+    pub(crate) halt: Halt,
 }
 
 impl Branch {
@@ -54,6 +60,7 @@ impl Branch {
                 url: url.into(),
             },
             limit: weir_bounded::TRY_FOR,
+            halt: Halt::default(),
         }
     }
 
@@ -66,7 +73,18 @@ impl Branch {
                 git_dir: git_dir.into(),
             },
             limit: weir_bounded::TRY_FOR,
+            halt: Halt::default(),
         }
+    }
+
+    /// This branch given its caller's `halt`: each try of a read or a write
+    /// of it, the fetch, the listing and the push, ends at the branch's
+    /// limit or at that halt, whichever comes first, and one begun with it
+    /// set runs no git. A branch with no remote makes no try, and its calls
+    /// run to their end whatever its halt says (48; C.3; record 0008 as
+    /// amended 2026-11-12; core.53).
+    pub fn with_halt(self, halt: Halt) -> Branch {
+        Branch { halt, ..self }
     }
 
     pub fn name(&self) -> &str {
@@ -381,8 +399,9 @@ impl Tip {
 /// (78). A remote's tip is fetched into the cache, made with
 /// `git init --bare` when it is missing; nothing on the branch changes. The
 /// fetch, and the listing that says whether a branch not fetched exists,
-/// are each one try to the branch's limit, a stopped one failing the read
-/// (69; C.3; core.53).
+/// are each one try to the branch's limit or its caller's halt, whichever
+/// comes first, a stopped or halted one failing the read (69; C.3; record
+/// 0008 as amended 2026-11-12; core.53).
 pub fn read(branch: &Branch) -> Result<Option<Tip>, Failure> {
     branch
         .check()
@@ -432,6 +451,7 @@ pub(crate) fn read_tip(branch: &Branch) -> Result<Option<Tip>, Failure> {
                     ],
                     url,
                     branch.limit,
+                    &branch.halt,
                 )
                 .map_err(failed)?;
             if fetched.ok() {
@@ -445,6 +465,7 @@ pub(crate) fn read_tip(branch: &Branch) -> Result<Option<Tip>, Failure> {
                         &["ls-remote", "--exit-code", "--", url, &branch.head_ref()],
                         url,
                         branch.limit,
+                        &branch.halt,
                     )
                     .map_err(failed)?;
                 match listed.code {
@@ -492,9 +513,11 @@ pub(crate) enum Moved {
 
 /// Moves `branch` to `commit` only while it stands at `tip`, none meaning
 /// it must not exist: on a remote by a push with the tip as the lease's
-/// expected value, never with force, as one try to the branch's limit, a
-/// stopped one failing the move; with no remote by `update-ref` from the
-/// tip, forty zeros for none (44, 48, 79; C.3 step 4; core.27, core.53).
+/// expected value, never with force, as one try to the branch's limit or
+/// its caller's halt, whichever comes first, a stopped or halted one
+/// failing the move; with no remote by `update-ref` from the tip, forty
+/// zeros for none, whatever the halt says (44, 48, 79; C.3 step 4; record
+/// 0008 as amended 2026-11-12; core.27, core.53).
 pub(crate) fn move_to(
     branch: &Branch,
     tip: Option<&Tip>,
@@ -510,8 +533,9 @@ pub(crate) fn move_to(
                 "--force-with-lease={head}:{}",
                 tip.map(Tip::commit).unwrap_or_default()
             );
-            // One try to the branch's limit: a stopped push fails the move
-            // and is no refusal, so it is never replayed (C.3; core.26).
+            // One try to the branch's limit or its caller's halt: a stopped
+            // or halted push fails the move and is no refusal, so it is
+            // never replayed (C.3; core.26).
             let pushed = git
                 .reach(
                     &[
@@ -525,6 +549,7 @@ pub(crate) fn move_to(
                     ],
                     url,
                     branch.limit,
+                    &branch.halt,
                 )
                 .map_err(failed)?;
             if !pushed.ok() {
@@ -603,18 +628,22 @@ mod tests {
         assert!(silent.called_is_gone(), "the call's process is left");
     }
 
-    #[test]
-    fn a_remote_that_never_answers_a_push() {
-        let silent = Silent::new();
+    /// A commit of the empty tree in the silent remote's cache.
+    fn an_empty_commit(silent: &Silent) -> String {
         let git = Git::new(silent.cache())
             .env("GIT_AUTHOR_NAME", "a test")
             .env("GIT_AUTHOR_EMAIL", "test@example.org")
             .env("GIT_COMMITTER_NAME", "a test")
             .env("GIT_COMMITTER_EMAIL", "test@example.org");
         let tree = git.text(&["mktree"], Some(b"")).expect("the empty tree");
-        let commit = git
-            .text(&["commit-tree", &tree, "-m", "a write"], None)
-            .expect("a commit of the empty tree");
+        git.text(&["commit-tree", &tree, "-m", "a write"], None)
+            .expect("a commit of the empty tree")
+    }
+
+    #[test]
+    fn a_remote_that_never_answers_a_push() {
+        let silent = Silent::new();
+        let commit = an_empty_commit(&silent);
         let failure = match move_to(&silent.branch(), None, &commit, "a write") {
             Err(failure) => failure,
             Ok(Moved::Moved) => panic!("the branch moved on a silent remote"),
@@ -622,6 +651,63 @@ mod tests {
         };
         assert_eq!(failure.step, Step::Move, "{failure}");
         for named in ["git push", silent::URL, "300ms"] {
+            assert!(failure.said.contains(named), "{named} unnamed: {failure}");
+        }
+        assert!(silent.called_is_gone(), "the call's process is left");
+    }
+
+    #[test]
+    fn a_halt_ends_a_fetch_its_remote_never_answers() {
+        let silent = Silent::new();
+        let halt = Halt::default();
+        let branch = silent.branch_halted_by(halt.clone());
+        let (read, took) =
+            silent::halted_after(&halt, Duration::from_millis(300), || read(&branch));
+        let failure = read.unwrap_err();
+        assert!(took < Duration::from_secs(5), "took {took:?}");
+        assert_eq!(failure.step, Step::Read, "{failure}");
+        for named in ["git fetch", silent::URL, "was stopped as its caller asked"] {
+            assert!(failure.said.contains(named), "{named} unnamed: {failure}");
+        }
+        for unnamed in ["30s", "the most a try may take"] {
+            assert!(
+                !failure.said.contains(unnamed),
+                "{unnamed} named: {failure}"
+            );
+        }
+        assert!(silent.called_is_gone(), "the call's process is left");
+    }
+
+    #[test]
+    fn a_read_begun_with_its_halt_set_reaches_no_remote() {
+        let silent = Silent::new();
+        let halt = Halt::default();
+        halt.halt();
+        let failure = read(&silent.branch_halted_by(halt)).unwrap_err();
+        assert_eq!(failure.step, Step::Read, "{failure}");
+        for named in ["git fetch", "was stopped as its caller asked"] {
+            assert!(failure.said.contains(named), "{named} unnamed: {failure}");
+        }
+        assert!(!silent.was_called(), "the silent remote was called");
+    }
+
+    #[test]
+    fn a_halt_ends_a_push_its_remote_never_answers() {
+        let silent = Silent::new();
+        let commit = an_empty_commit(&silent);
+        let halt = Halt::default();
+        let branch = silent.branch_halted_by(halt.clone());
+        let (moved, took) = silent::halted_after(&halt, Duration::from_millis(300), || {
+            move_to(&branch, None, &commit, "a write")
+        });
+        let failure = match moved {
+            Err(failure) => failure,
+            Ok(Moved::Moved) => panic!("the branch moved on a silent remote"),
+            Ok(Moved::Refused(said)) => panic!("a halted push taken as a refusal: {said}"),
+        };
+        assert!(took < Duration::from_secs(5), "took {took:?}");
+        assert_eq!(failure.step, Step::Move, "{failure}");
+        for named in ["git push", silent::URL, "was stopped as its caller asked"] {
             assert!(failure.said.contains(named), "{named} unnamed: {failure}");
         }
         assert!(silent.called_is_gone(), "the call's process is left");
