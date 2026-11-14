@@ -32,4 +32,4 @@ runs the repository's whole checks once every task is done.
 
 ## 3. The README
 
-- [ ] 3.1 Have the README's row for `weir-bounded` say a call to a remote run to the family's limit for a try, or to its caller's halt, ended with everything it started (design 10). True when `devenv shell -- moon run root:prose` passes.
+- [x] 3.1 Have the README's row for `weir-bounded` say a call to a remote run to the family's limit for a try, or to its caller's halt, ended with everything it started (design 10). True when `devenv shell -- moon run root:prose` passes.

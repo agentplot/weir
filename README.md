@@ -28,7 +28,7 @@ conformance pack do that for the family's captures.
 | `weir-signals` | The signal, move and item records, and the inbox's layout. |
 | `weir-adapters` | The folder drop, the meeting file and the signals-folder import. |
 | `weir-branch` | The one write protocol for a shared branch. |
-| `weir-bounded` | A call to a remote run to the family's limit for a try, ended with everything it started. |
+| `weir-bounded` | A call to a remote run to the family's limit for a try, or to its caller's halt, ended with everything it started. |
 | `weir-kinds` | The one kind format, with an elaboration kind's section, a kind's packages, their content hash and locks. |
 | `weir-cadence` | Five-field cron, caught up once after a missed run. |
 | `weir-delivery` | One form for a message a tool owes a reader, owed until the reader confirms it by its key: its records, their spellings and the calls over a deliverer's own store. |
