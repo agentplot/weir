@@ -20,7 +20,7 @@ mod run;
 
 pub use group::end_group;
 pub use halt::Halt;
-pub use run::{output, output_kept, Ended};
+pub use run::{output, output_kept, Ended, Stopped};
 
 /// The most a try of a call to a remote may take: the family's limit, one
 /// value no setting changes (C.3; record 0008).

@@ -160,9 +160,9 @@ impl<'a> Git<'a> {
     ) -> Result<Ran, String> {
         let mut command = self.command();
         command.args(args).stdin(Stdio::null());
-        let ended = weir_bounded::output(&mut command, limit)
+        let ended = weir_bounded::output(&mut command, limit, &weir_bounded::Halt::default())
             .map_err(|error| format!("git could not be run: {error}"))?;
-        if ended.stopped {
+        if ended.stopped.is_some() {
             let verb = args
                 .first()
                 .map(|verb| verb.as_ref().to_string_lossy().into_owned())
@@ -175,7 +175,7 @@ impl<'a> Git<'a> {
             ));
         }
         Ok(Ran {
-            code: ended.status.code(),
+            code: ended.status.and_then(|status| status.code()),
             out: ended.stdout,
             err: ended.stderr,
         })
