@@ -1,5 +1,6 @@
 //! Asking for a write, forming it at the tip, checking it and committing
-//! it, held to the scenarios of shared-branch-write (44 to 47, 50, 71).
+//! it, held to the scenarios of shared-branch-write (44 to 48, 50, 71;
+//! record 0008 as amended 2026-11-12).
 
 mod common;
 
@@ -11,7 +12,7 @@ use common::{
     all_commits, ask, at, git, header, left_in, message, now, parents, seed, working, write_of,
     Stage,
 };
-use weir_branch::{write, Branch, Files, Landed, Nothing, WriteError, Written};
+use weir_branch::{write, Branch, Files, Halt, Landed, Nothing, WriteError, Written};
 
 const MOVE: &str = "format: weir-move/1\nsignal: release/acme/v1#1\nword: drop\n";
 
@@ -401,4 +402,23 @@ fn the_commits_message() {
         );
     }
     assert!(left_in(&stage.cache("cache"), "weir-index").is_empty());
+}
+
+// A branch with no remote
+
+#[test]
+fn a_branch_with_no_remote_takes_no_halt() {
+    let folder = tempfile::tempdir().unwrap();
+    let git_dir = common::working(folder.path(), "repo", &[("README", "an inbox\n")]);
+    let halt = Halt::default();
+    halt.halt();
+    let landed = landed(
+        write(
+            &Branch::local("inbox", &git_dir).with_halt(halt),
+            &ask("add a move", "operator@one", &now),
+            |_| Ok(write_of(&[("inbox/moves/moves.rec", MOVE)])),
+        )
+        .unwrap(),
+    );
+    assert_eq!(common::tip(&git_dir, "inbox"), Some(landed.commit));
 }
