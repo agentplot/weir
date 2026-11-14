@@ -1,5 +1,6 @@
-//! The crate's own code names no tool of the family (core.2) and starts no
-//! thread (core.1).
+//! The crate's own code names no tool of the family (core.2), starts no
+//! thread and holds no static, so a halt is its caller's alone (core.1,
+//! core.53).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -19,6 +20,9 @@ const RULED_OUT: [&str; 8] = [
 
 /// The calls that start a thread.
 const THREADS: [&str; 2] = ["thread::spawn", "thread::Builder"];
+
+/// The beginnings of a line, trimmed, that declare a static.
+const STATICS: [&str; 3] = ["static ", "pub static ", "pub(crate) static "];
 
 /// Every source file under the crate's `src`, with its text.
 fn sources() -> Vec<(PathBuf, String)> {
@@ -81,4 +85,19 @@ fn the_crate_starts_no_thread() {
         }
     }
     assert!(started.is_empty(), "core.1: {}", started.join("; "));
+}
+
+#[test]
+fn the_crate_holds_no_static() {
+    let mut held = Vec::new();
+    for (path, text) in sources() {
+        for (number, line) in text.lines().enumerate() {
+            let line = line.trim();
+            if STATICS.iter().any(|start| line.starts_with(start)) || line.contains("thread_local!")
+            {
+                held.push(format!("{}:{}: `{line}`", path.display(), number + 1));
+            }
+        }
+    }
+    assert!(held.is_empty(), "core.1: {}", held.join("; "));
 }
